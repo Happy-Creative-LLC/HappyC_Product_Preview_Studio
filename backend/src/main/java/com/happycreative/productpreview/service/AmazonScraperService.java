@@ -41,22 +41,18 @@ public class AmazonScraperService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public List<AmazonSearchResultDto> searchAmazon(String keyword) {
+    public List<AmazonSearchResultDto> searchAmazon(String keyword, boolean forceRefresh) {
         String normalizedKeyword = keyword.trim().toLowerCase();
 
         // 1. Check Cache
         Optional<SearchCache> cacheOpt = searchCacheRepository.findByKeywordIgnoreCase(normalizedKeyword);
-        if (cacheOpt.isPresent()) {
+        if (!forceRefresh && cacheOpt.isPresent()) {
             SearchCache cache = cacheOpt.get();
-            if (cache.getLastUpdated().plusDays(CACHE_VALIDITY_DAYS).isAfter(LocalDateTime.now())) {
-                log.info("Returning cached results for keyword: {}", normalizedKeyword);
-                try {
-                    return objectMapper.readValue(cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>(){});
-                } catch (Exception e) {
-                    log.error("Failed to parse cached JSON", e);
-                }
-            } else {
-                log.info("Cache expired for keyword: {}", normalizedKeyword);
+            log.info("Returning cached results for keyword: {}", normalizedKeyword);
+            try {
+                return objectMapper.readValue(cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>(){});
+            } catch (Exception e) {
+                log.error("Failed to parse cached JSON", e);
             }
         }
 

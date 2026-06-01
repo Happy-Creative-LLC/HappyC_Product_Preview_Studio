@@ -17,12 +17,15 @@ public class AmazonController {
     private final AmazonScraperService amazonScraperService;
 
     @GetMapping("/search")
-    public ResponseEntity<List<AmazonSearchResultDto>> searchAmazon(@RequestParam String keyword) {
+    public ResponseEntity<List<AmazonSearchResultDto>> searchAmazon(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "false") boolean forceRefresh) {
+        
         if (keyword == null || keyword.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
         
-        List<AmazonSearchResultDto> results = amazonScraperService.searchAmazon(keyword);
+        List<AmazonSearchResultDto> results = amazonScraperService.searchAmazon(keyword, forceRefresh);
         return ResponseEntity.ok(results);
     }
 }

@@ -15,11 +15,11 @@ const AmazonSearchPage = () => {
     fetchResults();
   }, [keyword]);
 
-  const fetchResults = async () => {
+  const fetchResults = async (forceRefresh = false) => {
     setLoading(true);
     try {
       // Call backend scraper API
-      const response = await axios.get(`http://localhost:8081/api/amazon/search?keyword=${encodeURIComponent(keyword)}`);
+      const response = await axios.get(`http://localhost:8081/api/amazon/search?keyword=${encodeURIComponent(keyword)}${forceRefresh ? '&forceRefresh=true' : ''}`);
       if (response.data && response.data.length > 0) {
         setCompetitors(response.data);
       }
@@ -93,8 +93,19 @@ const AmazonSearchPage = () => {
       </div>
 
       {/* Results Header */}
-      <div className="px-4 py-2 text-sm shadow-sm border-b">
-        <span>1-48 of over 60,000 results for </span><span className="text-orange-600 font-bold">"{keyword}"</span>
+      <div className="px-4 py-2 text-sm shadow-sm border-b flex justify-between items-center">
+        <div>
+          <span>1-48 of over 60,000 results for </span><span className="text-orange-600 font-bold">"{keyword}"</span>
+        </div>
+        <button 
+          onClick={() => fetchResults(true)} 
+          className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded shadow-sm border border-gray-300 flex items-center transition-colors"
+        >
+          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Update from Amazon
+        </button>
       </div>
 
       <div className="flex max-w-[1600px] mx-auto mt-4 px-4">
