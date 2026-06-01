@@ -15,7 +15,10 @@ const Landing = () => (
     
     {/* Content */}
     <div className="relative z-10 bg-white/60 p-10 rounded-2xl shadow-2xl backdrop-blur-md flex flex-col items-center border border-white/40">
-      <h1 className="text-4xl font-bold mb-8 text-gray-900 drop-shadow-sm">Happy Creative Preview Product</h1>
+      <div className="flex flex-col sm:flex-row items-center mb-8 sm:space-x-4">
+        <img src="/front.png" alt="Company Logo" className="h-16 w-auto object-contain drop-shadow-sm mb-4 sm:mb-0" />
+        <h1 className="text-4xl font-bold text-gray-900 drop-shadow-sm text-center">Happy Creative Preview Product</h1>
+      </div>
       <div className="flex space-x-6">
       <Link to="/amazon" className="px-6 py-3 bg-amazon-yellow text-black font-bold rounded shadow hover:bg-yellow-500">
         Amazon Preview

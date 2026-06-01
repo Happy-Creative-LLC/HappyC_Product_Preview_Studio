@@ -56,13 +56,15 @@ const ControlPanel = () => {
 
   return (
     <>
-      {/* Floating Toggle Button */}
+      {/* Floating Toggle Button - Hidden as per request (will be replaced by login system later) */}
+      {/*
       <button 
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 bg-gray-900 text-white p-4 rounded-full shadow-2xl z-50 hover:bg-gray-800 transition-colors"
       >
         <Settings size={24} />
       </button>
+      */}
 
       {/* Side Panel */}
       <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col border-l border-gray-200`}>
