@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ProductInfo = ({ title, brand, rating, reviewsCount, price, oldPrice, discountPercent, bulletPoints, badges, salesStat, sustainabilityFeature, colors, sizes }) => {
+const ProductInfo = ({ title, brand, price, oldPrice, bulletPoints, colors, sizes, fabricType, careInstructions, origin }) => {
   return (
     <div className="flex flex-col px-4">
       {/* Brand */}
@@ -8,41 +8,6 @@ const ProductInfo = ({ title, brand, rating, reviewsCount, price, oldPrice, disc
       
       {/* Title */}
       <h1 className="text-xl leading-tight font-medium text-gray-900 mb-2">{title}</h1>
-
-      {/* Ratings & Top Badge */}
-      <div className="flex items-center space-x-2 mb-1">
-        <span className="text-orange-500 text-lg">★★★★☆</span>
-        <span className="text-sm text-blue-600 hover:text-orange-500 hover:underline cursor-pointer flex items-center">
-          4.5 <span className="ml-1">({reviewsCount})</span>
-        </span>
-      </div>
-
-      {/* Badges */}
-      {badges && badges.length > 0 && (
-        <div className="flex space-x-2 mt-1 mb-2 items-center">
-          {badges.map((badge, idx) => (
-            badge.toLowerCase().includes('overall pick') ? 
-            <span key={idx} className="bg-gray-800 text-white text-xs font-bold px-2 py-1 flex items-center">
-              Overall Pick
-            </span> : 
-            <span key={idx} className="bg-red-700 text-white text-xs font-bold px-2 py-1">
-              {badge}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Sustainability */}
-      {sustainabilityFeature && (
-        <div className="text-sm text-green-700 font-medium mb-1 mt-2 flex items-center">
-          <span className="mr-1 border border-green-700 rounded-sm px-1">🌿</span> {sustainabilityFeature} ˅
-        </div>
-      )}
-
-      {/* Sales Stats */}
-      {salesStat && (
-        <div className="text-sm text-gray-600 mb-2 mt-1">{salesStat}</div>
-      )}
       
       <div className="border-b border-gray-300 w-full mb-3 mt-1"></div>
 
@@ -98,15 +63,44 @@ const ProductInfo = ({ title, brand, rating, reviewsCount, price, oldPrice, disc
         </div>
       )}
 
-      {/* Product Details / Bullet points */}
-      <div className="mt-4 border-t border-gray-300 pt-4">
-        <h3 className="font-bold text-base mb-2">About this item</h3>
-        <ul className="list-disc pl-5 space-y-1 text-sm text-gray-900 font-medium">
-          {bulletPoints.map((point, idx) => (
-            <li key={idx} className="leading-snug">{point}</li>
-          ))}
-        </ul>
-      </div>
+      {/* Product Details */}
+      {(fabricType || careInstructions || origin) && (
+        <div className="mt-4 mb-4">
+          <h3 className="font-bold text-base text-gray-900 mb-2">Product details</h3>
+          <div className="flex flex-col space-y-2 text-sm text-gray-900">
+            {fabricType && (
+              <div className="flex items-start">
+                <span className="w-1/3 font-bold">Fabric type</span>
+                <span className="w-2/3">{fabricType}</span>
+              </div>
+            )}
+            {careInstructions && (
+              <div className="flex items-start">
+                <span className="w-1/3 font-bold">Care instructions</span>
+                <span className="w-2/3">{careInstructions}</span>
+              </div>
+            )}
+            {origin && (
+              <div className="flex items-start">
+                <span className="w-1/3 font-bold">Origin</span>
+                <span className="w-2/3">{origin}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Top Highlights / Bullet points */}
+      {bulletPoints && bulletPoints.length > 0 && (
+        <div className="mt-4 border-t border-gray-300 pt-4">
+          <h3 className="font-bold text-base mb-2">About this item</h3>
+          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-900 font-medium">
+            {bulletPoints.map((point, idx) => (
+              <li key={idx} className="leading-snug">{point}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

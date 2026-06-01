@@ -9,6 +9,11 @@ const UploadPreviewPage = () => {
     platform: 'AMAZON',
     title: '',
     price: '',
+    brand: '',
+    fabricType: '',
+    careInstructions: '',
+    origin: '',
+    bulletPoints: '',
   });
 
   const [files, setFiles] = useState({
@@ -60,6 +65,15 @@ const UploadPreviewPage = () => {
     data.append('title', formData.title);
     if (formData.price) {
       data.append('price', parseFloat(formData.price));
+    }
+    if (formData.brand) data.append('brand', formData.brand);
+    if (formData.fabricType) data.append('fabricType', formData.fabricType);
+    if (formData.careInstructions) data.append('careInstructions', formData.careInstructions);
+    if (formData.origin) data.append('origin', formData.origin);
+    
+    if (formData.bulletPoints && formData.bulletPoints.trim() !== '') {
+      const points = formData.bulletPoints.split('\n').map(p => p.trim()).filter(p => p !== '');
+      points.forEach(point => data.append('bulletPoints', point));
     }
     
     if (files.mainImage) {
@@ -166,17 +180,79 @@ const UploadPreviewPage = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Giá ($)</label>
-            <input
-              type="number"
-              name="price"
-              step="0.01"
-              required
-              value={formData.price}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Giá ($)</label>
+              <input
+                type="number"
+                name="price"
+                step="0.01"
+                required
+                value={formData.price}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Thương hiệu (Brand)</label>
+              <input
+                type="text"
+                name="brand"
+                value={formData.brand}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Chi tiết sản phẩm (Product Details)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Fabric Type</label>
+                <input
+                  type="text"
+                  name="fabricType"
+                  value={formData.fabricType}
+                  onChange={handleInputChange}
+                  placeholder="VD: 100% Polyester"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Care Instructions</label>
+                <input
+                  type="text"
+                  name="careInstructions"
+                  value={formData.careInstructions}
+                  onChange={handleInputChange}
+                  placeholder="VD: Machine Wash"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Origin</label>
+                <input
+                  type="text"
+                  name="origin"
+                  value={formData.origin}
+                  onChange={handleInputChange}
+                  placeholder="VD: Imported"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Top highlights (Mỗi dòng một ý)</label>
+              <textarea
+                name="bulletPoints"
+                rows="4"
+                value={formData.bulletPoints}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Điền các điểm nổi bật của sản phẩm..."
+              />
+            </div>
           </div>
 
           {/* Variants section */}

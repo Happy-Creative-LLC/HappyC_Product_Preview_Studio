@@ -25,6 +25,7 @@ public class PreviewService {
     private final ObjectMapper objectMapper;
 
     public Preview createPreview(String projectName, String platform, String title, Double price,
+                                 String brand, String fabricType, String careInstructions, String origin, List<String> bulletPoints,
                                  MultipartFile mainImage, List<MultipartFile> galleryImages, 
                                  List<String> colorNames, List<MultipartFile> colorImages, 
                                  List<String> sizes, MultipartFile video) {
@@ -49,6 +50,24 @@ public class PreviewService {
         productData.put("title", title);
         if (price != null) {
             productData.put("price", price);
+        }
+        if (brand != null && !brand.isEmpty()) {
+            productData.put("brand", brand);
+        }
+        if (fabricType != null && !fabricType.isEmpty()) {
+            productData.put("fabricType", fabricType);
+        }
+        if (careInstructions != null && !careInstructions.isEmpty()) {
+            productData.put("careInstructions", careInstructions);
+        }
+        if (origin != null && !origin.isEmpty()) {
+            productData.put("origin", origin);
+        }
+        if (bulletPoints != null && !bulletPoints.isEmpty()) {
+            ArrayNode bpArray = productData.putArray("bulletPoints");
+            for (String bp : bulletPoints) {
+                bpArray.add(bp);
+            }
         }
         
         ArrayNode imagesArray = productData.putArray("images");

@@ -21,8 +21,13 @@ public class PreviewController {
     public ResponseEntity<Preview> uploadPreview(
             @RequestParam("projectName") String projectName,
             @RequestParam("platform") String platform,
-            @RequestParam("title") String title,
+            @RequestParam(value = "title") String title,
             @RequestParam(value = "price", required = false) Double price,
+            @RequestParam(value = "brand", required = false) String brand,
+            @RequestParam(value = "fabricType", required = false) String fabricType,
+            @RequestParam(value = "careInstructions", required = false) String careInstructions,
+            @RequestParam(value = "origin", required = false) String origin,
+            @RequestParam(value = "bulletPoints", required = false) List<String> bulletPoints,
             @RequestParam(value = "mainImage", required = false) MultipartFile mainImage,
             @RequestParam(value = "galleryImages", required = false) List<MultipartFile> galleryImages,
             @RequestParam(value = "colorNames", required = false) List<String> colorNames,
@@ -30,7 +35,7 @@ public class PreviewController {
             @RequestParam(value = "sizes", required = false) List<String> sizes,
             @RequestParam(value = "video", required = false) MultipartFile video
     ) {
-        Preview preview = previewService.createPreview(projectName, platform, title, price, mainImage, galleryImages, colorNames, colorImages, sizes, video);
+        Preview preview = previewService.createPreview(projectName, platform, title, price, brand, fabricType, careInstructions, origin, bulletPoints, mainImage, galleryImages, colorNames, colorImages, sizes, video);
         return ResponseEntity.ok(preview);
     }
 

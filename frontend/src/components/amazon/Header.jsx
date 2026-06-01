@@ -10,7 +10,7 @@ const Header = () => {
         {/* Logo */}
         <div className="flex flex-col justify-center mt-1">
           <div className="cursor-pointer border border-transparent hover:border-white p-1 rounded-sm flex items-center justify-center">
-            <img src="/logo.webp" alt="Amazon Logo" className="h-8 object-contain mt-1" />
+            <img src="/amazon-logo.svg" alt="Amazon Logo" className="h-8 object-contain mt-1" />
           </div>
         </div>
         
