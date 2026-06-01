@@ -19,7 +19,7 @@ const AmazonSearchPage = () => {
     setLoading(true);
     try {
       // Call backend scraper API
-      const response = await axios.get(`http://localhost:8080/api/amazon/search?keyword=${encodeURIComponent(keyword)}`);
+      const response = await axios.get(`http://localhost:8081/api/amazon/search?keyword=${encodeURIComponent(keyword)}`);
       if (response.data && response.data.length > 0) {
         setCompetitors(response.data);
       }

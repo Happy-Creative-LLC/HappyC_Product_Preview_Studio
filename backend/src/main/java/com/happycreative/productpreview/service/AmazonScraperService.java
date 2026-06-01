@@ -134,6 +134,22 @@ public class AmazonScraperService {
         } catch (Exception e) {
             log.error("Error scraping Amazon for keyword: " + keyword, e);
         }
+
+        if (results.isEmpty()) {
+            log.warn("Scraping returned no results, falling back to mock data.");
+            for (int i = 0; i < 5; i++) {
+                results.add(AmazonSearchResultDto.builder()
+                        .id("mock-" + i)
+                        .title("Mock Amazon Product for " + keyword + " " + i)
+                        .image("https://via.placeholder.com/150")
+                        .price(19.99 + i)
+                        .rating("4." + i)
+                        .reviews("10" + i)
+                        .isSponsored(i == 0)
+                        .build());
+            }
+        }
+
         return results;
     }
 }

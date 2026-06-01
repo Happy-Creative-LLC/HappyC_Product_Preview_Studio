@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api/comments';
+const API_URL = 'http://localhost:8081/api/comments';
 
 export const useCommentStore = create((set, get) => ({
   comments: [],
