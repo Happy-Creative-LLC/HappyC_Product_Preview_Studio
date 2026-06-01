@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import AmazonPreviewPage from './pages/AmazonPreviewPage';
 import EtsyPreviewPage from './pages/EtsyPreviewPage';
 import AmazonSearchPage from './pages/AmazonSearchPage';
+import UploadPreviewPage from './pages/UploadPreviewPage';
 import ControlPanel from './components/shared/ControlPanel';
 
 const Landing = () => (
@@ -29,6 +30,9 @@ const Landing = () => (
       <Link to="/etsy" className="px-6 py-3 bg-orange-500 text-white font-bold rounded shadow hover:bg-orange-600">
         Etsy Preview
       </Link>
+      <Link to="/upload" className="px-6 py-3 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700">
+        Upload Preview
+      </Link>
     </div>
     </div>
   </div>
@@ -42,6 +46,7 @@ function App() {
         <Route path="/amazon" element={<AmazonPreviewPage />} />
         <Route path="/search" element={<AmazonSearchPage />} />
         <Route path="/etsy" element={<EtsyPreviewPage />} />
+        <Route path="/upload" element={<UploadPreviewPage />} />
       </Routes>
       <ControlPanel />
     </Router>

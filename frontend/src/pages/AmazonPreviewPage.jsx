@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import axios from '../api/axios';
 import { useProductStore } from '../stores/productStore';
 import Header from '../components/amazon/Header';
 import ProductGallery from '../components/amazon/ProductGallery';
@@ -6,11 +8,41 @@ import ProductInfo from '../components/amazon/ProductInfo';
 import BuyBox from '../components/amazon/BuyBox';
 
 const AmazonPreviewPage = () => {
+  const [searchParams] = useSearchParams();
+  const previewId = searchParams.get('previewId');
+  
   // Case selection: 1 = Clothing/Jewelry (Vertical), 2 = Home&Kitchen (Vertical), 3 = Home&Kitchen (Horizontal)
   const [caseType, setCaseType] = useState(1);
 
-  // Get data from global store
-  const productData = useProductStore();
+  // Get fallback data from global store
+  const storeData = useProductStore();
+  
+  // Local state for fetched preview data
+  const [previewData, setPreviewData] = useState(null);
+  const [isLoading, setIsLoading] = useState(!!previewId);
+
+  useEffect(() => {
+    if (previewId) {
+      axios.get(`/api/previews/${previewId}`)
+        .then(response => {
+          if (response.data && response.data.productData) {
+            setPreviewData(JSON.parse(response.data.productData));
+          }
+        })
+        .catch(error => {
+          console.error("Error fetching preview:", error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [previewId]);
+
+  const productData = previewData || storeData;
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading Preview...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white text-black font-sans">

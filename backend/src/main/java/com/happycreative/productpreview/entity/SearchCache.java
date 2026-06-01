@@ -21,7 +21,8 @@ public class SearchCache {
     @Column(nullable = false, unique = true)
     private String keyword;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
     private String resultsJson;
 
     @Column(nullable = false)

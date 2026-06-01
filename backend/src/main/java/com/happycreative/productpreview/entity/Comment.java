@@ -14,14 +14,25 @@ import java.time.LocalDateTime;
 public class Comment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private java.util.UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "preview_id", nullable = true)
+    private Preview preview;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = true)
+    private User user;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(nullable = false)
     private String authorRole; // e.g. "SELLER", "DESIGN", "MEDIA"
+
+    @Column(nullable = false)
+    private boolean isResolved = false;
 
     @Column(nullable = false)
     private String targetComponent; // e.g. "IMAGE", "VIDEO", "TEXT"
