@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: "Amazon Ember", Arial, sans-serif;
+  background-color: #ffffff;
+  color: #0f1111;
+}
