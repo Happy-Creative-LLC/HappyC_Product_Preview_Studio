@@ -25,9 +25,12 @@ public class PreviewController {
             @RequestParam(value = "price", required = false) Double price,
             @RequestParam(value = "mainImage", required = false) MultipartFile mainImage,
             @RequestParam(value = "galleryImages", required = false) List<MultipartFile> galleryImages,
+            @RequestParam(value = "colorNames", required = false) List<String> colorNames,
+            @RequestParam(value = "colorImages", required = false) List<MultipartFile> colorImages,
+            @RequestParam(value = "sizes", required = false) List<String> sizes,
             @RequestParam(value = "video", required = false) MultipartFile video
     ) {
-        Preview preview = previewService.createPreview(projectName, platform, title, price, mainImage, galleryImages, video);
+        Preview preview = previewService.createPreview(projectName, platform, title, price, mainImage, galleryImages, colorNames, colorImages, sizes, video);
         return ResponseEntity.ok(preview);
     }
 

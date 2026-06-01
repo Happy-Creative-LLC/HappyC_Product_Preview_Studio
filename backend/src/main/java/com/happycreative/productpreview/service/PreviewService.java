@@ -25,7 +25,9 @@ public class PreviewService {
     private final ObjectMapper objectMapper;
 
     public Preview createPreview(String projectName, String platform, String title, Double price,
-                                 MultipartFile mainImage, List<MultipartFile> galleryImages, MultipartFile video) {
+                                 MultipartFile mainImage, List<MultipartFile> galleryImages, 
+                                 List<String> colorNames, List<MultipartFile> colorImages, 
+                                 List<String> sizes, MultipartFile video) {
         
         // Mock user logic: find or create a dummy Design user
         User user = userRepository.findByEmail("Happyc.design@gmail.com").orElseGet(() -> {
@@ -63,6 +65,26 @@ public class PreviewService {
             }
         }
         
+        if (colorNames != null && colorImages != null && colorNames.size() == colorImages.size()) {
+            ArrayNode colorsArray = productData.putArray("colors");
+            for (int i = 0; i < colorNames.size(); i++) {
+                String cUrl = fileStorageService.storeFile(colorImages.get(i));
+                if (cUrl != null) {
+                    ObjectNode colorObj = objectMapper.createObjectNode();
+                    colorObj.put("name", colorNames.get(i));
+                    colorObj.put("image", "http://localhost:8081" + cUrl);
+                    colorsArray.add(colorObj);
+                }
+            }
+        }
+        
+        if (sizes != null && !sizes.isEmpty()) {
+            ArrayNode sizesArray = productData.putArray("sizes");
+            for (String size : sizes) {
+                sizesArray.add(size);
+            }
+        }
+
         if (videoUrl != null) {
             ArrayNode videosArray = productData.putArray("videos");
             videosArray.add("http://localhost:8081" + videoUrl);

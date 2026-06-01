@@ -41,4 +41,7 @@ public class Preview {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @OneToMany(mappedBy = "preview", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private java.util.List<Comment> comments;
 }

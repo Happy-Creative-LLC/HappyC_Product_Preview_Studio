@@ -96,28 +96,7 @@ const AmazonPreviewPage = () => {
         )}
       </main>
 
-      {/* Floating Case Switcher (so it doesn't break the Amazon UI flow) */}
-      <div className="fixed bottom-4 right-4 bg-white shadow-xl rounded-full px-4 py-2 flex items-center space-x-2 border border-gray-200 z-50">
-        <span className="font-bold text-sm mr-2 text-gray-700">Preview Layout:</span>
-        <button 
-          onClick={() => setCaseType(1)}
-          className={`px-3 py-1 text-xs rounded-full ${caseType === 1 ? 'bg-orange-500 text-white font-bold' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-        >
-          Case 1 (Clothing)
-        </button>
-        <button 
-          onClick={() => setCaseType(2)}
-          className={`px-3 py-1 text-xs rounded-full ${caseType === 2 ? 'bg-orange-500 text-white font-bold' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-        >
-          Case 2 (Vertical)
-        </button>
-        <button 
-          onClick={() => setCaseType(3)}
-          className={`px-3 py-1 text-xs rounded-full ${caseType === 3 ? 'bg-orange-500 text-white font-bold' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-        >
-          Case 3 (Horizontal)
-        </button>
-      </div>
+
     </div>
   );
 };

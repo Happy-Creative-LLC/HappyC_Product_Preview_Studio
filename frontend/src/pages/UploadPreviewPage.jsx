@@ -17,6 +17,9 @@ const UploadPreviewPage = () => {
     video: null,
   });
 
+  const [colors, setColors] = useState([{ name: '', image: null }]);
+  const [sizes, setSizes] = useState('');
+
   const [isUploading, setIsUploading] = useState(false);
 
   const handleInputChange = (e) => {
@@ -31,6 +34,20 @@ const UploadPreviewPage = () => {
     } else {
       setFiles({ ...files, [name]: selectedFiles[0] });
     }
+  };
+
+  const handleColorChange = (index, field, value) => {
+    const newColors = [...colors];
+    newColors[index][field] = value;
+    setColors(newColors);
+  };
+
+  const addColor = () => setColors([...colors, { name: '', image: null }]);
+  
+  const removeColor = (index) => {
+    const newColors = [...colors];
+    newColors.splice(index, 1);
+    setColors(newColors);
   };
 
   const handleSubmit = async (e) => {
@@ -57,6 +74,22 @@ const UploadPreviewPage = () => {
     
     if (files.video) {
       data.append('video', files.video);
+    }
+
+    // Append colors
+    colors.forEach((color) => {
+      if (color.name && color.image) {
+        data.append('colorNames', color.name);
+        data.append('colorImages', color.image);
+      }
+    });
+
+    // Append sizes
+    if (sizes.trim() !== '') {
+      const sizeList = sizes.split(',').map(s => s.trim()).filter(s => s !== '');
+      sizeList.forEach(size => {
+        data.append('sizes', size);
+      });
     }
 
     try {
@@ -93,14 +126,19 @@ const UploadPreviewPage = () => {
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">Tên Dự Án</label>
-              <input
-                type="text"
+              <select
                 name="projectName"
-                required
                 value={formData.projectName}
                 onChange={handleInputChange}
+                required
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
+              >
+                <option value="" disabled>-- Chọn dự án --</option>
+                <option value="Happy Project">Happy Project</option>
+                <option value="Creative Project">Creative Project</option>
+                <option value="Global Project">Global Project</option>
+                <option value="Pilot Project">Pilot Project</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Nền Tảng</label>
@@ -134,10 +172,62 @@ const UploadPreviewPage = () => {
               type="number"
               name="price"
               step="0.01"
+              required
               value={formData.price}
               onChange={handleInputChange}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+
+          {/* Variants section */}
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Biến thể (Variants)</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Sizes (Phân cách bằng dấu phẩy)</label>
+              <input
+                type="text"
+                placeholder="VD: Small, Medium, Large, X-Large"
+                value={sizes}
+                onChange={(e) => setSizes(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Màu sắc (Color Variants)</label>
+              {colors.map((color, index) => (
+                <div key={index} className="flex items-center space-x-4 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Tên màu (VD: Aztec)"
+                    value={color.name}
+                    onChange={(e) => handleColorChange(index, 'name', e.target.value)}
+                    className="block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleColorChange(index, 'image', e.target.files[0])}
+                    className="block w-2/3 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeColor(index)}
+                    className="text-red-500 hover:text-red-700 font-bold"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addColor}
+                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold"
+              >
+                + Thêm màu mới
+              </button>
+            </div>
           </div>
 
           <div className="border-t border-gray-200 pt-6">
@@ -163,6 +253,7 @@ const UploadPreviewPage = () => {
                   name="galleryImages"
                   accept="image/*"
                   multiple
+                  required
                   onChange={handleFileChange}
                   className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />

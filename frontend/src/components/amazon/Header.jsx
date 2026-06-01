@@ -71,7 +71,7 @@ const Header = () => {
 
       {/* Fashion Sub-Nav (Case 1 Specific) */}
       <div className="bg-white border-b border-gray-200 text-sm px-4 py-2 flex items-center justify-between text-gray-800 shadow-sm">
-        <div className="font-bold text-lg mr-8 whitespace-nowrap">Amazon Fashion</div>
+        <div className="font-extrabold text-2xl tracking-tighter mr-8 whitespace-nowrap">Amazon Fashion</div>
         <div className="flex space-x-6 text-sm font-medium flex-grow overflow-x-auto hide-scrollbar justify-center">
           <span className="cursor-pointer hover:text-orange-500 hover:underline">Women</span>
           <span className="cursor-pointer hover:text-orange-500 hover:underline">Men</span>

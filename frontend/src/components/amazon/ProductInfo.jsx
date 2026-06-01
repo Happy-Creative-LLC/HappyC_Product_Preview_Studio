@@ -47,16 +47,11 @@ const ProductInfo = ({ title, brand, rating, reviewsCount, price, oldPrice, disc
       <div className="border-b border-gray-300 w-full mb-3 mt-1"></div>
 
       {/* Price */}
-      <div className="flex flex-col mb-4">
-        <div className="flex items-center space-x-2">
-          {discountPercent && discountPercent > 0 && (
-            <span className="text-red-700 text-2xl font-light">-{discountPercent}%</span>
-          )}
-          <div className="flex items-baseline space-x-1">
-            <span className="text-sm font-medium align-top mt-1">$</span>
-            <span className="text-3xl font-medium">{Math.floor(Number(price) || 0)}</span>
-            <span className="text-sm font-medium align-top mt-1">{((Number(price) || 0) % 1).toFixed(2).substring(2)}</span>
-          </div>
+      <div className="flex flex-col mb-2 mt-2">
+        <div className="flex items-start">
+          <span className="text-[14px] text-gray-900 font-medium relative top-1 mr-[1px]">$</span>
+          <span className="text-[28px] text-gray-900 font-medium leading-none">{Math.floor(Number(price) || 27)}</span>
+          <span className="text-[14px] text-gray-900 font-medium relative top-1 ml-[1px]">{((Number(price) || 27.99) % 1).toFixed(2).substring(2)}</span>
         </div>
         {(Number(oldPrice) > 0) && (
           <div className="text-xs text-gray-500 mt-1">
@@ -74,13 +69,13 @@ const ProductInfo = ({ title, brand, rating, reviewsCount, price, oldPrice, disc
       {colors && colors.length > 0 && (
         <div className="mb-4">
           <div className="text-sm font-bold text-gray-900 mb-2">
-            Color: <span className="font-normal">{colors[0].name}</span>
+            Color: <span className="font-bold">{colors[0].name}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {colors.map((color, idx) => (
-              <div key={idx} className="border border-gray-300 rounded p-1 hover:border-orange-500 cursor-pointer flex flex-col items-center justify-center w-16 h-20">
-                <img src={color.image} alt={color.name} className="w-10 h-10 object-contain mb-1" />
-                <span className="text-xs text-gray-700">${color.price}</span>
+              <div key={idx} className={`border p-1 cursor-pointer flex flex-col items-center justify-center w-[70px] h-[86px] ${idx === 0 ? 'border-[#007185] shadow-[0_0_0_1px_#007185]' : 'border-gray-400 hover:border-[#007185]'}`}>
+                <img src={color.image} alt={color.name} className="w-[50px] h-[50px] object-cover mb-1" />
+                <span className="text-[11px] text-gray-800">${price || '27.99'}</span>
               </div>
             ))}
           </div>
@@ -89,18 +84,17 @@ const ProductInfo = ({ title, brand, rating, reviewsCount, price, oldPrice, disc
 
       {/* Variations: Sizes */}
       {sizes && sizes.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-4 mt-2">
           <div className="text-sm font-bold text-gray-900 mb-2">
-            Size: <span className="font-normal">{sizes[4] || sizes[0]}</span>
+            Size: <span className="font-bold">{sizes[0]}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {sizes.map((size, idx) => (
-              <div key={idx} className="border border-gray-300 rounded px-3 py-1 text-sm hover:border-orange-500 hover:bg-gray-50 cursor-pointer">
+              <div key={idx} className={`border rounded-sm px-3 py-1.5 text-sm cursor-pointer ${idx === 0 ? 'border-[#007185] shadow-[0_0_0_1px_#007185] bg-gray-50' : 'border-gray-400 hover:border-[#007185] hover:bg-gray-50'}`}>
                 {size}
               </div>
             ))}
           </div>
-          <div className="text-blue-600 hover:text-orange-500 hover:underline text-sm mt-1 cursor-pointer">Size Chart ˅</div>
         </div>
       )}
 

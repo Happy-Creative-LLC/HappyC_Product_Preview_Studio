@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface PreviewRepository extends JpaRepository<Preview, UUID> {
     List<Preview> findByUserIdOrderByCreatedAtDesc(UUID userId);
+    List<Preview> findByCreatedAtBefore(java.time.LocalDateTime dateTime);
 }

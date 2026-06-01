@@ -8,17 +8,17 @@ const ProductGallery = ({ images, videos, isVertical = true }) => {
   return (
     <div className={`flex ${isVertical ? 'flex-row' : 'flex-col-reverse'} sticky top-5`}>
       {/* Thumbnails */}
-      <div className={`flex ${isVertical ? 'flex-col space-y-2 mr-4 w-12' : 'flex-row space-x-2 mt-4'}`}>
+      <div className="flex flex-col space-y-2 mr-4 w-12 mt-2">
         {images.map((img, idx) => (
           <div 
             key={idx} 
-            className={`cursor-pointer border-2 rounded-md overflow-hidden ${activeMedia === img ? 'border-amazon-yellow shadow-md' : 'border-transparent hover:border-gray-300'}`}
+            className={`cursor-pointer border-[1px] rounded-lg overflow-hidden ${activeMedia === img ? 'border-[#007185] shadow-[0_0_0_1px_#007185]' : 'border-gray-400 hover:border-[#007185]'}`}
             onMouseEnter={() => setActiveMedia(img)}
           >
             <img 
               src={img} 
               alt={`Thumbnail ${idx}`} 
-              className="w-10 h-10 object-cover" 
+              className="w-10 h-10 object-cover p-[2px]" 
               onError={(e) => { e.target.onerror = null; e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'; }}
             />
           </div>
@@ -26,23 +26,23 @@ const ProductGallery = ({ images, videos, isVertical = true }) => {
         {videos && videos.map((vid, idx) => (
           <div 
             key={`vid-${idx}`} 
-            className={`cursor-pointer border-2 rounded-md overflow-hidden bg-black flex items-center justify-center ${activeMedia === vid ? 'border-amazon-yellow shadow-md' : 'border-transparent hover:border-gray-300'}`}
+            className={`cursor-pointer border-[1px] rounded-lg overflow-hidden bg-black flex items-center justify-center h-10 ${activeMedia === vid ? 'border-[#007185] shadow-[0_0_0_1px_#007185]' : 'border-gray-400 hover:border-[#007185]'}`}
             onMouseEnter={() => setActiveMedia(vid)}
           >
-            <span className="text-white text-xs">Play</span>
+            <span className="text-white text-[10px] font-bold tracking-wider">VIDEO</span>
           </div>
         ))}
       </div>
 
       {/* Main View */}
-      <div className="flex-grow flex items-center justify-center relative cursor-crosshair">
+      <div className="flex-grow flex items-center justify-center relative cursor-crosshair bg-white">
         {activeMedia?.endsWith('.mp4') ? (
-          <video src={activeMedia} controls className="max-h-[500px] w-auto max-w-full" autoPlay />
+          <video src={activeMedia} controls className="max-h-[700px] w-auto max-w-full" autoPlay />
         ) : (
           <img 
             src={activeMedia} 
             alt="Main view" 
-            className="max-h-[500px] w-auto max-w-full object-contain" 
+            className="max-h-[700px] w-auto max-w-full object-contain" 
             onError={(e) => { e.target.onerror = null; e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'; }}
           />
         )}
