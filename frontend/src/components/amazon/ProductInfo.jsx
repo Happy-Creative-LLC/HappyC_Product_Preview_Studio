@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ProductInfo = ({ title, brand, price, oldPrice, bulletPoints, colors, sizes, fabricType, careInstructions, origin }) => {
+const ProductInfo = ({ title, brand, price, oldPrice, bulletPoints, colors, fabricType, careInstructions, origin }) => {
   return (
     <div className="flex flex-col px-4">
       {/* Brand */}
@@ -47,21 +47,6 @@ const ProductInfo = ({ title, brand, price, oldPrice, bulletPoints, colors, size
         </div>
       )}
 
-      {/* Variations: Sizes */}
-      {sizes && sizes.length > 0 && (
-        <div className="mb-4 mt-2">
-          <div className="text-sm font-bold text-gray-900 mb-2">
-            Size: <span className="font-bold">{sizes[0]}</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {sizes.map((size, idx) => (
-              <div key={idx} className={`border rounded-sm px-3 py-1.5 text-sm cursor-pointer ${idx === 0 ? 'border-[#007185] shadow-[0_0_0_1px_#007185] bg-gray-50' : 'border-gray-400 hover:border-[#007185] hover:bg-gray-50'}`}>
-                {size}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Product Details */}
       {(fabricType || careInstructions || origin) && (

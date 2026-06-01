@@ -23,7 +23,6 @@ const UploadPreviewPage = () => {
   });
 
   const [colors, setColors] = useState([{ name: '', image: null }]);
-  const [sizes, setSizes] = useState('');
 
   const [isUploading, setIsUploading] = useState(false);
 
@@ -97,14 +96,6 @@ const UploadPreviewPage = () => {
         data.append('colorImages', color.image);
       }
     });
-
-    // Append sizes
-    if (sizes.trim() !== '') {
-      const sizeList = sizes.split(',').map(s => s.trim()).filter(s => s !== '');
-      sizeList.forEach(size => {
-        data.append('sizes', size);
-      });
-    }
 
     try {
       const response = await axios.post('/api/previews/upload', data, {
@@ -259,17 +250,6 @@ const UploadPreviewPage = () => {
           <div className="border-t border-gray-200 pt-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Biến thể (Variants)</h3>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Sizes (Phân cách bằng dấu phẩy)</label>
-              <input
-                type="text"
-                placeholder="VD: Small, Medium, Large, X-Large"
-                value={sizes}
-                onChange={(e) => setSizes(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Màu sắc (Color Variants)</label>
               {colors.map((color, index) => (
