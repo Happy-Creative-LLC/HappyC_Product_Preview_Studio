@@ -3,35 +3,37 @@ import { create } from 'zustand';
 // Initial Mock Data so the page doesn't look empty at first
 const initialData = {
   images: [
-    'https://images.unsplash.com/photo-1512429234305-12fe5b0b0f0f?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80'
+    'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80'
   ],
   videos: [],
-  title: 'Apple 2023 MacBook Pro Laptop M3 Pro chip with 11‑core CPU, 14‑core GPU: 14.2-inch Liquid Retina XDR Display, 18GB Unified Memory, 512GB SSD Storage',
-  brand: 'Visit the Apple Store',
-  rating: '4.7',
-  reviewsCount: '1,245',
-  price: 1899.00,
-  oldPrice: 23.98,
-  discountPercent: 25,
-  badges: ['Overall Pick', 'Limited time deal'],
-  salesStat: '3K+ bought in past month',
-  sustainabilityFeature: '1 sustainability feature',
+  title: "Hanes Men's Undershirts, Moisture-Wicking Crewneck T-Shirts, Cotton Classics Multipack",
+  brand: 'Visit the Hanes Store',
+  rating: '4.6',
+  reviewsCount: '154,245',
+  price: 19.98,
+  oldPrice: 26.00,
+  discountPercent: 23,
+  badges: ['Overall Pick'],
+  salesStat: '10K+ bought in past month',
+  sustainabilityFeature: 'Climate Pledge Friendly',
   colors: [
+    { name: 'White - 6 Pack', image: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=100&q=80', price: 19.98 },
     { name: 'Black/Grey/Blue Assorted - 6 Pack', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&q=80', price: 17.98 },
-    { name: 'White - 6 Pack', image: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=100&q=80', price: 19.99 }
+    { name: 'Black - 6 Pack', image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=100&q=80', price: 21.99 }
   ],
-  sizes: ['Small', 'Medium', 'Large', 'X-Large', 'XX-Large', '3X-Large', '4X'],
+  sizes: ['Small', 'Medium', 'Large', 'X-Large', 'XX-Large', '3X-Large'],
   bulletPoints: [
-    'SUPERCHARGED BY M3 PRO — The Apple M3 Pro chip, with an 11-core CPU and 14-core GPU, delivers incredible performance for demanding workflows.',
-    'UP TO 18 HOURS OF BATTERY LIFE — Go all day thanks to the power-efficient design of Apple silicon.',
-    'BRILLIANT PRO DISPLAY — The 14.2-inch Liquid Retina XDR display features Extreme Dynamic Range, 1000 nits of sustained brightness for stunning HDR content.',
-    'FULLY COMPATIBLE — All your pro apps run lightning fast—including Adobe Creative Cloud, Apple Xcode, Microsoft 365, and many more.'
+    'COTTON CLASSICS - Soft, breathable cotton for all-day comfort.',
+    'MOISTURE-WICKING - Cool Comfort technology wicks away moisture to keep you cool and dry.',
+    'STAY TUCKED IN - Designed with a generous length so your hem stays exactly where it belongs.',
+    'CREWNECK - Classic crewneck design lays flat and keeps its shape.',
+    'TAGLESS - Tag-free design means no scratchy labels.'
   ],
-  description: 'The 14-inch MacBook Pro blasts forward with M3 Pro, an incredibly advanced chip that brings even more speed and capability...',
+  description: 'Hanes Cotton Classics men\'s crewneck undershirts deliver the comfort you need. Moisture-wicking technology helps keep you cool and dry, while the generous length ensures your shirt stays tucked in. The classic crewneck design lays flat and keeps its shape, wash after wash.',
   aPlusImages: [
-    'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80'
+    'https://images.unsplash.com/photo-1489987707023-afc624154e85?auto=format&fit=crop&w=1200&q=80'
   ]
 };
 

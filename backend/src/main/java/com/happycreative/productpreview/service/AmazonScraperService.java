@@ -12,6 +12,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +33,14 @@ public class AmazonScraperService {
     // Cache valid for 7 days
     private static final int CACHE_VALIDITY_DAYS = 7;
 
+    @Value("${rapidapi.amazon.host:amazon-data-scraper-api3.p.rapidapi.com}")
+    private String rapidapiHost;
+
+    @Value("${rapidapi.amazon.key:}")
+    private String rapidapiKey;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
     public List<AmazonSearchResultDto> searchAmazon(String keyword) {
         String normalizedKeyword = keyword.trim().toLowerCase();
 
@@ -44,15 +54,14 @@ public class AmazonScraperService {
                     return objectMapper.readValue(cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>(){});
                 } catch (Exception e) {
                     log.error("Failed to parse cached JSON", e);
-                    // Fallthrough to scrape again
                 }
             } else {
                 log.info("Cache expired for keyword: {}", normalizedKeyword);
             }
         }
 
-        // 2. Scrape Amazon
-        List<AmazonSearchResultDto> results = scrapeAmazon(normalizedKeyword);
+        // 2. Scrape Amazon using RapidAPI
+        List<AmazonSearchResultDto> results = scrapeAmazonWithRapidApi(normalizedKeyword);
 
         // 3. Update Cache
         if (!results.isEmpty()) {
@@ -72,67 +81,68 @@ public class AmazonScraperService {
         return results;
     }
 
-    private List<AmazonSearchResultDto> scrapeAmazon(String keyword) {
+    private List<AmazonSearchResultDto> scrapeAmazonWithRapidApi(String keyword) {
         List<AmazonSearchResultDto> results = new ArrayList<>();
-        try {
-            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-            String url = "https://www.amazon.com/s?k=" + encodedKeyword;
+        
+        if (rapidapiKey == null || rapidapiKey.isEmpty()) {
+            log.error("RapidAPI key is missing! Cannot fetch real data.");
+        } else {
+            try {
+                String url = "https://" + rapidapiHost + "/queries";
 
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-                    .timeout(10000)
-                    .get();
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.set("x-rapidapi-host", rapidapiHost);
+                headers.set("x-rapidapi-key", rapidapiKey);
+                headers.set("Content-Type", "application/json");
 
-            Elements items = doc.select("div[data-component-type=\"s-search-result\"]");
+                String payload = String.format("{\"source\":\"amazon_search\",\"query\":\"%s\",\"geo_location\":\"90210\",\"parse\":true}", keyword.replace("\"", "\\\""));
 
-            for (int i = 0; i < items.size(); i++) {
-                if (results.size() >= 12) break; // Limit to 12 results
-
-                Element item = items.get(i);
+                org.springframework.http.HttpEntity<String> request = new org.springframework.http.HttpEntity<>(payload, headers);
                 
-                String title = item.select("h2 a span").text();
-                String image = item.select("img.s-image").attr("src");
-                
-                String priceStr = item.select("span.a-price span.a-offscreen").text();
-                Double price = 0.0;
-                if (!priceStr.isEmpty()) {
-                    try {
-                        price = Double.parseDouble(priceStr.replace("$", "").replace(",", "").trim());
-                    } catch (NumberFormatException e) {
-                        // ignore
+                log.info("Sending request to RapidAPI for keyword: {}", keyword);
+                org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(
+                        url,
+                        org.springframework.http.HttpMethod.POST,
+                        request,
+                        String.class
+                );
+
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(response.getBody());
+                    com.fasterxml.jackson.databind.JsonNode resultsArray = root.path("results").get(0).path("content").path("results").path("organic");
+                    
+                    if (resultsArray.isArray()) {
+                        for (int i = 0; i < resultsArray.size(); i++) {
+                            if (results.size() >= 12) break; // Limit to 12 results
+                            
+                            com.fasterxml.jackson.databind.JsonNode item = resultsArray.get(i);
+                            
+                            String title = item.path("title").asText("");
+                            String image = item.path("url_image").asText("");
+                            Double price = item.path("price").asDouble(0.0);
+                            String rating = item.path("rating").asText("");
+                            String reviews = item.path("reviews_count").asText("");
+                            boolean isSponsored = item.path("is_sponsored").asBoolean(false);
+                            String badge = item.path("is_amazons_choice").asBoolean(false) ? "Amazon's Choice" : null;
+
+                            if (!title.isEmpty() && !image.isEmpty()) {
+                                results.add(AmazonSearchResultDto.builder()
+                                        .id("amz-" + i)
+                                        .title(title)
+                                        .image(image)
+                                        .price(price)
+                                        .rating(rating)
+                                        .reviews(reviews)
+                                        .isSponsored(isSponsored)
+                                        .badge(badge)
+                                        .build());
+                            }
+                        }
                     }
                 }
-
-                String rating = item.select("span.a-icon-alt").text();
-                if (rating.contains(" out of")) {
-                    rating = rating.split(" out of")[0];
-                }
-
-                String reviews = item.select("span.a-size-base.s-underline-text").text();
-
-                boolean isSponsored = !item.select(".s-sponsored-label-info-icon").isEmpty();
-                
-                String badge = item.select("span.a-badge-text").text();
-                if (badge.isEmpty()) badge = null;
-
-                if (!title.isEmpty() && !image.isEmpty()) {
-                    results.add(AmazonSearchResultDto.builder()
-                            .id("amz-" + i)
-                            .title(title)
-                            .image(image)
-                            .price(price)
-                            .rating(rating)
-                            .reviews(reviews)
-                            .isSponsored(isSponsored)
-                            .badge(badge)
-                            .build());
-                }
+            } catch (Exception e) {
+                log.error("Error calling RapidAPI for keyword: " + keyword, e);
             }
-
-        } catch (Exception e) {
-            log.error("Error scraping Amazon for keyword: " + keyword, e);
         }
 
         if (results.isEmpty()) {

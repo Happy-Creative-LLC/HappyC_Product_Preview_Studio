@@ -23,3 +23,8 @@ cloudinary:
 
 server:
   port: 8081
+
+rapidapi:
+  amazon:
+    host: amazon-data-scraper-api3.p.rapidapi.com
+    key: b2fbdbcca0msh330c13aadb58eafp1cc2eajsn935b7bec1096
