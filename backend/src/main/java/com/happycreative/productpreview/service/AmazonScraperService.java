@@ -30,8 +30,8 @@ public class AmazonScraperService {
     private final SearchCacheRepository searchCacheRepository;
     private final ObjectMapper objectMapper;
 
-    // Cache valid for 7 days
-    private static final int CACHE_VALIDITY_DAYS = 7;
+    // Cache valid for 10 days
+    private static final int CACHE_VALIDITY_DAYS = 10;
 
     @Value("${rapidapi.amazon.host:amazon-data-scraper-api3.p.rapidapi.com}")
     private String rapidapiHost;
@@ -48,11 +48,15 @@ public class AmazonScraperService {
         Optional<SearchCache> cacheOpt = searchCacheRepository.findByKeywordIgnoreCase(normalizedKeyword);
         if (!forceRefresh && cacheOpt.isPresent()) {
             SearchCache cache = cacheOpt.get();
-            log.info("Returning cached results for keyword: {}", normalizedKeyword);
-            try {
-                return objectMapper.readValue(cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>(){});
-            } catch (Exception e) {
-                log.error("Failed to parse cached JSON", e);
+            if (cache.getLastUpdated() != null && cache.getLastUpdated().plusDays(CACHE_VALIDITY_DAYS).isAfter(LocalDateTime.now())) {
+                log.info("Returning cached results for keyword: {}", normalizedKeyword);
+                try {
+                    return objectMapper.readValue(cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>(){});
+                } catch (Exception e) {
+                    log.error("Failed to parse cached JSON", e);
+                }
+            } else {
+                log.info("Cache expired (older than 10 days) for keyword: {}, fetching from API...", normalizedKeyword);
             }
         }
 
@@ -120,6 +124,9 @@ public class AmazonScraperService {
                             String reviews = item.path("reviews_count").asText("");
                             boolean isSponsored = item.path("is_sponsored").asBoolean(false);
                             String badge = item.path("is_amazons_choice").asBoolean(false) ? "Amazon's Choice" : null;
+                            String brand = item.path("brand").asText("");
+                            String salesVolume = item.path("sales_volume").asText("");
+                            Double originalPrice = item.path("price_strikethrough").asDouble(0.0);
 
                             if (!title.isEmpty() && !image.isEmpty()) {
                                 results.add(AmazonSearchResultDto.builder()
@@ -131,6 +138,9 @@ public class AmazonScraperService {
                                         .reviews(reviews)
                                         .isSponsored(isSponsored)
                                         .badge(badge)
+                                        .brand(brand)
+                                        .salesVolume(salesVolume)
+                                        .originalPrice(originalPrice)
                                         .build());
                             }
                         }

@@ -14,4 +14,7 @@ public class AmazonSearchResultDto {
     private String reviews;
     private boolean isSponsored;
     private String badge;
+    private String brand;
+    private String salesVolume;
+    private Double originalPrice;
 }
