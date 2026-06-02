@@ -20,9 +20,8 @@ const UploadPreviewPage = () => {
     mainImage: null,
     galleryImages: [],
     video: null,
+    colorImages: [],
   });
-
-  const [colors, setColors] = useState([{ name: '', image: null }]);
 
   const [isUploading, setIsUploading] = useState(false);
 
@@ -33,26 +32,14 @@ const UploadPreviewPage = () => {
 
   const handleFileChange = (e) => {
     const { name, files: selectedFiles } = e.target;
-    if (name === 'galleryImages') {
-      setFiles({ ...files, galleryImages: Array.from(selectedFiles) });
+    if (name === 'galleryImages' || name === 'colorImages') {
+      setFiles({ ...files, [name]: Array.from(selectedFiles) });
     } else {
       setFiles({ ...files, [name]: selectedFiles[0] });
     }
   };
 
-  const handleColorChange = (index, field, value) => {
-    const newColors = [...colors];
-    newColors[index][field] = value;
-    setColors(newColors);
-  };
 
-  const addColor = () => setColors([...colors, { name: '', image: null }]);
-  
-  const removeColor = (index) => {
-    const newColors = [...colors];
-    newColors.splice(index, 1);
-    setColors(newColors);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -90,12 +77,11 @@ const UploadPreviewPage = () => {
     }
 
     // Append colors
-    colors.forEach((color) => {
-      if (color.name && color.image) {
-        data.append('colorNames', color.name);
-        data.append('colorImages', color.image);
-      }
-    });
+    if (files.colorImages && files.colorImages.length > 0) {
+      files.colorImages.forEach((file) => {
+        data.append('colorImages', file);
+      });
+    }
 
     try {
       const response = await axios.post('/api/previews/upload', data, {
@@ -251,38 +237,20 @@ const UploadPreviewPage = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Biến thể (Variants)</h3>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Màu sắc (Color Variants)</label>
-              {colors.map((color, index) => (
-                <div key={index} className="flex items-center space-x-4 mb-3">
-                  <input
-                    type="text"
-                    placeholder="Tên màu (VD: Aztec)"
-                    value={color.name}
-                    onChange={(e) => handleColorChange(index, 'name', e.target.value)}
-                    className="block w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleColorChange(index, 'image', e.target.files[0])}
-                    className="block w-2/3 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeColor(index)}
-                    className="text-red-500 hover:text-red-700 font-bold"
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addColor}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold"
-              >
-                + Thêm màu mới
-              </button>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Màu sắc (Color Images)</label>
+              <input
+                type="file"
+                name="colorImages"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {files.colorImages.length > 0 && (
+                <p className="mt-2 text-sm text-gray-500">
+                  Đã chọn {files.colorImages.length} ảnh màu
+                </p>
+              )}
             </div>
           </div>
 

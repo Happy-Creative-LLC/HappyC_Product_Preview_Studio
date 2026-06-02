@@ -34,12 +34,12 @@ const ProductInfo = ({ title, brand, price, oldPrice, bulletPoints, colors, fabr
       {colors && colors.length > 0 && (
         <div className="mb-4">
           <div className="text-sm font-bold text-gray-900 mb-2">
-            Color: <span className="font-bold">{colors[0].name}</span>
+            Color
           </div>
           <div className="flex flex-wrap gap-2">
             {colors.map((color, idx) => (
               <div key={idx} className={`border p-1 cursor-pointer flex flex-col items-center justify-center w-[70px] h-[86px] ${idx === 0 ? 'border-[#007185] shadow-[0_0_0_1px_#007185]' : 'border-gray-400 hover:border-[#007185]'}`}>
-                <img src={color.image} alt={color.name} className="w-[50px] h-[50px] object-cover mb-1" />
+                <img src={color.image} alt="Color variant" className="w-[50px] h-[50px] object-cover mb-1" />
                 <span className="text-[11px] text-gray-800">${price || '27.99'}</span>
               </div>
             ))}

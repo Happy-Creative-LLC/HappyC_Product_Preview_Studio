@@ -84,13 +84,14 @@ public class PreviewService {
             }
         }
         
-        if (colorNames != null && colorImages != null && colorNames.size() == colorImages.size()) {
+        if (colorImages != null && !colorImages.isEmpty()) {
             ArrayNode colorsArray = productData.putArray("colors");
-            for (int i = 0; i < colorNames.size(); i++) {
+            for (int i = 0; i < colorImages.size(); i++) {
                 String cUrl = fileStorageService.storeFile(colorImages.get(i));
                 if (cUrl != null) {
                     ObjectNode colorObj = objectMapper.createObjectNode();
-                    colorObj.put("name", colorNames.get(i));
+                    String name = (colorNames != null && colorNames.size() > i) ? colorNames.get(i) : "";
+                    colorObj.put("name", name);
                     colorObj.put("image", "http://localhost:8081" + cUrl);
                     colorsArray.add(colorObj);
                 }
