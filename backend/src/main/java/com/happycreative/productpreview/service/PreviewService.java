@@ -23,6 +23,7 @@ public class PreviewService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
+    private final AmazonScraperService amazonScraperService;
 
     public Preview createPreview(String projectName, String platform, String title, Double price,
                                  String brand, String fabricType, String careInstructions, String origin, List<String> bulletPoints,
@@ -131,5 +132,36 @@ public class PreviewService {
 
     public Optional<Preview> getPreviewById(java.util.UUID id) {
         return previewRepository.findById(id);
+    }
+
+    public Preview createPreviewFromAsin(String projectName, String platform, String asin) {
+        User user = userRepository.findByEmail("Happyc.design@gmail.com").orElseGet(() -> {
+            User newUser = new User();
+            newUser.setEmail("Happyc.design@gmail.com");
+            newUser.setPasswordHash("dummyHash123");
+            newUser.setFullName("Design Team");
+            newUser.setDepartment("DESIGN");
+            newUser.setActive(true);
+            return userRepository.save(newUser);
+        });
+
+        ObjectNode productData = amazonScraperService.scrapeProductByAsin(asin);
+
+        Preview preview = new Preview();
+        preview.setUser(user);
+        preview.setProjectName(projectName);
+        preview.setPlatform(platform.toUpperCase());
+        
+        try {
+            preview.setProductData(objectMapper.writeValueAsString(productData));
+        } catch (Exception e) {
+            throw new RuntimeException("Error processing JSON data", e);
+        }
+        
+        preview.setStatus("DRAFT");
+        preview.setCreatedAt(LocalDateTime.now());
+        preview.setUpdatedAt(LocalDateTime.now());
+
+        return previewRepository.save(preview);
     }
 }

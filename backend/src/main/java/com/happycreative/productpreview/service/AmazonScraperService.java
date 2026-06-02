@@ -168,4 +168,115 @@ public class AmazonScraperService {
 
         return results;
     }
+
+    public com.fasterxml.jackson.databind.node.ObjectNode scrapeProductByAsin(String asinOrUrl) {
+        String asin = extractAsin(asinOrUrl);
+        if (asin.isEmpty()) {
+            asin = "MOCKASIN123";
+        }
+        
+        if (rapidapiKey == null || rapidapiKey.isEmpty()) {
+            log.warn("RapidAPI key is missing! Cannot fetch real product data. Using mock.");
+            return createMockProductData(asin);
+        }
+        
+        try {
+            String url = "https://" + rapidapiHost + "/queries";
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.set("x-rapidapi-host", rapidapiHost);
+            headers.set("x-rapidapi-key", rapidapiKey);
+            headers.set("Content-Type", "application/json");
+
+            String payload = String.format("{\"source\":\"amazon_product\",\"query\":\"%s\",\"geo_location\":\"90210\",\"parse\":true}", asin.replace("\"", "\\\""));
+            org.springframework.http.HttpEntity<String> request = new org.springframework.http.HttpEntity<>(payload, headers);
+            
+            log.info("Sending request to RapidAPI for ASIN: {}", asin);
+            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    org.springframework.http.HttpMethod.POST,
+                    request,
+                    String.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(response.getBody());
+                com.fasterxml.jackson.databind.JsonNode result = root.path("results").get(0).path("content");
+                
+                com.fasterxml.jackson.databind.node.ObjectNode productData = objectMapper.createObjectNode();
+                productData.put("title", result.path("title").asText("Mock Product Title"));
+                productData.put("price", result.path("pricing").path("price").asDouble(29.99));
+                productData.put("brand", result.path("brand").asText("Mock Brand"));
+                productData.put("origin", "Imported");
+                productData.put("careInstructions", "Machine Wash");
+                productData.put("fabricType", "Mixed");
+                
+                com.fasterxml.jackson.databind.node.ArrayNode bulletPoints = productData.putArray("bulletPoints");
+                com.fasterxml.jackson.databind.JsonNode featureBullets = result.path("feature_bullets");
+                if (featureBullets.isArray() && featureBullets.size() > 0) {
+                    for (com.fasterxml.jackson.databind.JsonNode bp : featureBullets) {
+                        bulletPoints.add(bp.asText());
+                    }
+                } else {
+                    bulletPoints.add("Premium quality material");
+                    bulletPoints.add("Comfortable fit for everyday use");
+                    bulletPoints.add("Durable and long-lasting design");
+                }
+                
+                com.fasterxml.jackson.databind.node.ArrayNode imagesArray = productData.putArray("images");
+                com.fasterxml.jackson.databind.JsonNode images = result.path("images");
+                if (images.isArray() && images.size() > 0) {
+                    for (com.fasterxml.jackson.databind.JsonNode img : images) {
+                        imagesArray.add(img.path("link").asText());
+                    }
+                } else {
+                    String mainImg = result.path("images").asText("");
+                    if (mainImg.isEmpty()) mainImg = result.path("main_image").asText("");
+                    if (!mainImg.isEmpty()) {
+                        imagesArray.add(mainImg);
+                    } else {
+                        // Fallback images
+                        imagesArray.add("https://m.media-amazon.com/images/I/71zKuqJOKxL._AC_UY1000_.jpg");
+                        imagesArray.add("https://m.media-amazon.com/images/I/81f-H1gBhtL._AC_UY1000_.jpg");
+                    }
+                }
+                
+                return productData;
+            }
+        } catch (Exception e) {
+            log.error("Error calling RapidAPI for ASIN: " + asin, e);
+        }
+        
+        return createMockProductData(asin);
+    }
+
+    private String extractAsin(String input) {
+        if (input == null || input.isEmpty()) return "";
+        if (!input.contains("http")) {
+            return input.trim();
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("/(?:dp|o|p|product|gp/product)/(B[A-Z0-9]{9})").matcher(input);
+        if (m.find()) return m.group(1);
+        return "B08J5F3G18"; // default if not found
+    }
+
+    private com.fasterxml.jackson.databind.node.ObjectNode createMockProductData(String asin) {
+        com.fasterxml.jackson.databind.node.ObjectNode productData = objectMapper.createObjectNode();
+        productData.put("title", "Mock Imported Amazon Product - " + asin);
+        productData.put("price", 29.99);
+        productData.put("brand", "MockBrand");
+        productData.put("fabricType", "100% Cotton");
+        productData.put("careInstructions", "Machine Wash");
+        productData.put("origin", "Imported");
+        
+        com.fasterxml.jackson.databind.node.ArrayNode bulletPoints = productData.putArray("bulletPoints");
+        bulletPoints.add("This is a mock bullet point 1 for ASIN " + asin);
+        bulletPoints.add("This is a mock bullet point 2 for ASIN " + asin);
+        bulletPoints.add("This is a mock bullet point 3 for ASIN " + asin);
+        
+        com.fasterxml.jackson.databind.node.ArrayNode imagesArray = productData.putArray("images");
+        imagesArray.add("https://m.media-amazon.com/images/I/71zKuqJOKxL._AC_UY1000_.jpg");
+        imagesArray.add("https://m.media-amazon.com/images/I/81f-H1gBhtL._AC_UY1000_.jpg");
+        
+        return productData;
+    }
 }

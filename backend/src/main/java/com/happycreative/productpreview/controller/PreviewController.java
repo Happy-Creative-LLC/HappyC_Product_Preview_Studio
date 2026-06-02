@@ -39,6 +39,16 @@ public class PreviewController {
         return ResponseEntity.ok(preview);
     }
 
+    @PostMapping("/import")
+    public ResponseEntity<Preview> importPreview(
+            @RequestParam("projectName") String projectName,
+            @RequestParam("platform") String platform,
+            @RequestParam("asin") String asin
+    ) {
+        Preview preview = previewService.createPreviewFromAsin(projectName, platform, asin);
+        return ResponseEntity.ok(preview);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Preview> getPreview(@PathVariable java.util.UUID id) {
         return previewService.getPreviewById(id)
