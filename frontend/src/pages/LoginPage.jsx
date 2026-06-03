@@ -13,6 +13,14 @@ const LoginPage = () => {
   // Auto redirect if already logged in (session stored)
   useEffect(() => {
     if (user) {
+      if (user.role === 'Product Design') {
+        const { projects } = useAppStore.getState();
+        const project = projects.find(p => p.key === user.projectKey);
+        if (project) {
+          navigate(`/projects/${project.id}/tasks`);
+          return;
+        }
+      }
       navigate('/projects');
     }
   }, [user, navigate]);

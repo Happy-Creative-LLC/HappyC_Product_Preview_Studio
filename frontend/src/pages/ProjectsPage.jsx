@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppStore } from '../stores/appStore';
-import { Folder, LogOut, ArrowRight } from 'lucide-react';
+import { Folder, LogOut, ArrowRight, Search } from 'lucide-react';
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
@@ -10,8 +10,13 @@ const ProjectsPage = () => {
   useEffect(() => {
     if (!user) {
       navigate('/');
+    } else if (user.role === 'Product Design') {
+      const project = projects.find(p => p.key === user.projectKey);
+      if (project) {
+        navigate(`/projects/${project.id}/tasks`, { replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [user, navigate, projects]);
 
   const handleProjectClick = (projectId) => {
     navigate(`/projects/${projectId}/tasks`);
@@ -68,7 +73,9 @@ const ProjectsPage = () => {
                 <Folder size={40} />
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-gray-800">{project.name}</h2>
+                <h2 className="text-2xl font-semibold text-gray-800">
+                  {user.role === 'Seller' ? 'Amazon Preview' : project.name}
+                </h2>
                 <p className="text-gray-500 text-sm mt-1">Click to view tasks</p>
               </div>
             </div>
@@ -77,6 +84,25 @@ const ProjectsPage = () => {
             </div>
           </div>
         ))}
+        {user.role === 'Seller' && (
+          <div 
+            onClick={() => navigate('/search')}
+            className="bg-white rounded-xl shadow-md p-8 flex items-center justify-between cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 group"
+          >
+            <div className="flex items-center space-x-6">
+              <div className="p-4 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-100 transition-colors">
+                <Search size={40} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-800">Amazon Search</h2>
+                <p className="text-gray-500 text-sm mt-1">Search and import products</p>
+              </div>
+            </div>
+            <div className="text-gray-300 group-hover:text-blue-600 transition-colors">
+              <ArrowRight size={28} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppStore } from '../stores/appStore';
-import { Plus, ListTodo, ArrowLeft } from 'lucide-react';
+import { Plus, ListTodo, ArrowLeft, LogOut } from 'lucide-react';
 
 const TaskListPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { user, projects, tasks, addTask } = useAppStore();
+  const { user, projects, tasks, addTask, logout } = useAppStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -52,10 +52,22 @@ const TaskListPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
       <div className="max-w-5xl w-full">
         {/* Header */}
-        <div className="flex items-center space-x-4 mb-8">
-          <Link to="/projects" className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors">
-            <ArrowLeft size={24} className="text-gray-600" />
-          </Link>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            {user?.role === 'Product Design' ? (
+              <button 
+                onClick={() => { logout(); navigate('/'); }} 
+                className="p-2 bg-white rounded-full shadow-sm hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-100"
+                title="Logout"
+              >
+                <LogOut size={24} />
+              </button>
+            ) : (
+              <Link to="/projects" className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors border border-gray-100">
+                <ArrowLeft size={24} className="text-gray-600" />
+              </Link>
+            )}
+          </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
             <p className="text-gray-500">Task Management</p>
