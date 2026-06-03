@@ -7,7 +7,6 @@ import Header from '../components/amazon/Header';
 import ProductGallery from '../components/amazon/ProductGallery';
 import ProductInfo from '../components/amazon/ProductInfo';
 import BuyBox from '../components/amazon/BuyBox';
-import { ArrowLeft } from 'lucide-react';
 
 const AmazonPreviewPage = () => {
   const [searchParams] = useSearchParams();
@@ -59,15 +58,6 @@ const AmazonPreviewPage = () => {
 
   return (
     <div className="min-h-screen bg-white text-black font-sans relative">
-      {taskId && projectId && (
-        <button 
-          onClick={() => navigate(`/projects/${projectId}/tasks/${taskId}`)}
-          className="absolute top-4 left-4 z-50 flex items-center space-x-2 bg-white px-4 py-2 rounded shadow-md hover:bg-gray-50 border border-gray-200"
-        >
-          <ArrowLeft size={16} />
-          <span>Back to Task</span>
-        </button>
-      )}
       <Header />
       
       {/* Breadcrumb */}
