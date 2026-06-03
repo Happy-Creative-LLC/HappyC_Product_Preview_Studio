@@ -5,24 +5,28 @@ import { Folder, LogOut, ArrowRight } from 'lucide-react';
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
-  const { role, projects, setRole } = useAppStore();
+  const { user, projects, logout } = useAppStore();
 
   useEffect(() => {
-    if (!role) {
+    if (!user) {
       navigate('/');
     }
-  }, [role, navigate]);
+  }, [user, navigate]);
 
   const handleProjectClick = (projectId) => {
     navigate(`/projects/${projectId}/tasks`);
   };
 
   const handleLogout = () => {
-    setRole(null);
+    logout();
     navigate('/');
   };
 
-  if (!role) return null;
+  if (!user) return null;
+
+  const visibleProjects = user.projectKey === 'all' 
+    ? projects 
+    : projects.filter(p => p.key === user.projectKey);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4">
@@ -32,21 +36,28 @@ const ProjectsPage = () => {
           <p className="text-gray-500 mt-1">Select a project to view tasks</p>
         </div>
         <div className="flex items-center space-x-6">
-          <div className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-medium border border-indigo-100">
-            Current Role: <span className="font-bold">{role}</span>
+          <div className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-medium border border-indigo-100 flex items-center space-x-2">
+            <span>User: <strong>{user.username}</strong></span>
+            <span className="text-gray-400">|</span>
+            <span>Role: <strong>{user.role}</strong></span>
           </div>
           <button 
             onClick={handleLogout}
             className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
           >
             <LogOut size={20} />
-            <span>Change Role</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl w-full">
-        {projects.map((project) => (
+        {visibleProjects.length === 0 && (
+          <div className="col-span-1 md:col-span-2 text-center text-gray-500 py-12">
+            You do not have access to any projects.
+          </div>
+        )}
+        {visibleProjects.map((project) => (
           <div 
             key={project.id}
             onClick={() => handleProjectClick(project.id)}

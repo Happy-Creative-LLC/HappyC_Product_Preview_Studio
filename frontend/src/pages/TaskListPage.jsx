@@ -6,19 +6,28 @@ import { Plus, ListTodo, ArrowLeft } from 'lucide-react';
 const TaskListPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { role, projects, tasks, addTask } = useAppStore();
+  const { user, projects, tasks, addTask } = useAppStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskType, setNewTaskType] = useState('Amazon');
 
   useEffect(() => {
-    if (!role) {
+    if (!user) {
       navigate('/');
     }
-  }, [role, navigate]);
+  }, [user, navigate]);
 
   const project = projects.find(p => p.id === projectId);
+  
+  useEffect(() => {
+    if (user && project) {
+      if (user.projectKey !== 'all' && user.projectKey !== project.key) {
+        navigate('/projects'); // block unauthorized access
+      }
+    }
+  }, [user, project, navigate]);
+
   const projectTasks = tasks[projectId] || [];
 
   const handleCreateTask = (e) => {
@@ -57,7 +66,7 @@ const TaskListPage = () => {
             <span>{projectTasks.length} Tasks</span>
           </div>
           
-          {role === 'Seller' && (
+          {(user?.role === 'Seller' || user?.role === 'Admin') && (
             <button 
               onClick={() => setIsModalOpen(true)}
               className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"

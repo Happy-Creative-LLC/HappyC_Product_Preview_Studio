@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import RoleSelectionPage from './pages/RoleSelectionPage';
+import LoginPage from './pages/LoginPage';
 import ProjectsPage from './pages/ProjectsPage';
 import TaskListPage from './pages/TaskListPage';
 import TaskDetailPage from './pages/TaskDetailPage';
@@ -13,7 +13,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<RoleSelectionPage />} />
+        <Route path="/" element={<LoginPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/:projectId/tasks" element={<TaskListPage />} />
         <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetailPage />} />

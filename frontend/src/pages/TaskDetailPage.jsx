@@ -7,20 +7,20 @@ import AmazonUploadForm from '../components/upload/AmazonUploadForm';
 const TaskDetailPage = () => {
   const { projectId, taskId } = useParams();
   const navigate = useNavigate();
-  const { role, tasks } = useAppStore();
+  const { user, tasks } = useAppStore();
 
   useEffect(() => {
-    if (!role) {
+    if (!user) {
       navigate('/');
     }
-  }, [role, navigate]);
+  }, [user, navigate]);
 
   const projectTasks = tasks[projectId] || [];
   const task = projectTasks.find(t => t.id === taskId);
 
   if (!task) return <div className="p-8 text-center">Task not found</div>;
 
-  const isEditor = role === 'Marvel' || role === 'Product Design' || role === 'Seller';
+  const isEditor = user?.role === 'Marvel' || user?.role === 'Product Design' || user?.role === 'Seller' || user?.role === 'Admin';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">

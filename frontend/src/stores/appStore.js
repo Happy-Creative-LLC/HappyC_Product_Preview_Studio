@@ -1,11 +1,25 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // Mock Data
 const MOCK_PROJECTS = [
-  { id: 'p1', name: 'Happy Project' },
-  { id: 'p2', name: 'Creative Project' },
-  { id: 'p3', name: 'Pilot Project' },
-  { id: 'p4', name: 'Global Project' },
+  { id: 'p1', key: 'happy', name: 'Happy Project' },
+  { id: 'p2', key: 'creative', name: 'Creative Project' },
+  { id: 'p3', key: 'pilot', name: 'Pilot Project' },
+  { id: 'p4', key: 'global', name: 'Global Project' },
+];
+
+const MOCK_USERS = [
+  { username: 'happyc.admin', password: '123456', role: 'Admin', projectKey: 'all' },
+  { username: 'happyc.marvel', password: '123456', role: 'Marvel', projectKey: 'all' },
+  { username: 'happyc.seller.happy', password: '123456', role: 'Seller', projectKey: 'happy' },
+  { username: 'happyc.seller.creative', password: '123456', role: 'Seller', projectKey: 'creative' },
+  { username: 'happyc.seller.pilot', password: '123456', role: 'Seller', projectKey: 'pilot' },
+  { username: 'happyc.seller.global', password: '123456', role: 'Seller', projectKey: 'global' },
+  { username: 'happyc.pd.happy', password: '123456', role: 'Product Design', projectKey: 'happy' },
+  { username: 'happyc.pd.creative', password: '123456', role: 'Product Design', projectKey: 'creative' },
+  { username: 'happyc.pd.pilot', password: '123456', role: 'Product Design', projectKey: 'pilot' },
+  { username: 'happyc.pd.global', password: '123456', role: 'Product Design', projectKey: 'global' },
 ];
 
 // Initial dummy data for testing
@@ -32,35 +46,53 @@ const MOCK_TASKS = {
   'p4': []
 };
 
-export const useAppStore = create((set) => ({
-  role: null, // 'Admin', 'Seller', 'Marvel', 'Product Design'
-  projects: MOCK_PROJECTS,
-  tasks: MOCK_TASKS,
-  
-  setRole: (role) => set({ role }),
-  
-  addTask: (projectId, taskData) => set((state) => {
-    const projectTasks = state.tasks[projectId] || [];
-    return {
-      tasks: {
-        ...state.tasks,
-        [projectId]: [...projectTasks, { ...taskData, id: `t${Date.now()}`, status: 'Pending Uploads', productData: defaultProductData }]
-      }
-    };
-  }),
-  
-  updateTaskProductData: (projectId, taskId, newProductData) => set((state) => {
-    const projectTasks = state.tasks[projectId] || [];
-    const updatedTasks = projectTasks.map(task => 
-      task.id === taskId 
-        ? { ...task, productData: { ...task.productData, ...newProductData } }
-        : task
-    );
-    return {
-      tasks: {
-        ...state.tasks,
-        [projectId]: updatedTasks
-      }
-    };
-  }),
-}));
+export const useAppStore = create(
+  persist(
+    (set, get) => ({
+      user: null, // The current logged in user object
+      role: null, // 'Admin', 'Seller', 'Marvel', 'Product Design'
+      projects: MOCK_PROJECTS,
+      tasks: MOCK_TASKS,
+      
+      login: (username, password) => {
+        const user = MOCK_USERS.find(u => u.username === username && u.password === password);
+        if (user) {
+          set({ user, role: user.role });
+          return true;
+        }
+        return false;
+      },
+      
+      logout: () => set({ user: null, role: null }),
+      
+      addTask: (projectId, taskData) => set((state) => {
+        const projectTasks = state.tasks[projectId] || [];
+        return {
+          tasks: {
+            ...state.tasks,
+            [projectId]: [...projectTasks, { ...taskData, id: `t${Date.now()}`, status: 'Pending Uploads', productData: defaultProductData }]
+          }
+        };
+      }),
+      
+      updateTaskProductData: (projectId, taskId, newProductData) => set((state) => {
+        const projectTasks = state.tasks[projectId] || [];
+        const updatedTasks = projectTasks.map(task => 
+          task.id === taskId 
+            ? { ...task, productData: { ...task.productData, ...newProductData } }
+            : task
+        );
+        return {
+          tasks: {
+            ...state.tasks,
+            [projectId]: updatedTasks
+          }
+        };
+      }),
+    }),
+    {
+      name: 'amazon-preview-session', // name of the item in the storage (must be unique)
+      partialize: (state) => ({ user: state.user, role: state.role, tasks: state.tasks }), // persist user session and tasks
+    }
+  )
+);
