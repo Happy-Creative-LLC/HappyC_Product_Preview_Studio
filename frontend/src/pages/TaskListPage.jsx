@@ -1,0 +1,153 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAppStore } from '../stores/appStore';
+import { Plus, ListTodo, ArrowLeft } from 'lucide-react';
+
+const TaskListPage = () => {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  const { role, projects, tasks, addTask } = useAppStore();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskType, setNewTaskType] = useState('Amazon');
+
+  useEffect(() => {
+    if (!role) {
+      navigate('/');
+    }
+  }, [role, navigate]);
+
+  const project = projects.find(p => p.id === projectId);
+  const projectTasks = tasks[projectId] || [];
+
+  const handleCreateTask = (e) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    
+    addTask(projectId, {
+      title: newTaskTitle,
+      type: newTaskType,
+    });
+    
+    setNewTaskTitle('');
+    setIsModalOpen(false);
+  };
+
+  if (!project) return <div className="p-8 text-center">Project not found</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
+      <div className="max-w-5xl w-full">
+        {/* Header */}
+        <div className="flex items-center space-x-4 mb-8">
+          <Link to="/projects" className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors">
+            <ArrowLeft size={24} className="text-gray-600" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+            <p className="text-gray-500">Task Management</p>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center space-x-2 text-gray-700 font-medium">
+            <ListTodo size={20} />
+            <span>{projectTasks.length} Tasks</span>
+          </div>
+          
+          {role === 'Seller' && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              <Plus size={20} />
+              <span>Create Task</span>
+            </button>
+          )}
+        </div>
+
+        {/* Task List */}
+        <div className="space-y-4">
+          {projectTasks.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+              <p className="text-gray-500">No tasks found for this project.</p>
+            </div>
+          ) : (
+            projectTasks.map((task) => (
+              <div 
+                key={task.id}
+                onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}
+                className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer hover:border-orange-300 hover:shadow-md transition-all group"
+              >
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">{task.title}</h3>
+                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                    <span className="bg-gray-100 px-2 py-1 rounded">Type: {task.type}</span>
+                    <span className={`px-2 py-1 rounded ${task.status === 'Pending Uploads' ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700'}`}>
+                      Status: {task.status}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-gray-400 group-hover:text-orange-500">
+                  <ArrowLeft size={24} className="rotate-180" />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Create Task Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-2xl font-bold mb-4">Create New Task</h2>
+            <form onSubmit={handleCreateTask}>
+              <div className="mb-4">
+                <label className="block text-gray-700 font-medium mb-2">Task Title</label>
+                <input 
+                  type="text" 
+                  required
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="e.g. Summer T-Shirt Preview"
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-gray-700 font-medium mb-2">Preview Type</label>
+                <select 
+                  value={newTaskType}
+                  onChange={(e) => setNewTaskType(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="Amazon">Amazon</option>
+                  <option value="Etsy">Etsy</option>
+                </select>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TaskListPage;

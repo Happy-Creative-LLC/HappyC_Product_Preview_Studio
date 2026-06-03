@@ -1,21 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 import { useProductStore } from '../stores/productStore';
+import { useAppStore } from '../stores/appStore';
 import Header from '../components/amazon/Header';
 import ProductGallery from '../components/amazon/ProductGallery';
 import ProductInfo from '../components/amazon/ProductInfo';
 import BuyBox from '../components/amazon/BuyBox';
+import { ArrowLeft } from 'lucide-react';
 
 const AmazonPreviewPage = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const previewId = searchParams.get('previewId');
+  const taskId = searchParams.get('taskId');
+  const projectId = searchParams.get('projectId');
   
   // Case selection: 1 = Clothing/Jewelry (Vertical), 2 = Home&Kitchen (Vertical), 3 = Home&Kitchen (Horizontal)
   const [caseType, setCaseType] = useState(1);
 
   // Get fallback data from global store
   const storeData = useProductStore();
+  const { tasks } = useAppStore();
+  
+  // Task specific data
+  const taskProductData = (projectId && taskId && tasks[projectId]) 
+    ? tasks[projectId].find(t => t.id === taskId)?.productData 
+    : null;
   
   // Local state for fetched preview data
   const [previewData, setPreviewData] = useState(null);
@@ -38,14 +49,23 @@ const AmazonPreviewPage = () => {
     }
   }, [previewId]);
 
-  const productData = previewData || storeData;
+  const productData = taskProductData || previewData || storeData;
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading Preview...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-white text-black font-sans">
+    <div className="min-h-screen bg-white text-black font-sans relative">
+      {taskId && projectId && (
+        <button 
+          onClick={() => navigate(`/projects/${projectId}/tasks/${taskId}`)}
+          className="absolute top-4 left-4 z-50 flex items-center space-x-2 bg-white px-4 py-2 rounded shadow-md hover:bg-gray-50 border border-gray-200"
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Task</span>
+        </button>
+      )}
       <Header />
       
       {/* Breadcrumb */}
