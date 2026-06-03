@@ -16,17 +16,19 @@ const AmazonPreviewPage = () => {
   const taskId = searchParams.get('taskId');
   const projectId = searchParams.get('projectId');
   
-  // Case selection: 1 = Clothing/Jewelry (Vertical), 2 = Home&Kitchen (Vertical), 3 = Home&Kitchen (Horizontal)
-  const [caseType, setCaseType] = useState(1);
-
-  // Get fallback data from global store
-  const storeData = useProductStore();
   const { tasks } = useAppStore();
   
+  // Get fallback data from global store
+  const storeData = useProductStore();
+  
   // Task specific data
-  const taskProductData = (projectId && taskId && tasks[projectId]) 
-    ? tasks[projectId].find(t => t.id === taskId)?.productData 
+  const task = (projectId && taskId && tasks[projectId]) 
+    ? tasks[projectId].find(t => t.id === taskId)
     : null;
+  const taskProductData = task?.productData;
+  
+  // Case selection: 1 = Clothing/Jewelry (Vertical), 2 = Home&Kitchen (Vertical), 3 = Home&Kitchen (Horizontal)
+  const caseType = task?.category ? Number(task.category) : 1;
   
   // Local state for fetched preview data
   const [previewData, setPreviewData] = useState(null);

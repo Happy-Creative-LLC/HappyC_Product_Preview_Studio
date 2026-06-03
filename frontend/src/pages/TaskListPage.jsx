@@ -11,6 +11,7 @@ const TaskListPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskType, setNewTaskType] = useState('Amazon');
+  const [newTaskCategory, setNewTaskCategory] = useState('1');
 
   useEffect(() => {
     if (!user) {
@@ -37,9 +38,11 @@ const TaskListPage = () => {
     addTask(projectId, {
       title: newTaskTitle,
       type: newTaskType,
+      category: newTaskCategory,
     });
     
     setNewTaskTitle('');
+    setNewTaskCategory('1');
     setIsModalOpen(false);
   };
 
@@ -134,6 +137,18 @@ const TaskListPage = () => {
                 >
                   <option value="Amazon">Amazon</option>
                   <option value="Etsy">Etsy</option>
+                </select>
+              </div>
+              <div className="mb-6">
+                <label className="block text-gray-700 font-medium mb-2">Product Category</label>
+                <select 
+                  value={newTaskCategory}
+                  onChange={(e) => setNewTaskCategory(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="1">Clothing, Shoes & Jewelry</option>
+                  <option value="2">Home & Kitchen - DỌC</option>
+                  <option value="3">Home & Kitchen - NGANG</option>
                 </select>
               </div>
               <div className="flex justify-end space-x-3">
