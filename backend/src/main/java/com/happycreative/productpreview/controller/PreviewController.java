@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/previews")
-@CrossOrigin(origins = "http://localhost:5174")
 @RequiredArgsConstructor
 public class PreviewController {
 

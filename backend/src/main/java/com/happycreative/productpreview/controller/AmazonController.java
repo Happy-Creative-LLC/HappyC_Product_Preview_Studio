@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/amazon")
-@CrossOrigin(origins = "http://localhost:5174")
 @RequiredArgsConstructor
 public class AmazonController {
 

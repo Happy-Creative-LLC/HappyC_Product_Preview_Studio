@@ -1,8 +1,8 @@
 package com.happycreative.productpreview.entity;
 
 public enum Role {
-    DESIGN,
-    MEDIA,
+    MARVEL,
+    PRODUCT_DESIGN,
     SELLER,
     ADMIN
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import axiosInstance from '../api/axiosConfig';
 
 // Mock Data
 const MOCK_PROJECTS = [
@@ -50,20 +51,40 @@ export const useAppStore = create(
   persist(
     (set, get) => ({
       user: null, // The current logged in user object
-      role: null, // 'Admin', 'Seller', 'Marvel', 'Product Design'
+      role: null, // 'ADMIN', 'SELLER', 'MARVEL', 'PRODUCT_DESIGN'
+      token: null, // JWT Token
       projects: MOCK_PROJECTS,
       tasks: MOCK_TASKS,
       
-      login: (username, password) => {
-        const user = MOCK_USERS.find(u => u.username === username && u.password === password);
-        if (user) {
-          set({ user, role: user.role });
-          return true;
+      login: async (username, password) => {
+        try {
+          // Gọi API login thực tế tới backend
+          const response = await axiosInstance.post('/api/auth/login', {
+            email: username,
+            password: password
+          });
+          
+          if (response.data && response.data.token) {
+            set({ 
+              user: response.data, 
+              role: response.data.role,
+              token: response.data.token
+            });
+            return true;
+          }
+        } catch (error) {
+          console.error("Login failed via API, trying mock data...", error);
+          // Fallback mock logic (trong môi trường dev chưa có data chuẩn)
+          const user = MOCK_USERS.find(u => u.username === username && u.password === password);
+          if (user) {
+            set({ user, role: user.role, token: "mock_token_for_dev_mode_123" });
+            return true;
+          }
         }
         return false;
       },
       
-      logout: () => set({ user: null, role: null }),
+      logout: () => set({ user: null, role: null, token: null }),
       
       addTask: (projectId, taskData) => set((state) => {
         const projectTasks = state.tasks[projectId] || [];
@@ -92,7 +113,7 @@ export const useAppStore = create(
     }),
     {
       name: 'amazon-preview-session', // name of the item in the storage (must be unique)
-      partialize: (state) => ({ user: state.user, role: state.role, tasks: state.tasks }), // persist user session and tasks
+      partialize: (state) => ({ user: state.user, role: state.role, token: state.token, tasks: state.tasks }), // persist user session, token and tasks
     }
   )
 );

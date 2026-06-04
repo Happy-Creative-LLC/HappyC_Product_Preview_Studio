@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/comments")
-@CrossOrigin(origins = "http://localhost:5174")
 @RequiredArgsConstructor
 public class CommentController {
 
@@ -20,10 +19,10 @@ public class CommentController {
     @GetMapping
     public ResponseEntity<List<Comment>> getComments(@RequestParam(required = false) String component, @RequestParam String role) {
         // Enforce role-based visibility
-        if ("DESIGN".equalsIgnoreCase(role) && component != null && !component.equalsIgnoreCase("IMAGE")) {
+        if ("PRODUCT_DESIGN".equalsIgnoreCase(role) && component != null && !component.equalsIgnoreCase("IMAGE")) {
             return ResponseEntity.status(403).build(); // Design can only see IMAGE
         }
-        if ("MEDIA".equalsIgnoreCase(role) && component != null && !component.equalsIgnoreCase("VIDEO")) {
+        if ("MARVEL".equalsIgnoreCase(role) && component != null && !component.equalsIgnoreCase("VIDEO")) {
             return ResponseEntity.status(403).build(); // Media can only see VIDEO
         }
         
@@ -42,10 +41,10 @@ public class CommentController {
         String role = comment.getAuthorRole();
         String comp = comment.getTargetComponent();
         
-        if ("DESIGN".equalsIgnoreCase(role) && !comp.equalsIgnoreCase("IMAGE")) {
+        if ("PRODUCT_DESIGN".equalsIgnoreCase(role) && !comp.equalsIgnoreCase("IMAGE")) {
             return ResponseEntity.status(403).build();
         }
-        if ("MEDIA".equalsIgnoreCase(role) && !comp.equalsIgnoreCase("VIDEO")) {
+        if ("MARVEL".equalsIgnoreCase(role) && !comp.equalsIgnoreCase("VIDEO")) {
             return ResponseEntity.status(403).build();
         }
 

@@ -26,8 +26,9 @@ public class User {
 
     private String fullName;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String department;
+    private Role role;
 
     @Column(nullable = false)
     private boolean isActive = true;

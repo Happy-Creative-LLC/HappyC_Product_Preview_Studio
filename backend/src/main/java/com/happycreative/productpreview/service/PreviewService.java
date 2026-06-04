@@ -37,7 +37,7 @@ public class PreviewService {
             newUser.setEmail("Happyc.design@gmail.com");
             newUser.setPasswordHash("dummyHash123");
             newUser.setFullName("Design Team");
-            newUser.setDepartment("DESIGN");
+            newUser.setRole(com.happycreative.productpreview.entity.Role.PRODUCT_DESIGN);
             newUser.setActive(true);
             return userRepository.save(newUser);
         });
@@ -140,7 +140,7 @@ public class PreviewService {
             newUser.setEmail("Happyc.design@gmail.com");
             newUser.setPasswordHash("dummyHash123");
             newUser.setFullName("Design Team");
-            newUser.setDepartment("DESIGN");
+            newUser.setRole(com.happycreative.productpreview.entity.Role.PRODUCT_DESIGN);
             newUser.setActive(true);
             return userRepository.save(newUser);
         });
