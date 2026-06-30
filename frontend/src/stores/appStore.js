@@ -6,7 +6,7 @@ import axiosInstance from '../api/axiosConfig';
 const MOCK_PROJECTS = [
   { id: 'p1', key: 'happy', name: 'Happy Project' },
   { id: 'p2', key: 'creative', name: 'Creative Project' },
-  { id: 'p3', key: 'pilot', name: 'Pilot Project' },
+  { id: 'p3', key: 'hapify84', name: 'Hapify84 Project' },
   { id: 'p4', key: 'global', name: 'Global Project' },
 ];
 
@@ -15,11 +15,11 @@ const MOCK_USERS = [
   { username: 'happyc.marvel', password: '123456', role: 'Marvel', projectKey: 'all' },
   { username: 'happyc.seller.happy', password: '123456', role: 'Seller', projectKey: 'happy' },
   { username: 'happyc.seller.creative', password: '123456', role: 'Seller', projectKey: 'creative' },
-  { username: 'happyc.seller.pilot', password: '123456', role: 'Seller', projectKey: 'pilot' },
+  { username: 'happyc.seller.hapify84', password: '123456', role: 'Seller', projectKey: 'hapify84' },
   { username: 'happyc.seller.global', password: '123456', role: 'Seller', projectKey: 'global' },
   { username: 'happyc.pd.happy', password: '123456', role: 'Product Design', projectKey: 'happy' },
   { username: 'happyc.pd.creative', password: '123456', role: 'Product Design', projectKey: 'creative' },
-  { username: 'happyc.pd.pilot', password: '123456', role: 'Product Design', projectKey: 'pilot' },
+  { username: 'happyc.pd.hapify84', password: '123456', role: 'Product Design', projectKey: 'hapify84' },
   { username: 'happyc.pd.global', password: '123456', role: 'Product Design', projectKey: 'global' },
 ];
 

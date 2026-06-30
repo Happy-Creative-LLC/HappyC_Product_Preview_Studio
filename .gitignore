@@ -7,3 +7,6 @@
 
 # Custom tool folders
 .sixth/
+
+# AI context files
+claude.md

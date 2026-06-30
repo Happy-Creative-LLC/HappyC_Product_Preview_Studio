@@ -32,9 +32,11 @@ public class AuthController {
 
         return ResponseEntity.ok(new AuthResponse(
                 jwt,
+                userDetails.getUserId(),
                 userDetails.getUsername(),
-                userDetails.getUser().getFullName(),
-                userDetails.getRole()
+                userDetails.getFullName(),
+                userDetails.getRole(),
+                userDetails.getProjectKey()
         ));
     }
 }

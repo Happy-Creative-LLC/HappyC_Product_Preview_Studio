@@ -8,6 +8,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -16,32 +17,57 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Preview {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    // nullable trong giai đoạn chuyển tiếp — Sprint 1 sẽ bắt buộc
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id")
+    private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String projectName;
+    private Platform platform = Platform.AMAZON;
 
-    @Column(nullable = false)
-    private String platform;
-
+    // JSON structure: { title, brand, price, description, fabricType,
+    //   careInstructions, origin, bulletPoints[], images[], videos[],
+    //   aPlusImages[], colors[], sizes[] }
+    // Amazon: tối đa 7 ảnh | Etsy: tối đa 20 ảnh | Cả hai: tối đa 1 video
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String productData;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private PreviewStatus status = PreviewStatus.DRAFT;
+
+    @Column(nullable = false)
+    private int version = 1;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "preview", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    private java.util.List<Comment> comments;
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private List<Comment> comments;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
