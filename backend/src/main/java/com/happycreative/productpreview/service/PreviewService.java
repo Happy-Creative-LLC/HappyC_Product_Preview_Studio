@@ -3,165 +3,146 @@ package com.happycreative.productpreview.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.happycreative.productpreview.entity.Preview;
-import com.happycreative.productpreview.entity.User;
+import com.happycreative.productpreview.entity.*;
 import com.happycreative.productpreview.repository.PreviewRepository;
 import com.happycreative.productpreview.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class PreviewService {
-    
+
     private final PreviewRepository previewRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
     private final AmazonScraperService amazonScraperService;
 
+    @Value("${app.base-url:http://localhost:8081}")
+    private String baseUrl;
+
+    // TODO Sprint 1: refactor để nhận taskId thay vì projectName
     public Preview createPreview(String projectName, String platform, String title, Double price,
-                                 String brand, String fabricType, String careInstructions, String origin, List<String> bulletPoints,
-                                 MultipartFile mainImage, List<MultipartFile> galleryImages, 
-                                 List<String> colorNames, List<MultipartFile> colorImages, 
-                                 List<String> sizes, MultipartFile video) {
-        
-        // Mock user logic: find or create a dummy Design user
-        User user = userRepository.findByEmail("Happyc.design@gmail.com").orElseGet(() -> {
-            User newUser = new User();
-            newUser.setEmail("Happyc.design@gmail.com");
-            newUser.setPasswordHash("dummyHash123");
-            newUser.setFullName("Design Team");
-            newUser.setRole(com.happycreative.productpreview.entity.Role.PRODUCT_DESIGN);
-            newUser.setActive(true);
-            return userRepository.save(newUser);
-        });
+                                 String brand, String fabricType, String careInstructions, String origin,
+                                 List<String> bulletPoints, MultipartFile mainImage,
+                                 List<MultipartFile> galleryImages, List<String> colorNames,
+                                 List<MultipartFile> colorImages, List<String> sizes,
+                                 MultipartFile video) {
 
-        // Store files
-        String mainImageUrl = fileStorageService.storeFile(mainImage);
-        String videoUrl = fileStorageService.storeFile(video);
-        
-        // Build JSON product data
-        ObjectNode productData = objectMapper.createObjectNode();
-        productData.put("title", title);
-        if (price != null) {
-            productData.put("price", price);
-        }
-        if (brand != null && !brand.isEmpty()) {
-            productData.put("brand", brand);
-        }
-        if (fabricType != null && !fabricType.isEmpty()) {
-            productData.put("fabricType", fabricType);
-        }
-        if (careInstructions != null && !careInstructions.isEmpty()) {
-            productData.put("careInstructions", careInstructions);
-        }
-        if (origin != null && !origin.isEmpty()) {
-            productData.put("origin", origin);
-        }
-        if (bulletPoints != null && !bulletPoints.isEmpty()) {
-            ArrayNode bpArray = productData.putArray("bulletPoints");
-            for (String bp : bulletPoints) {
-                bpArray.add(bp);
-            }
-        }
-        
-        ArrayNode imagesArray = productData.putArray("images");
-        if (mainImageUrl != null) {
-            imagesArray.add("http://localhost:8081" + mainImageUrl); // Hardcoding localhost for demo
-        }
-        
-        if (galleryImages != null && !galleryImages.isEmpty()) {
-            for (MultipartFile img : galleryImages) {
-                String imgUrl = fileStorageService.storeFile(img);
-                if (imgUrl != null) {
-                    imagesArray.add("http://localhost:8081" + imgUrl);
-                }
-            }
-        }
-        
-        if (colorImages != null && !colorImages.isEmpty()) {
-            ArrayNode colorsArray = productData.putArray("colors");
-            for (int i = 0; i < colorImages.size(); i++) {
-                String cUrl = fileStorageService.storeFile(colorImages.get(i));
-                if (cUrl != null) {
-                    ObjectNode colorObj = objectMapper.createObjectNode();
-                    String name = (colorNames != null && colorNames.size() > i) ? colorNames.get(i) : "";
-                    colorObj.put("name", name);
-                    colorObj.put("image", "http://localhost:8081" + cUrl);
-                    colorsArray.add(colorObj);
-                }
-            }
-        }
-        
-        if (sizes != null && !sizes.isEmpty()) {
-            ArrayNode sizesArray = productData.putArray("sizes");
-            for (String size : sizes) {
-                sizesArray.add(size);
-            }
-        }
+        User user = getOrCreateDefaultUser();
 
-        if (videoUrl != null) {
-            ArrayNode videosArray = productData.putArray("videos");
-            videosArray.add("http://localhost:8081" + videoUrl);
-        }
+        ObjectNode productData = buildProductData(title, price, brand, fabricType, careInstructions,
+                origin, bulletPoints, mainImage, galleryImages, colorNames, colorImages, sizes, video);
 
-        // Create Preview entity
         Preview preview = new Preview();
         preview.setUser(user);
-        preview.setProjectName(projectName);
-        preview.setPlatform(platform.toUpperCase());
-        
+        preview.setPlatform(Platform.valueOf(platform.toUpperCase()));
+        preview.setStatus(PreviewStatus.DRAFT);
+
         try {
             preview.setProductData(objectMapper.writeValueAsString(productData));
         } catch (Exception e) {
             throw new RuntimeException("Error processing JSON data", e);
         }
-        
-        preview.setStatus("DRAFT");
-        preview.setCreatedAt(LocalDateTime.now());
-        preview.setUpdatedAt(LocalDateTime.now());
 
         return previewRepository.save(preview);
     }
 
-    public Optional<Preview> getPreviewById(java.util.UUID id) {
+    public Optional<Preview> getPreviewById(UUID id) {
         return previewRepository.findById(id);
     }
 
+    // TODO Sprint 1: refactor để nhận taskId thay vì projectName
     public Preview createPreviewFromAsin(String projectName, String platform, String asin) {
-        User user = userRepository.findByEmail("Happyc.design@gmail.com").orElseGet(() -> {
-            User newUser = new User();
-            newUser.setEmail("Happyc.design@gmail.com");
-            newUser.setPasswordHash("dummyHash123");
-            newUser.setFullName("Design Team");
-            newUser.setRole(com.happycreative.productpreview.entity.Role.PRODUCT_DESIGN);
-            newUser.setActive(true);
-            return userRepository.save(newUser);
-        });
+        User user = getOrCreateDefaultUser();
 
         ObjectNode productData = amazonScraperService.scrapeProductByAsin(asin);
 
         Preview preview = new Preview();
         preview.setUser(user);
-        preview.setProjectName(projectName);
-        preview.setPlatform(platform.toUpperCase());
-        
+        preview.setPlatform(Platform.valueOf(platform.toUpperCase()));
+        preview.setStatus(PreviewStatus.DRAFT);
+
         try {
             preview.setProductData(objectMapper.writeValueAsString(productData));
         } catch (Exception e) {
             throw new RuntimeException("Error processing JSON data", e);
         }
-        
-        preview.setStatus("DRAFT");
-        preview.setCreatedAt(LocalDateTime.now());
-        preview.setUpdatedAt(LocalDateTime.now());
 
         return previewRepository.save(preview);
+    }
+
+    private User getOrCreateDefaultUser() {
+        return userRepository.findByEmail("happyc.design@gmail.com").orElseGet(() -> {
+            User newUser = new User();
+            newUser.setEmail("happyc.design@gmail.com");
+            newUser.setPasswordHash("dummyHash123");
+            newUser.setFullName("Design Team");
+            newUser.setRole(Role.PRODUCT_DESIGN);
+            newUser.setStatus(UserStatus.ACTIVE);
+            return userRepository.save(newUser);
+        });
+    }
+
+    private ObjectNode buildProductData(String title, Double price, String brand, String fabricType,
+                                        String careInstructions, String origin, List<String> bulletPoints,
+                                        MultipartFile mainImage, List<MultipartFile> galleryImages,
+                                        List<String> colorNames, List<MultipartFile> colorImages,
+                                        List<String> sizes, MultipartFile video) {
+        ObjectNode data = objectMapper.createObjectNode();
+        data.put("title", title);
+        if (price != null) data.put("price", price);
+        if (brand != null && !brand.isEmpty()) data.put("brand", brand);
+        if (fabricType != null && !fabricType.isEmpty()) data.put("fabricType", fabricType);
+        if (careInstructions != null && !careInstructions.isEmpty()) data.put("careInstructions", careInstructions);
+        if (origin != null && !origin.isEmpty()) data.put("origin", origin);
+
+        if (bulletPoints != null && !bulletPoints.isEmpty()) {
+            ArrayNode bpArray = data.putArray("bulletPoints");
+            bulletPoints.forEach(bpArray::add);
+        }
+
+        ArrayNode imagesArray = data.putArray("images");
+        String mainImageUrl = fileStorageService.storeFile(mainImage);
+        if (mainImageUrl != null) imagesArray.add(baseUrl + mainImageUrl);
+
+        if (galleryImages != null) {
+            for (MultipartFile img : galleryImages) {
+                String url = fileStorageService.storeFile(img);
+                if (url != null) imagesArray.add(baseUrl + url);
+            }
+        }
+
+        if (colorImages != null && !colorImages.isEmpty()) {
+            ArrayNode colorsArray = data.putArray("colors");
+            for (int i = 0; i < colorImages.size(); i++) {
+                String url = fileStorageService.storeFile(colorImages.get(i));
+                if (url != null) {
+                    ObjectNode colorObj = objectMapper.createObjectNode();
+                    colorObj.put("name", (colorNames != null && colorNames.size() > i) ? colorNames.get(i) : "");
+                    colorObj.put("image", baseUrl + url);
+                    colorsArray.add(colorObj);
+                }
+            }
+        }
+
+        if (sizes != null && !sizes.isEmpty()) {
+            ArrayNode sizesArray = data.putArray("sizes");
+            sizes.forEach(sizesArray::add);
+        }
+
+        String videoUrl = fileStorageService.storeFile(video);
+        if (videoUrl != null) {
+            data.putArray("videos").add(baseUrl + videoUrl);
+        }
+
+        return data;
     }
 }
