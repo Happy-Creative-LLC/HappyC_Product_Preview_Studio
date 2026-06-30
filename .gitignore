@@ -1,0 +1,9 @@
+# IDE & Editor
+.idea/
+.vscode/
+
+# GitHub Actions / CI config (local)
+.github/
+
+# Custom tool folders
+.sixth/
