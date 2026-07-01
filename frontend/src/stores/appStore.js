@@ -42,6 +42,23 @@ export const useAppStore = create(
         }));
       },
 
+      fetchTask: async (projectId, taskId) => {
+        const response = await axiosInstance.get(`/api/tasks/${taskId}`);
+        set((state) => {
+          const existing = state.tasks[projectId] || [];
+          const updated = existing.some(t => t.id === taskId)
+            ? existing.map(t => t.id === taskId ? response.data : t)
+            : [...existing, response.data];
+          return { tasks: { ...state.tasks, [projectId]: updated } };
+        });
+        return response.data;
+      },
+
+      updateTaskStatus: async (taskId, status) => {
+        const response = await axiosInstance.put(`/api/tasks/${taskId}`, { status });
+        return response.data;
+      },
+
       createTask: async (projectId, taskData) => {
         const response = await axiosInstance.post(`/api/projects/${projectId}/tasks`, taskData);
         set((state) => ({

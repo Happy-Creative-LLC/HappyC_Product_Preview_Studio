@@ -44,6 +44,12 @@ public class TaskService {
         return TaskResponse.from(taskRepository.save(task));
     }
 
+    public TaskResponse getTaskById(UUID taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
+        return TaskResponse.from(task);
+    }
+
     public TaskResponse updateTask(UUID taskId, TaskRequest request) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
