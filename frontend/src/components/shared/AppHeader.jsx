@@ -77,9 +77,8 @@ const AppHeader = ({ breadcrumbs = [] }) => {
             <div className="hidden sm:flex items-center gap-2">
               <div className="text-right">
                 <p className="text-sm font-semibold text-gray-800 leading-none">
-                  {user.fullName || user.email}
+                  {user.fullName || user.username}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
               </div>
               <span className={`text-xs font-medium px-2 py-1 rounded-full ${ROLE_COLORS[user.role] || 'bg-gray-100 text-gray-600'}`}>
                 {ROLE_LABELS[user.role] || user.role}
