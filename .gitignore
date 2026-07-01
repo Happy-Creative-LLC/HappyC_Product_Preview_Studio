@@ -10,3 +10,7 @@
 
 # AI context files
 claude.md
+
+# Project internal folders (not for source control)
+database/
+documents/
