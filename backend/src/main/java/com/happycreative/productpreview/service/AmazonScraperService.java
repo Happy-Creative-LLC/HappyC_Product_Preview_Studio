@@ -1,22 +1,23 @@
 package com.happycreative.productpreview.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.happycreative.productpreview.dto.AmazonSearchResultDto;
 import com.happycreative.productpreview.entity.SearchCache;
 import com.happycreative.productpreview.repository.SearchCacheRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,32 +91,32 @@ public class AmazonScraperService {
             try {
                 String url = "https://" + rapidapiHost + "/queries";
 
-                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                HttpHeaders headers = new HttpHeaders();
                 headers.set("x-rapidapi-host", rapidapiHost);
                 headers.set("x-rapidapi-key", rapidapiKey);
                 headers.set("Content-Type", "application/json");
 
                 String payload = String.format("{\"source\":\"amazon_search\",\"query\":\"%s\",\"geo_location\":\"90210\",\"parse\":true}", keyword.replace("\"", "\\\""));
 
-                org.springframework.http.HttpEntity<String> request = new org.springframework.http.HttpEntity<>(payload, headers);
-                
+                HttpEntity<String> request = new HttpEntity<>(payload, headers);
+
                 log.info("Sending request to RapidAPI for keyword: {}", keyword);
-                org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(
+                ResponseEntity<String> response = restTemplate.exchange(
                         url,
-                        org.springframework.http.HttpMethod.POST,
+                        HttpMethod.POST,
                         request,
                         String.class
                 );
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(response.getBody());
-                    com.fasterxml.jackson.databind.JsonNode resultsArray = root.path("results").get(0).path("content").path("results").path("organic");
-                    
+                    JsonNode root = objectMapper.readTree(response.getBody());
+                    JsonNode resultsArray = root.path("results").get(0).path("content").path("results").path("organic");
+
                     if (resultsArray.isArray()) {
                         for (int i = 0; i < resultsArray.size(); i++) {
-                            if (results.size() >= 12) break; // Limit to 12 results
-                            
-                            com.fasterxml.jackson.databind.JsonNode item = resultsArray.get(i);
+                            if (results.size() >= 12) break;
+
+                            JsonNode item = resultsArray.get(i);
                             
                             String title = item.path("title").asText("");
                             String image = item.path("url_image").asText("");
@@ -169,7 +170,7 @@ public class AmazonScraperService {
         return results;
     }
 
-    public com.fasterxml.jackson.databind.node.ObjectNode scrapeProductByAsin(String asinOrUrl) {
+    public ObjectNode scrapeProductByAsin(String asinOrUrl) {
         String asin = extractAsin(asinOrUrl);
         if (asin.isEmpty()) {
             asin = "MOCKASIN123";
@@ -182,38 +183,38 @@ public class AmazonScraperService {
         
         try {
             String url = "https://" + rapidapiHost + "/queries";
-            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            HttpHeaders headers = new HttpHeaders();
             headers.set("x-rapidapi-host", rapidapiHost);
             headers.set("x-rapidapi-key", rapidapiKey);
             headers.set("Content-Type", "application/json");
 
             String payload = String.format("{\"source\":\"amazon_product\",\"query\":\"%s\",\"geo_location\":\"90210\",\"parse\":true}", asin.replace("\"", "\\\""));
-            org.springframework.http.HttpEntity<String> request = new org.springframework.http.HttpEntity<>(payload, headers);
-            
+            HttpEntity<String> request = new HttpEntity<>(payload, headers);
+
             log.info("Sending request to RapidAPI for ASIN: {}", asin);
-            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     url,
-                    org.springframework.http.HttpMethod.POST,
+                    HttpMethod.POST,
                     request,
                     String.class
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(response.getBody());
-                com.fasterxml.jackson.databind.JsonNode result = root.path("results").get(0).path("content");
-                
-                com.fasterxml.jackson.databind.node.ObjectNode productData = objectMapper.createObjectNode();
+                JsonNode root = objectMapper.readTree(response.getBody());
+                JsonNode result = root.path("results").get(0).path("content");
+
+                ObjectNode productData = objectMapper.createObjectNode();
                 productData.put("title", result.path("title").asText("Mock Product Title"));
                 productData.put("price", result.path("pricing").path("price").asDouble(29.99));
                 productData.put("brand", result.path("brand").asText("Mock Brand"));
                 productData.put("origin", "Imported");
                 productData.put("careInstructions", "Machine Wash");
                 productData.put("fabricType", "Mixed");
-                
-                com.fasterxml.jackson.databind.node.ArrayNode bulletPoints = productData.putArray("bulletPoints");
-                com.fasterxml.jackson.databind.JsonNode featureBullets = result.path("feature_bullets");
+
+                ArrayNode bulletPoints = productData.putArray("bulletPoints");
+                JsonNode featureBullets = result.path("feature_bullets");
                 if (featureBullets.isArray() && featureBullets.size() > 0) {
-                    for (com.fasterxml.jackson.databind.JsonNode bp : featureBullets) {
+                    for (JsonNode bp : featureBullets) {
                         bulletPoints.add(bp.asText());
                     }
                 } else {
@@ -221,11 +222,11 @@ public class AmazonScraperService {
                     bulletPoints.add("Comfortable fit for everyday use");
                     bulletPoints.add("Durable and long-lasting design");
                 }
-                
-                com.fasterxml.jackson.databind.node.ArrayNode imagesArray = productData.putArray("images");
-                com.fasterxml.jackson.databind.JsonNode images = result.path("images");
+
+                ArrayNode imagesArray = productData.putArray("images");
+                JsonNode images = result.path("images");
                 if (images.isArray() && images.size() > 0) {
-                    for (com.fasterxml.jackson.databind.JsonNode img : images) {
+                    for (JsonNode img : images) {
                         imagesArray.add(img.path("link").asText());
                     }
                 } else {
@@ -234,12 +235,11 @@ public class AmazonScraperService {
                     if (!mainImg.isEmpty()) {
                         imagesArray.add(mainImg);
                     } else {
-                        // Fallback images
                         imagesArray.add("https://m.media-amazon.com/images/I/71zKuqJOKxL._AC_UY1000_.jpg");
                         imagesArray.add("https://m.media-amazon.com/images/I/81f-H1gBhtL._AC_UY1000_.jpg");
                     }
                 }
-                
+
                 return productData;
             }
         } catch (Exception e) {
@@ -259,8 +259,8 @@ public class AmazonScraperService {
         return "B08J5F3G18"; // default if not found
     }
 
-    private com.fasterxml.jackson.databind.node.ObjectNode createMockProductData(String asin) {
-        com.fasterxml.jackson.databind.node.ObjectNode productData = objectMapper.createObjectNode();
+    private ObjectNode createMockProductData(String asin) {
+        ObjectNode productData = objectMapper.createObjectNode();
         productData.put("title", "Mock Imported Amazon Product - " + asin);
         productData.put("price", 29.99);
         productData.put("brand", "MockBrand");
@@ -268,12 +268,12 @@ public class AmazonScraperService {
         productData.put("careInstructions", "Machine Wash");
         productData.put("origin", "Imported");
         
-        com.fasterxml.jackson.databind.node.ArrayNode bulletPoints = productData.putArray("bulletPoints");
+        ArrayNode bulletPoints = productData.putArray("bulletPoints");
         bulletPoints.add("This is a mock bullet point 1 for ASIN " + asin);
         bulletPoints.add("This is a mock bullet point 2 for ASIN " + asin);
         bulletPoints.add("This is a mock bullet point 3 for ASIN " + asin);
         
-        com.fasterxml.jackson.databind.node.ArrayNode imagesArray = productData.putArray("images");
+        ArrayNode imagesArray = productData.putArray("images");
         imagesArray.add("https://m.media-amazon.com/images/I/71zKuqJOKxL._AC_UY1000_.jpg");
         imagesArray.add("https://m.media-amazon.com/images/I/81f-H1gBhtL._AC_UY1000_.jpg");
         
