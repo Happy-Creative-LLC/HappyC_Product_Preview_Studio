@@ -62,27 +62,30 @@ const AmazonPreviewPage = () => {
       
       {/* Breadcrumb */}
       <div className="max-w-[1500px] mx-auto px-4 py-2 text-xs text-gray-500 bg-white">
-        Clothing, Shoes & Jewelry {'>'} Men {'>'} Clothing {'>'} Underwear {'>'} Undershirts
+        {caseType === 1
+          ? 'Clothing, Shoes & Jewelry > Men > Clothing > Underwear > Undershirts'
+          : 'Home & Kitchen > Kitchen & Dining > Storage & Organization'}
       </div>
 
       {/* Main Content Area */}
       <main className="max-w-[1500px] mx-auto px-4 py-4 pb-20 bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 relative">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 relative overflow-visible">
           {/* Left Column: Gallery */}
-          <div className={`${caseType === 3 ? 'md:col-span-12 lg:col-span-12 mb-8' : 'md:col-span-5 lg:col-span-5'} z-10`}>
-            <ProductGallery 
-              images={productData.images} 
-              videos={productData.videos} 
+          <div className="md:col-span-5 lg:col-span-5 overflow-visible">
+            <ProductGallery
+              images={productData.images || []}
+              videos={productData.videos || []}
+              caseType={caseType}
             />
           </div>
 
           {/* Center Column: Info */}
-          <div className={`${caseType === 3 ? 'md:col-span-8 lg:col-span-8' : 'md:col-span-4 lg:col-span-4'}`}>
+          <div className="md:col-span-4 lg:col-span-4">
             <ProductInfo {...productData} />
           </div>
 
           {/* Right Column: Buy Box */}
-          <div className={`${caseType === 3 ? 'md:col-span-4 lg:col-span-4' : 'md:col-span-3 lg:col-span-3'} flex justify-end md:justify-end`}>
+          <div className="md:col-span-3 lg:col-span-3 flex justify-end md:justify-end">
             <BuyBox price={Number(productData.price) || 0} brand={productData.brand} />
           </div>
         </div>
