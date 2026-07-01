@@ -23,7 +23,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> authenticateUser(@RequestBody AuthRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtTokenProvider.generateToken(authentication);
@@ -33,7 +33,7 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(
                 jwt,
                 userDetails.getUserId(),
-                userDetails.getUsername(),
+                userDetails.getEmail(),
                 userDetails.getFullName(),
                 userDetails.getRole(),
                 userDetails.getProjectKey()
