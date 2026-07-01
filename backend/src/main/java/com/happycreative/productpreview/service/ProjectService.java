@@ -2,7 +2,9 @@ package com.happycreative.productpreview.service;
 
 import com.happycreative.productpreview.dto.ProjectResponse;
 import com.happycreative.productpreview.entity.Role;
+import com.happycreative.productpreview.entity.TaskStatus;
 import com.happycreative.productpreview.repository.ProjectRepository;
+import com.happycreative.productpreview.repository.TaskRepository;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,13 +17,14 @@ import java.util.stream.Collectors;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
 
     public List<ProjectResponse> getProjectsForUser(CustomUserDetails userDetails) {
         Role role = userDetails.getRole();
 
         if (role == Role.ADMIN || role == Role.MARVEL) {
             return projectRepository.findAll().stream()
-                    .map(ProjectResponse::from)
+                    .map(this::toResponse)
                     .collect(Collectors.toList());
         }
 
@@ -29,7 +32,15 @@ public class ProjectService {
         if (projectKey == null) return List.of();
 
         return projectRepository.findByKey(projectKey)
-                .map(p -> List.of(ProjectResponse.from(p)))
+                .map(p -> List.of(toResponse(p)))
                 .orElse(List.of());
+    }
+
+    private ProjectResponse toResponse(com.happycreative.productpreview.entity.Project project) {
+        ProjectResponse dto = ProjectResponse.from(project);
+        dto.setPendingTaskCount(
+            taskRepository.countByProjectIdAndStatus(project.getId(), TaskStatus.PENDING_UPLOADS)
+        );
+        return dto;
     }
 }
