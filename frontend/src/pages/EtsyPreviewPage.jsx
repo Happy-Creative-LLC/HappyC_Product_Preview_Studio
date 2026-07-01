@@ -6,7 +6,9 @@ import { useAppStore } from '../stores/appStore';
 import EtsyHeader from '../components/etsy/EtsyHeader';
 import EtsyGallery from '../components/etsy/EtsyGallery';
 import EtsyInfo from '../components/etsy/EtsyInfo';
-import { Loader2 } from 'lucide-react';
+import EditableZone from '../components/shared/EditableZone';
+import CommentSection from '../components/shared/CommentSection';
+import { Loader2, MessageCircle } from 'lucide-react';
 
 const EtsyPreviewPage = () => {
   const [searchParams] = useSearchParams();
@@ -25,6 +27,10 @@ const EtsyPreviewPage = () => {
   const [previewData, setPreviewData] = useState(null);
   const [isLoading, setIsLoading]     = useState(!!previewId);
 
+  // Comment panel state
+  const [commentPanelOpen, setCommentPanelOpen]     = useState(false);
+  const [commentDefaultZone, setCommentDefaultZone] = useState(null);
+
   useEffect(() => {
     if (!previewId) return;
     axiosInstance.get(`/api/previews/${previewId}`)
@@ -36,6 +42,11 @@ const EtsyPreviewPage = () => {
       .catch(() => {})
       .finally(() => setIsLoading(false));
   }, [previewId]);
+
+  const handleZoneComment = (zone) => {
+    setCommentDefaultZone(zone);
+    setCommentPanelOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -55,7 +66,7 @@ const EtsyPreviewPage = () => {
   const bulletPoints = pd.bulletPoints || [];
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans">
+    <div className="min-h-screen bg-white text-gray-900 font-sans relative">
       <EtsyHeader />
 
       <main className="max-w-[1400px] mx-auto pt-6 px-4 md:px-8 pb-20">
@@ -70,11 +81,22 @@ const EtsyPreviewPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-          {/* Left — Gallery + Reviews */}
-          <div className="lg:col-span-7">
-            <EtsyGallery images={images} videos={videos} />
+          {/* Left — Gallery (IMAGE + VIDEO zones stacked) */}
+          <div className="lg:col-span-7 space-y-2">
+            {/* Video zone wrapper — shown only when there are videos */}
+            {videos.length > 0 ? (
+              <EditableZone zone="VIDEO" onCommentClick={handleZoneComment}>
+                <EditableZone zone="IMAGE" onCommentClick={handleZoneComment}>
+                  <EtsyGallery images={images} videos={videos} />
+                </EditableZone>
+              </EditableZone>
+            ) : (
+              <EditableZone zone="IMAGE" onCommentClick={handleZoneComment}>
+                <EtsyGallery images={images} videos={videos} />
+              </EditableZone>
+            )}
 
-            {/* Reviews section */}
+            {/* Reviews section — no zone (static content) */}
             <div className="mt-12 border-t border-gray-200 pt-8">
               <h2 className="text-xl font-bold mb-4">4,128 Reviews</h2>
               <div className="flex items-center gap-3 mb-6">
@@ -85,7 +107,6 @@ const EtsyPreviewPage = () => {
                 Buyers are raving! This shop received multiple 5-star reviews in the past 7 days.
               </p>
 
-              {/* Sample review */}
               <div className="mt-6 border-t border-gray-100 pt-6">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold text-sm flex-shrink-0">
@@ -103,28 +124,61 @@ const EtsyPreviewPage = () => {
             </div>
           </div>
 
-          {/* Right — Info & Buy */}
+          {/* Right — Info & Buy — TEXT zone */}
           <div className="lg:col-span-5">
-            <EtsyInfo
-              title={pd.title}
-              shopName={shopName}
-              sales="23,491"
-              rating="4.9"
-              reviewCount="4,128"
-              price={Number(pd.price || 0)}
-              colors={colors}
-              sizes={sizes}
-              bulletPoints={bulletPoints}
-              description={pd.description || ''}
-              fabricType={pd.fabricType || ''}
-              careInstructions={pd.careInstructions || ''}
-              origin={pd.origin || ''}
-              tags={['handmade', 'gift', 'customized', 'personalized', 'trending']}
-            />
+            <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+              <EtsyInfo
+                title={pd.title}
+                shopName={shopName}
+                sales="23,491"
+                rating="4.9"
+                reviewCount="4,128"
+                price={Number(pd.price || 0)}
+                colors={colors}
+                sizes={sizes}
+                bulletPoints={bulletPoints}
+                description={pd.description || ''}
+                fabricType={pd.fabricType || ''}
+                careInstructions={pd.careInstructions || ''}
+                origin={pd.origin || ''}
+                tags={['handmade', 'gift', 'customized', 'personalized', 'trending']}
+              />
+            </EditableZone>
           </div>
 
         </div>
       </main>
+
+      {/* Floating Comment FAB */}
+      <button
+        onClick={() => setCommentPanelOpen(prev => !prev)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-full shadow-xl transition-all"
+        title="Xem / thêm comments"
+      >
+        <MessageCircle size={18} />
+        Comments
+      </button>
+
+      {/* Right-side Comment Panel */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[380px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${
+          commentPanelOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <CommentSection
+          previewId={previewId}
+          defaultComponent={commentDefaultZone}
+          onClose={() => setCommentPanelOpen(false)}
+        />
+      </div>
+
+      {/* Backdrop */}
+      {commentPanelOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40"
+          onClick={() => setCommentPanelOpen(false)}
+        />
+      )}
     </div>
   );
 };

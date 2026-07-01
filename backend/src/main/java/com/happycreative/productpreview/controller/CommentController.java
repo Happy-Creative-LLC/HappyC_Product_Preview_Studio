@@ -1,55 +1,45 @@
 package com.happycreative.productpreview.controller;
 
-import com.happycreative.productpreview.entity.Comment;
-import com.happycreative.productpreview.repository.CommentRepository;
+import com.happycreative.productpreview.dto.CommentRequest;
+import com.happycreative.productpreview.dto.CommentResponse;
+import com.happycreative.productpreview.security.CustomUserDetails;
+import com.happycreative.productpreview.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/comments")
 @RequiredArgsConstructor
 public class CommentController {
 
-    private final CommentRepository commentRepository;
+    private final CommentService commentService;
 
-    @GetMapping
-    public ResponseEntity<List<Comment>> getComments(@RequestParam(required = false) String component, @RequestParam String role) {
-        // Enforce role-based visibility
-        if ("PRODUCT_DESIGN".equalsIgnoreCase(role) && component != null && !component.equalsIgnoreCase("IMAGE")) {
-            return ResponseEntity.status(403).build(); // Design can only see IMAGE
-        }
-        if ("MARVEL".equalsIgnoreCase(role) && component != null && !component.equalsIgnoreCase("VIDEO")) {
-            return ResponseEntity.status(403).build(); // Media can only see VIDEO
-        }
-        
-        List<Comment> comments;
-        if (component != null && !component.isEmpty()) {
-            comments = commentRepository.findByTargetComponentOrderByCreatedAtDesc(component);
-        } else {
-            comments = commentRepository.findAllByOrderByCreatedAtDesc();
-        }
-        return ResponseEntity.ok(comments);
+    // GET /api/previews/{previewId}/comments?component=IMAGE
+    @GetMapping("/api/previews/{previewId}/comments")
+    public ResponseEntity<List<CommentResponse>> getComments(
+            @PathVariable UUID previewId,
+            @RequestParam(required = false) String component) {
+        return ResponseEntity.ok(commentService.getComments(previewId, component));
     }
 
-    @PostMapping
-    public ResponseEntity<Comment> addComment(@RequestBody Comment comment) {
-        // Enforce role-based post permission
-        String role = comment.getAuthorRole();
-        String comp = comment.getTargetComponent();
-        
-        if ("PRODUCT_DESIGN".equalsIgnoreCase(role) && !comp.equalsIgnoreCase("IMAGE")) {
-            return ResponseEntity.status(403).build();
-        }
-        if ("MARVEL".equalsIgnoreCase(role) && !comp.equalsIgnoreCase("VIDEO")) {
-            return ResponseEntity.status(403).build();
-        }
+    // POST /api/previews/{previewId}/comments
+    @PostMapping("/api/previews/{previewId}/comments")
+    public ResponseEntity<CommentResponse> addComment(
+            @PathVariable UUID previewId,
+            @RequestBody CommentRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(commentService.addComment(previewId, userDetails.getUserId(), request));
+    }
 
-        comment.setCreatedAt(LocalDateTime.now());
-        Comment savedComment = commentRepository.save(comment);
-        return ResponseEntity.ok(savedComment);
+    // PUT /api/comments/{id}/resolve
+    @PutMapping("/api/comments/{id}/resolve")
+    public ResponseEntity<CommentResponse> resolveComment(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(commentService.resolveComment(id, userDetails.getUserId()));
     }
 }

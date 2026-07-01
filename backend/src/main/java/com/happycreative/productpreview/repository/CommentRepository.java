@@ -8,6 +8,7 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, java.util.UUID> {
-    List<Comment> findByTargetComponentOrderByCreatedAtDesc(String targetComponent);
-    List<Comment> findAllByOrderByCreatedAtDesc();
+    List<Comment> findByPreview_IdOrderByCreatedAtAsc(java.util.UUID previewId);
+    List<Comment> findByPreview_IdAndTargetComponentOrderByCreatedAtAsc(java.util.UUID previewId, String targetComponent);
+    long countByPreview_Id(java.util.UUID previewId);
 }
