@@ -35,7 +35,7 @@ public class PreviewService {
                                  List<String> bulletPoints, MultipartFile mainImage,
                                  List<MultipartFile> galleryImages, List<String> colorNames,
                                  List<MultipartFile> colorImages, List<String> sizes,
-                                 MultipartFile video) {
+                                 MultipartFile video, List<MultipartFile> aPlusImages) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
@@ -44,7 +44,7 @@ public class PreviewService {
                 .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
 
         ObjectNode productData = buildProductData(title, price, brand, fabricType, careInstructions,
-                origin, bulletPoints, mainImage, galleryImages, colorNames, colorImages, sizes, video);
+                origin, bulletPoints, mainImage, galleryImages, colorNames, colorImages, sizes, video, aPlusImages);
 
         Preview preview = new Preview();
         preview.setUser(user);
@@ -93,7 +93,8 @@ public class PreviewService {
                                         String careInstructions, String origin, List<String> bulletPoints,
                                         MultipartFile mainImage, List<MultipartFile> galleryImages,
                                         List<String> colorNames, List<MultipartFile> colorImages,
-                                        List<String> sizes, MultipartFile video) {
+                                        List<String> sizes, MultipartFile video,
+                                        List<MultipartFile> aPlusImages) {
         ObjectNode data = objectMapper.createObjectNode();
         data.put("title", title);
         if (price != null) data.put("price", price);
@@ -139,6 +140,14 @@ public class PreviewService {
         String videoUrl = fileStorageService.storeFile(video);
         if (videoUrl != null) {
             data.putArray("videos").add(baseUrl + videoUrl);
+        }
+
+        if (aPlusImages != null && !aPlusImages.isEmpty()) {
+            ArrayNode aPlusArray = data.putArray("aPlusImages");
+            for (MultipartFile ap : aPlusImages) {
+                String url = fileStorageService.storeFile(ap);
+                if (url != null) aPlusArray.add(baseUrl + url);
+            }
         }
 
         return data;

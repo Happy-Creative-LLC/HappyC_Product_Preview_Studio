@@ -13,6 +13,7 @@ public class ProjectResponse {
     private String name;
     private String description;
     private boolean isActive;
+    private long pendingTaskCount;
     private LocalDateTime createdAt;
 
     public static ProjectResponse from(Project project) {

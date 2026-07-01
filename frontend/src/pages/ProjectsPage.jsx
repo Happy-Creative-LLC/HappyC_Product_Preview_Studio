@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/appStore';
-import { Folder, LogOut, ArrowRight, Search, Loader2 } from 'lucide-react';
+import { Folder, ArrowRight, Search, Loader2 } from 'lucide-react';
+import AppHeader from '../components/shared/AppHeader';
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
-  const { user, projects, fetchProjects, logout } = useAppStore();
+  const { user, projects, fetchProjects } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -17,7 +18,6 @@ const ProjectsPage = () => {
 
     fetchProjects()
       .then(() => {
-        // Product Design đi thẳng vào task list của project mình
         if (user.role === 'PRODUCT_DESIGN') {
           const state = useAppStore.getState();
           const project = state.projects.find(p => p.key === user.projectKey);
@@ -30,11 +30,6 @@ const ProjectsPage = () => {
       .finally(() => setLoading(false));
   }, [user]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
   if (!user) return null;
 
   if (loading) {
@@ -46,83 +41,80 @@ const ProjectsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4">
-      {/* Header */}
-      <div className="max-w-6xl w-full flex justify-between items-center mb-12 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-500 mt-1">Chọn project để xem danh sách task</p>
-        </div>
-        <div className="flex items-center space-x-6">
-          <div className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-medium border border-indigo-100 flex items-center space-x-2">
-            <span>{user.fullName || user.email}</span>
-            <span className="text-gray-400">|</span>
-            <span className="text-sm font-normal">{user.role}</span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
-          >
-            <LogOut size={20} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <AppHeader breadcrumbs={[{ label: 'Projects' }]} />
 
-      {error && (
-        <div className="max-w-6xl w-full mb-6 bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
-          {error}
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Chọn project</h1>
+          <p className="text-gray-500 mt-1 text-sm">Click vào project để xem danh sách task</p>
         </div>
-      )}
 
-      {/* Project cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl w-full">
-        {projects.length === 0 && (
-          <div className="col-span-2 text-center text-gray-500 py-12">
-            Bạn không có quyền truy cập project nào.
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-sm">
+            {error}
           </div>
         )}
 
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            onClick={() => navigate(`/projects/${project.id}/tasks`)}
-            className="bg-white rounded-xl shadow-md p-8 flex items-center justify-between cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 group"
-          >
-            <div className="flex items-center space-x-6">
-              <div className="p-4 bg-orange-50 text-orange-600 rounded-xl group-hover:bg-orange-100 transition-colors">
-                <Folder size={40} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800">{project.name}</h2>
-                <p className="text-gray-500 text-sm mt-1">Click để xem tasks</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {projects.length === 0 && (
+            <div className="col-span-2 text-center text-gray-500 py-16 bg-white rounded-xl border border-gray-100">
+              Bạn không có quyền truy cập project nào.
             </div>
-            <div className="text-gray-300 group-hover:text-orange-500 transition-colors">
-              <ArrowRight size={28} />
-            </div>
-          </div>
-        ))}
+          )}
 
-        {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role === 'MARVEL') && (
-          <div
-            onClick={() => navigate('/search')}
-            className="bg-white rounded-xl shadow-md p-8 flex items-center justify-between cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 group"
-          >
-            <div className="flex items-center space-x-6">
-              <div className="p-4 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-100 transition-colors">
-                <Search size={40} />
+          {projects.map((project) => (
+            <div
+              key={project.id}
+              onClick={() => navigate(`/projects/${project.id}/tasks`)}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-orange-200 hover:-translate-y-0.5 transition-all group"
+            >
+              <div className="flex items-center gap-5">
+                <div className="p-3 bg-orange-50 text-orange-500 rounded-xl group-hover:bg-orange-100 transition-colors flex-shrink-0">
+                  <Folder size={32} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
+                    {project.name}
+                  </h2>
+                  {project.description && (
+                    <p className="text-gray-400 text-sm mt-0.5 line-clamp-1">{project.description}</p>
+                  )}
+                  {project.pendingTaskCount > 0 && (
+                    <span className="inline-flex items-center gap-1 mt-1.5 text-xs font-medium bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                      {project.pendingTaskCount} task chờ upload
+                    </span>
+                  )}
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-800">Amazon Search</h2>
-                <p className="text-gray-500 text-sm mt-1">Tìm kiếm và import sản phẩm</p>
+              <div className="text-gray-300 group-hover:text-orange-400 transition-colors flex-shrink-0 ml-4">
+                <ArrowRight size={22} />
               </div>
             </div>
-            <div className="text-gray-300 group-hover:text-blue-600 transition-colors">
-              <ArrowRight size={28} />
+          ))}
+
+          {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role === 'MARVEL') && (
+            <div
+              onClick={() => navigate('/search')}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-blue-200 hover:-translate-y-0.5 transition-all group"
+            >
+              <div className="flex items-center gap-5">
+                <div className="p-3 bg-blue-50 text-blue-500 rounded-xl group-hover:bg-blue-100 transition-colors flex-shrink-0">
+                  <Search size={32} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                    Amazon Search
+                  </h2>
+                  <p className="text-gray-400 text-sm mt-0.5">Tìm kiếm và import sản phẩm từ Amazon</p>
+                </div>
+              </div>
+              <div className="text-gray-300 group-hover:text-blue-400 transition-colors flex-shrink-0 ml-4">
+                <ArrowRight size={22} />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

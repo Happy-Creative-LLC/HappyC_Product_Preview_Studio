@@ -36,12 +36,13 @@ public class PreviewController {
             @RequestParam(value = "colorImages", required = false) List<MultipartFile> colorImages,
             @RequestParam(value = "sizes", required = false) List<String> sizes,
             @RequestParam(value = "video", required = false) MultipartFile video,
+            @RequestParam(value = "aPlusImages", required = false) List<MultipartFile> aPlusImages,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Preview preview = previewService.createPreview(
                 taskId, userDetails.getUserId(), platform, title, price, brand,
                 fabricType, careInstructions, origin, bulletPoints,
-                mainImage, galleryImages, colorNames, colorImages, sizes, video);
+                mainImage, galleryImages, colorNames, colorImages, sizes, video, aPlusImages);
         return ResponseEntity.ok(preview);
     }
 
