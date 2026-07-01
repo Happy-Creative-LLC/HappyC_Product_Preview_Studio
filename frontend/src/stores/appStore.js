@@ -13,7 +13,7 @@ export const useAppStore = create(
 
       login: async (username, password) => {
         const response = await axiosInstance.post('/api/auth/login', {
-          email: username,
+          username: username,
           password: password,
         });
 

@@ -65,18 +65,19 @@ const LoginPage = () => {
           )}
 
           <div>
-            <label className="block text-gray-700 font-medium mb-2 text-sm">Email</label>
+            <label className="block text-gray-700 font-medium mb-2 text-sm">Tài khoản</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                 <User size={18} />
               </div>
               <input
-                type="email"
+                type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all bg-white/50"
-                placeholder="happyc.admin@gmail.com"
+                placeholder="hc.admin"
+                autoComplete="username"
               />
             </div>
           </div>
