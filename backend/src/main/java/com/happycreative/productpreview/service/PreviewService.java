@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.happycreative.productpreview.entity.*;
 import com.happycreative.productpreview.repository.PreviewRepository;
+import com.happycreative.productpreview.repository.TaskRepository;
 import com.happycreative.productpreview.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ public class PreviewService {
 
     private final PreviewRepository previewRepository;
     private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
     private final AmazonScraperService amazonScraperService;
@@ -28,21 +30,25 @@ public class PreviewService {
     @Value("${app.base-url:http://localhost:8081}")
     private String baseUrl;
 
-    // TODO Sprint 1: refactor để nhận taskId thay vì projectName
-    public Preview createPreview(String projectName, String platform, String title, Double price,
+    public Preview createPreview(UUID taskId, UUID userId, String platform, String title, Double price,
                                  String brand, String fabricType, String careInstructions, String origin,
                                  List<String> bulletPoints, MultipartFile mainImage,
                                  List<MultipartFile> galleryImages, List<String> colorNames,
                                  List<MultipartFile> colorImages, List<String> sizes,
                                  MultipartFile video) {
 
-        User user = getOrCreateDefaultUser();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
 
         ObjectNode productData = buildProductData(title, price, brand, fabricType, careInstructions,
                 origin, bulletPoints, mainImage, galleryImages, colorNames, colorImages, sizes, video);
 
         Preview preview = new Preview();
         preview.setUser(user);
+        preview.setTask(task);
         preview.setPlatform(Platform.valueOf(platform.toUpperCase()));
         preview.setStatus(PreviewStatus.DRAFT);
 
@@ -59,14 +65,18 @@ public class PreviewService {
         return previewRepository.findById(id);
     }
 
-    // TODO Sprint 1: refactor để nhận taskId thay vì projectName
-    public Preview createPreviewFromAsin(String projectName, String platform, String asin) {
-        User user = getOrCreateDefaultUser();
+    public Preview createPreviewFromAsin(UUID taskId, UUID userId, String platform, String asin) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
 
         ObjectNode productData = amazonScraperService.scrapeProductByAsin(asin);
 
         Preview preview = new Preview();
         preview.setUser(user);
+        preview.setTask(task);
         preview.setPlatform(Platform.valueOf(platform.toUpperCase()));
         preview.setStatus(PreviewStatus.DRAFT);
 
@@ -77,18 +87,6 @@ public class PreviewService {
         }
 
         return previewRepository.save(preview);
-    }
-
-    private User getOrCreateDefaultUser() {
-        return userRepository.findByEmail("happyc.design@gmail.com").orElseGet(() -> {
-            User newUser = new User();
-            newUser.setEmail("happyc.design@gmail.com");
-            newUser.setPasswordHash("dummyHash123");
-            newUser.setFullName("Design Team");
-            newUser.setRole(Role.PRODUCT_DESIGN);
-            newUser.setStatus(UserStatus.ACTIVE);
-            return userRepository.save(newUser);
-        });
     }
 
     private ObjectNode buildProductData(String title, Double price, String brand, String fabricType,
