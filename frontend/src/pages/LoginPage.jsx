@@ -34,145 +34,249 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
-      {/* Left Panel */}
-      <div
-        className="hidden lg:flex flex-col justify-center px-16 relative overflow-hidden"
-        style={{
-          flex: 1,
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1d4ed8 100%)',
-        }}
-      >
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full" style={{ border: '1px solid rgba(255,255,255,0.08)' }} />
-        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full" style={{ border: '1px solid rgba(255,255,255,0.06)' }} />
-        <div className="absolute -bottom-24 -left-12 w-80 h-80 rounded-full" style={{ background: 'rgba(37,99,235,0.2)', filter: 'blur(80px)' }} />
+    <>
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(-12px); }
+        }
+        .login-anim-0 { animation: fadeInUp 0.6s ease-out both; }
+        .login-anim-1 { animation: fadeInUp 0.6s ease-out 0.1s both; }
+        .login-orb-1  { animation: float 8s ease-in-out infinite; }
+        .login-orb-2  { animation: float 6s ease-in-out 2s infinite; }
+        .login-input::placeholder { color: rgba(255,255,255,0.3); }
+      `}</style>
 
-        <div className="relative z-10">
-          {/* Logo */}
-          <div className="flex items-center gap-3.5 mb-12">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#f59e0b' }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </div>
-            <span className="text-white font-extrabold text-2xl tracking-tight">Happy Creative</span>
+      <div style={{
+        minHeight: '100vh',
+        background: '#0f172a',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 20px',
+        position: 'relative',
+        overflow: 'hidden',
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+      }}>
+        {/* Gradient orbs */}
+        <div className="login-orb-1" style={{
+          position: 'absolute', top: '10%', left: '15%',
+          width: 400, height: 400, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(37,99,235,0.3), transparent 70%)',
+          filter: 'blur(60px)', pointerEvents: 'none',
+        }} />
+        <div className="login-orb-2" style={{
+          position: 'absolute', bottom: '10%', right: '15%',
+          width: 350, height: 350, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(245,158,11,0.2), transparent 70%)',
+          filter: 'blur(60px)', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 500, height: 500, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)',
+          filter: 'blur(80px)', pointerEvents: 'none',
+        }} />
+
+        {/* Dot grid overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Logo */}
+        <div className="login-anim-0" style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          marginBottom: 40, position: 'relative', zIndex: 1,
+        }}>
+          <div style={{
+            width: 44, height: 44,
+            background: 'linear-gradient(135deg, #f59e0b, #f97316)',
+            borderRadius: 11,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(245,158,11,0.3)',
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
           </div>
+          <span style={{ fontSize: 22, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>
+            Happy Creative
+          </span>
+        </div>
 
-          <h1 className="text-white font-extrabold leading-tight mb-4" style={{ fontSize: 40, letterSpacing: '-1px' }}>
-            Preview Product<br />trước khi publish
-          </h1>
-          <p className="text-base leading-relaxed max-w-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            Xem trước listing Amazon &amp; Etsy, review cùng team, và chỉnh sửa nội dung trước khi đăng chính thức.
+        {/* Glass Card */}
+        <div className="login-anim-1" style={{
+          width: 420, maxWidth: '100%',
+          background: 'rgba(255,255,255,0.05)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 24,
+          padding: 40,
+          position: 'relative', zIndex: 1,
+        }}>
+          <h2 style={{
+            fontSize: 24, fontWeight: 800, color: 'white',
+            margin: '0 0 6px', textAlign: 'center',
+          }}>
+            Chào mừng trở lại
+          </h2>
+          <p style={{
+            fontSize: 14, color: 'rgba(255,255,255,0.5)',
+            margin: '0 0 32px', textAlign: 'center',
+          }}>
+            Đăng nhập để xem preview sản phẩm
           </p>
 
-          {/* Stats */}
-          <div className="flex gap-8 mt-12">
-            {[{ val: '4', label: 'Projects' }, { val: '10', label: 'Team Members' }, { val: '2', label: 'Platforms' }].map(s => (
-              <div key={s.label}>
-                <div className="text-3xl font-extrabold" style={{ color: '#f59e0b' }}>{s.val}</div>
-                <div className="text-[13px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel — Form */}
-      <div className="flex-1 flex items-center justify-center px-8 py-12" style={{ background: '#f8fafc' }}>
-        <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#f59e0b' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </div>
-            <span className="font-extrabold text-lg text-slate-900">Happy Creative</span>
-          </div>
-
-          <h2 className="font-extrabold text-slate-900 mb-2" style={{ fontSize: 28, letterSpacing: '-0.5px' }}>Đăng nhập</h2>
-          <p className="text-[14px] text-slate-400 mb-9">Nhập thông tin để tiếp tục</p>
-
+          {/* Error */}
           {error && (
-            <div className="mb-5 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-[13px]">
+            <div style={{
+              marginBottom: 20,
+              background: 'rgba(239,68,68,0.15)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              color: '#fca5a5',
+              padding: '10px 14px',
+              borderRadius: 10,
+              fontSize: 13,
+            }}>
               {error}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin}>
             {/* Username */}
-            <div>
-              <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Tài khoản</label>
-              <div className="relative">
-                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  placeholder="hc.admin"
-                  autoComplete="username"
-                  className="w-full pl-11 pr-4 py-3 text-[14px] text-slate-900 bg-white border border-slate-200 rounded-xl outline-none transition-all"
-                  style={{ borderRadius: 12 }}
-                  onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
-                  onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
-                />
-              </div>
+            <div style={{ marginBottom: 18 }}>
+              <label style={{
+                display: 'block', fontSize: 12, fontWeight: 600,
+                color: 'rgba(255,255,255,0.7)', marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+              }}>
+                Tài khoản
+              </label>
+              <input
+                className="login-input"
+                type="text"
+                required
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="hc.admin"
+                autoComplete="username"
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '13px 16px',
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 12,
+                  fontSize: 14, color: 'white',
+                  fontFamily: 'inherit', outline: 'none',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = 'rgba(37,99,235,0.6)';
+                  e.target.style.background = 'rgba(255,255,255,0.1)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.12)';
+                  e.target.style.background = 'rgba(255,255,255,0.07)';
+                }}
+              />
             </div>
 
             {/* Password */}
-            <div>
-              <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Mật khẩu</label>
-              <div className="relative">
-                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 text-[14px] text-slate-900 bg-white border border-slate-200 rounded-xl outline-none transition-all"
-                  onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
-                  onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
-                />
-              </div>
+            <div style={{ marginBottom: 28 }}>
+              <label style={{
+                display: 'block', fontSize: 12, fontWeight: 600,
+                color: 'rgba(255,255,255,0.7)', marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+              }}>
+                Mật khẩu
+              </label>
+              <input
+                className="login-input"
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '13px 16px',
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 12,
+                  fontSize: 14, color: 'white',
+                  fontFamily: 'inherit', outline: 'none',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = 'rgba(37,99,235,0.6)';
+                  e.target.style.background = 'rgba(255,255,255,0.1)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.12)';
+                  e.target.style.background = 'rgba(255,255,255,0.07)';
+                }}
+              />
             </div>
 
             {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 text-white font-bold text-[15px] rounded-xl disabled:opacity-60 flex items-center justify-center gap-2 transition-all"
               style={{
-                background: 'linear-gradient(135deg, #1d4ed8, #2563eb)',
-                boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
-                borderRadius: 12,
+                width: '100%', padding: '14px',
+                background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                color: 'white', fontSize: 15, fontWeight: 700,
+                border: 'none', borderRadius: 12,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+                boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
+                transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                opacity: loading ? 0.7 : 1,
               }}
-              onMouseOver={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseOver={e => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.5)'; } }}
+              onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(37,99,235,0.4)'; }}
             >
-              {loading && <Loader2 size={18} className="animate-spin" />}
+              {loading && <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />}
               {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
           </form>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-[12px] text-slate-400">hoặc</span>
-            <div className="flex-1 h-px bg-slate-200" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>hoặc</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
           </div>
 
-          {/* Google Button — placeholder for Sprint 1B */}
+          {/* Google Button */}
           <button
             type="button"
             onClick={() => alert('Chức năng đăng nhập Google đang phát triển.')}
-            className="w-full py-3 bg-white border border-slate-200 text-slate-700 text-[14px] font-semibold rounded-xl flex items-center justify-center gap-2.5 transition-colors hover:bg-slate-50"
+            style={{
+              width: '100%', padding: '13px',
+              background: 'rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.9)',
+              fontSize: 14, fontWeight: 600,
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 12,
+              cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
           >
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -183,8 +287,17 @@ const LoginPage = () => {
             Đăng nhập bằng Google
           </button>
         </div>
+
+        {/* Footer */}
+        <p style={{
+          marginTop: 24, fontSize: 12,
+          color: 'rgba(255,255,255,0.3)',
+          position: 'relative', zIndex: 1,
+        }}>
+          © 2026 Happy Creative · Internal Tool
+        </p>
       </div>
-    </div>
+    </>
   );
 };
 

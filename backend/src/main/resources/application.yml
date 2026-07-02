@@ -17,7 +17,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  secret: ${JWT_SECRET:verySecretKeyForProductPreview1234567890qwertyuiopasdfghjkl}
+  secret: ${JWT_SECRET:verySecretKeyForProductPreview1234567890qwertyuiopasdfghjklZXCVBNM123}
   expiration: 86400000 # 24 hours
 
 cloudinary:
