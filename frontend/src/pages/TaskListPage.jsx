@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/appStore';
-import { Plus, ListTodo, Loader2, ChevronRight } from 'lucide-react';
-import AppHeader from '../components/shared/AppHeader';
+import { Plus, ChevronRight, Loader2, X } from 'lucide-react';
+import SidebarLayout from '../components/shared/SidebarLayout';
 
-const STATUS_STYLES = {
-  PENDING_UPLOADS: 'bg-yellow-50 text-yellow-700',
-  IN_REVIEW: 'bg-blue-50 text-blue-700',
-  APPROVED: 'bg-green-50 text-green-700',
-  REJECTED: 'bg-red-50 text-red-700',
+const STATUS_DOT = {
+  PENDING_UPLOADS: '#eab308',
+  IN_REVIEW:       '#3b82f6',
+  APPROVED:        '#22c55e',
+  REJECTED:        '#ef4444',
+};
+
+const STATUS_BADGE = {
+  PENDING_UPLOADS: 'bg-amber-100 text-amber-700',
+  IN_REVIEW:       'bg-blue-100 text-blue-700',
+  APPROVED:        'bg-green-100 text-green-700',
+  REJECTED:        'bg-red-100 text-red-600',
 };
 
 const STATUS_LABELS = {
   PENDING_UPLOADS: 'Chờ upload',
-  IN_REVIEW: 'Đang review',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Từ chối',
+  IN_REVIEW:       'Đang review',
+  APPROVED:        'Đã duyệt',
+  REJECTED:        'Từ chối',
 };
 
 const CATEGORY_LABELS = {
@@ -24,15 +31,22 @@ const CATEGORY_LABELS = {
   3: 'H&K Horizontal',
 };
 
-const PLATFORM_STYLES = {
+const PLATFORM_BADGE = {
   AMAZON: 'bg-orange-50 text-orange-600 border border-orange-200',
   ETSY:   'bg-rose-50 text-rose-600 border border-rose-200',
 };
 
+const FILTER_TABS = [
+  { key: null,              label: 'Tất cả' },
+  { key: 'PENDING_UPLOADS', label: 'Chờ upload' },
+  { key: 'IN_REVIEW',       label: 'Đang review' },
+  { key: 'APPROVED',        label: 'Đã duyệt' },
+  { key: 'REJECTED',        label: 'Từ chối' },
+];
+
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 const TaskListPage = () => {
@@ -40,39 +54,40 @@ const TaskListPage = () => {
   const navigate = useNavigate();
   const { user, projects, tasks, fetchTasks, createTask } = useAppStore();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskPlatform, setNewTaskPlatform] = useState('AMAZON');
-  const [newTaskCategory, setNewTaskCategory] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [activeFilter, setActiveFilter] = useState(null);
+  const [isModalOpen, setIsModalOpen]   = useState(false);
+  const [newTitle, setNewTitle]         = useState('');
+  const [newPlatform, setNewPlatform]   = useState('AMAZON');
+  const [newCategory, setNewCategory]   = useState(1);
+  const [loading, setLoading]           = useState(true);
+  const [submitting, setSubmitting]     = useState(false);
+  const [error, setError]               = useState('');
 
   useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
-
+    if (!user) { navigate('/'); return; }
     fetchTasks(projectId)
       .catch(() => setError('Không thể tải danh sách task.'))
       .finally(() => setLoading(false));
   }, [projectId, user]);
 
   const project = projects.find(p => p.id === projectId);
+  const allTasks = tasks[projectId] || [];
+
+  const statusCounts = allTasks.reduce((acc, t) => {
+    acc[t.status] = (acc[t.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const filtered = activeFilter ? allTasks.filter(t => t.status === activeFilter) : allTasks;
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!newTitle.trim()) return;
     setSubmitting(true);
     try {
-      await createTask(projectId, {
-        title: newTaskTitle,
-        platform: newTaskPlatform,
-        category: newTaskCategory,
-      });
-      setNewTaskTitle('');
-      setNewTaskCategory(1);
+      await createTask(projectId, { title: newTitle, platform: newPlatform, category: newCategory });
+      setNewTitle('');
+      setNewCategory(1);
       setIsModalOpen(false);
     } catch {
       setError('Tạo task thất bại. Vui lòng thử lại.');
@@ -81,162 +96,229 @@ const TaskListPage = () => {
     }
   };
 
+  const canCreate = user?.role === 'SELLER' || user?.role === 'ADMIN' || user?.role === 'MARVEL';
+
   if (!user) return null;
 
-  const projectTasks = tasks[projectId] || [];
-
-  const breadcrumbs = [
-    { label: 'Projects', href: '/projects' },
-    { label: project?.name || 'Tasks' },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader breadcrumbs={breadcrumbs} />
+    <SidebarLayout>
+      {/* Top bar */}
+      <div className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between">
+        <div>
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1.5 text-[12px] text-slate-400 mb-1">
+            <span
+              className="hover:text-blue-600 cursor-pointer transition-colors"
+              onClick={() => navigate('/projects')}
+            >
+              Projects
+            </span>
+            <ChevronRight size={12} />
+            <span className="text-slate-600 font-medium">{project?.name || 'Tasks'}</span>
+          </div>
+          <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Tasks</h1>
+          <p className="text-[13px] text-slate-400 mt-0.5">
+            {allTasks.length} task trong {project?.name || 'project này'}
+          </p>
+        </div>
+        {canCreate && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 text-white text-[13px] font-bold px-5 py-2.5 rounded-xl transition-colors"
+            style={{ background: '#1d4ed8', boxShadow: '0 2px 8px rgba(29,78,216,0.3)' }}
+            onMouseOver={e => e.currentTarget.style.background = '#1e40af'}
+            onMouseOut={e => e.currentTarget.style.background = '#1d4ed8'}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            Tạo Task
+          </button>
+        )}
+      </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="px-8 py-6">
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl text-sm">
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-[13px]">
             {error}
           </div>
         )}
 
-        {/* Toolbar */}
-        <div className="flex justify-between items-center mb-5 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 text-gray-700 font-medium">
-            <ListTodo size={18} />
-            <span>{projectTasks.length} Tasks</span>
-          </div>
-
-          {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role === 'MARVEL') && (
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              <Plus size={16} />
-              Tạo Task
-            </button>
-          )}
+        {/* Filter pills */}
+        <div className="flex gap-2 mb-5 flex-wrap">
+          {FILTER_TABS.map(tab => {
+            const count = tab.key ? (statusCounts[tab.key] || 0) : allTasks.length;
+            const isActive = activeFilter === tab.key;
+            return (
+              <button
+                key={tab.key ?? 'all'}
+                onClick={() => setActiveFilter(tab.key)}
+                className={`text-[12px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all ${
+                  isActive
+                    ? 'bg-blue-700 text-white border-blue-700'
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-blue-500 hover:text-blue-600'
+                }`}
+              >
+                {tab.label} ({count})
+              </button>
+            );
+          })}
         </div>
 
-        {/* Task List */}
-        <div className="space-y-3">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 size={32} className="animate-spin text-orange-500" />
-            </div>
-          ) : projectTasks.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100">
-              <p className="text-gray-500">Chưa có task nào.</p>
-              {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role === 'MARVEL') && (
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="mt-4 text-orange-500 hover:underline text-sm font-medium"
-                >
-                  Tạo task đầu tiên
-                </button>
-              )}
-            </div>
-          ) : (
-            projectTasks.map((task) => (
+        {/* Task list */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 size={32} className="animate-spin text-blue-600" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+            <p className="text-slate-500 text-[14px]">
+              {activeFilter ? 'Không có task nào ở trạng thái này.' : 'Chưa có task nào.'}
+            </p>
+            {canCreate && !activeFilter && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="mt-3 text-blue-600 hover:underline text-[13px] font-semibold"
+              >
+                Tạo task đầu tiên
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {filtered.map(task => (
               <div
                 key={task.id}
                 onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}
-                className="bg-white px-5 py-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer hover:border-orange-200 hover:shadow-md transition-all group"
+                className="bg-white rounded-2xl border border-slate-200 px-5 py-4 flex items-center gap-4 cursor-pointer transition-all group"
+                onMouseOver={e => {
+                  e.currentTarget.style.borderColor = '#2563eb';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.08)';
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors truncate">
+                {/* Status dot */}
+                <div
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: STATUS_DOT[task.status] || '#94a3b8' }}
+                />
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-bold text-slate-900 group-hover:text-blue-700 transition-colors truncate">
                     {task.title}
-                  </h3>
-                  <div className="flex items-center flex-wrap gap-1.5 mt-1.5 text-xs">
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${PLATFORM_STYLES[task.platform] || 'bg-gray-100 text-gray-600'}`}>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${PLATFORM_BADGE[task.platform] || 'bg-gray-100 text-gray-600'}`}>
                       {task.platform || 'AMAZON'}
                     </span>
-                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
                       {CATEGORY_LABELS[task.category] || `Case ${task.category}`}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[task.status] || 'bg-gray-50 text-gray-600'}`}>
-                      {STATUS_LABELS[task.status] || task.status}
-                    </span>
                     {task.createdByName && (
-                      <span className="text-gray-400">bởi {task.createdByName}</span>
-                    )}
-                    {task.createdAt && (
-                      <span className="text-gray-300">· {formatDate(task.createdAt)}</span>
+                      <span className="text-[10px] text-slate-400">
+                        bởi {task.createdByName} · {formatDate(task.createdAt)}
+                      </span>
                     )}
                   </div>
                 </div>
-                <ChevronRight size={18} className="text-gray-300 group-hover:text-orange-400 transition-colors flex-shrink-0 ml-3" />
+
+                {/* Status badge */}
+                <span className={`text-[11px] font-bold px-3 py-1.5 rounded-lg flex-shrink-0 ${STATUS_BADGE[task.status] || 'bg-slate-100 text-slate-500'}`}>
+                  {STATUS_LABELS[task.status] || task.status}
+                </span>
+
+                <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Create Task Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-2xl font-bold mb-4">Tạo Task Mới</h2>
-            <form onSubmit={handleCreateTask}>
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">Tên Task</label>
+          <div
+            className="bg-white rounded-2xl w-full max-w-md"
+            style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15)', padding: 32 }}
+          >
+            <div className="flex items-start justify-between mb-1">
+              <h2 className="text-[20px] font-extrabold text-slate-900">Tạo Task Mới</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 transition-colors rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-[13px] text-slate-400 mb-6">Điền thông tin để bắt đầu preview sản phẩm</p>
+
+            <form onSubmit={handleCreateTask} className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Tên Task</label>
                 <input
                   type="text"
                   required
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
                   placeholder="VD: Summer T-Shirt Preview"
+                  className="w-full px-3.5 py-2.5 text-[13px] border border-slate-200 rounded-xl outline-none bg-slate-50 text-slate-900 transition-all"
+                  onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.background = 'white'; }}
+                  onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc'; }}
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-gray-700 font-medium mb-2">Nền tảng</label>
-                <select
-                  value={newTaskPlatform}
-                  onChange={(e) => setNewTaskPlatform(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="AMAZON">Amazon</option>
-                  <option value="ETSY">Etsy</option>
-                </select>
-              </div>
-              {newTaskPlatform === 'AMAZON' && (
-                <div className="mb-6">
-                  <label className="block text-gray-700 font-medium mb-2">Category</label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Nền tảng</label>
                   <select
-                    value={newTaskCategory}
-                    onChange={(e) => setNewTaskCategory(Number(e.target.value))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={newPlatform}
+                    onChange={e => setNewPlatform(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-[13px] border border-slate-200 rounded-xl outline-none bg-slate-50 text-slate-900"
                   >
-                    <option value={1}>Clothing, Shoes & Jewelry</option>
-                    <option value={2}>Home & Kitchen — Thumbnail Dọc + Zoom</option>
-                    <option value={3}>Home & Kitchen — Thumbnail Ngang + Zoom</option>
+                    <option value="AMAZON">Amazon</option>
+                    <option value="ETSY">Etsy</option>
                   </select>
                 </div>
-              )}
-              <div className="flex justify-end space-x-3">
+                {newPlatform === 'AMAZON' && (
+                  <div>
+                    <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Category</label>
+                    <select
+                      value={newCategory}
+                      onChange={e => setNewCategory(Number(e.target.value))}
+                      className="w-full px-3.5 py-2.5 text-[13px] border border-slate-200 rounded-xl outline-none bg-slate-50 text-slate-900"
+                    >
+                      <option value={1}>Clothing &amp; Jewelry</option>
+                      <option value={2}>H&amp;K — Vertical</option>
+                      <option value={3}>H&amp;K — Horizontal</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-5 py-2.5 text-[13px] font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-60 flex items-center space-x-2"
+                  className="px-5 py-2.5 text-[13px] font-bold text-white rounded-xl disabled:opacity-60 flex items-center gap-2 transition-colors"
+                  style={{ background: '#1d4ed8', boxShadow: '0 2px 8px rgba(29,78,216,0.3)' }}
+                  onMouseOver={e => e.currentTarget.style.background = '#1e40af'}
+                  onMouseOut={e => e.currentTarget.style.background = '#1d4ed8'}
                 >
-                  {submitting && <Loader2 size={16} className="animate-spin" />}
-                  <span>Tạo</span>
+                  {submitting && <Loader2 size={14} className="animate-spin" />}
+                  Tạo Task
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </SidebarLayout>
   );
 };
 
