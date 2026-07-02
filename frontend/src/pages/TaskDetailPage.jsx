@@ -1,21 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppStore } from '../stores/appStore';
-import { Eye, CheckCircle, Clock, XCircle, Search, Loader2 } from 'lucide-react';
-import AppHeader from '../components/shared/AppHeader';
+import { Eye, CheckCircle, Clock, XCircle, Search, Loader2, ChevronRight } from 'lucide-react';
+import SidebarLayout from '../components/shared/SidebarLayout';
 import AmazonUploadForm from '../components/upload/AmazonUploadForm';
 
 const STATUS_CONFIG = {
-  PENDING_UPLOADS: { label: 'Chờ upload', icon: Clock, color: 'bg-yellow-100 text-yellow-700' },
-  IN_REVIEW:       { label: 'Đang review', icon: Search, color: 'bg-blue-100 text-blue-700' },
-  APPROVED:        { label: 'Đã duyệt', icon: CheckCircle, color: 'bg-green-100 text-green-700' },
-  REJECTED:        { label: 'Từ chối', icon: XCircle, color: 'bg-red-100 text-red-700' },
+  PENDING_UPLOADS: { label: 'Chờ upload',  icon: Clock,       cls: 'bg-amber-100 text-amber-700' },
+  IN_REVIEW:       { label: 'Đang review', icon: Search,      cls: 'bg-blue-100 text-blue-700' },
+  APPROVED:        { label: 'Đã duyệt',    icon: CheckCircle, cls: 'bg-green-100 text-green-700' },
+  REJECTED:        { label: 'Từ chối',     icon: XCircle,     cls: 'bg-red-100 text-red-600' },
 };
 
 const CATEGORY_LABELS = {
   1: 'Clothing, Shoes & Jewelry',
-  2: 'Home & Kitchen — Thumbnail Dọc + Zoom',
-  3: 'Home & Kitchen — Thumbnail Ngang + Zoom',
+  2: 'Home & Kitchen — Vertical',
+  3: 'Home & Kitchen — Horizontal',
+};
+
+const PLATFORM_BADGE = {
+  AMAZON: 'bg-orange-50 text-orange-600 border border-orange-200',
+  ETSY:   'bg-rose-50 text-rose-600 border border-rose-200',
 };
 
 const TaskDetailPage = () => {
@@ -23,25 +28,21 @@ const TaskDetailPage = () => {
   const navigate = useNavigate();
   const { user, projects, tasks, fetchTask, updateTaskStatus } = useAppStore();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('');
+  const [statusMsg, setStatusMsg]   = useState('');
 
   useEffect(() => {
     if (!user) { navigate('/'); return; }
-
-    const projectTasks = tasks[projectId] || [];
-    const found = projectTasks.find(t => t.id === taskId);
+    const found = (tasks[projectId] || []).find(t => t.id === taskId);
     if (!found) {
       setLoading(true);
-      fetchTask(projectId, taskId)
-        .catch(() => {})
-        .finally(() => setLoading(false));
+      fetchTask(projectId, taskId).catch(() => {}).finally(() => setLoading(false));
     }
   }, [user, projectId, taskId]);
 
   const project = projects.find(p => p.id === projectId);
-  const task = (tasks[projectId] || []).find(t => t.id === taskId);
+  const task    = (tasks[projectId] || []).find(t => t.id === taskId);
 
   const handleSubmitForReview = async () => {
     setSubmitting(true);
@@ -57,101 +58,120 @@ const TaskDetailPage = () => {
     }
   };
 
-  const breadcrumbs = [
-    { label: 'Projects', href: '/projects' },
-    { label: project?.name || 'Project', href: `/projects/${projectId}/tasks` },
-    { label: task?.title || 'Task' },
-  ];
-
   if (!user) return null;
 
   if (loading) {
     return (
-      <>
-        <AppHeader breadcrumbs={breadcrumbs} />
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 size={40} className="animate-spin text-orange-500" />
+      <SidebarLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 size={40} className="animate-spin text-blue-600" />
         </div>
-      </>
+      </SidebarLayout>
     );
   }
 
   if (!task) {
     return (
-      <>
-        <AppHeader breadcrumbs={[{ label: 'Projects', href: '/projects' }]} />
-        <div className="min-h-screen flex items-center justify-center text-gray-500">
-          Task không tìm thấy.{' '}
-          <Link to={`/projects/${projectId}/tasks`} className="text-orange-500 hover:underline ml-1">
+      <SidebarLayout>
+        <div className="flex items-center justify-center min-h-screen text-slate-500 text-[14px] gap-2">
+          Task không tìm thấy.
+          <Link to={`/projects/${projectId}/tasks`} className="text-blue-600 hover:underline">
             Quay lại
           </Link>
         </div>
-      </>
+      </SidebarLayout>
     );
   }
 
   const statusCfg = STATUS_CONFIG[task.status] || STATUS_CONFIG.PENDING_UPLOADS;
   const StatusIcon = statusCfg.icon;
-  const canEdit = user.role === 'MARVEL' || user.role === 'PRODUCT_DESIGN'
-                  || user.role === 'SELLER' || user.role === 'ADMIN';
-  const canSubmit = canEdit && task.status === 'PENDING_UPLOADS';
+  const canEdit    = ['ADMIN', 'SELLER', 'MARVEL', 'PRODUCT_DESIGN'].includes(user.role);
+  const canSubmit  = canEdit && task.status === 'PENDING_UPLOADS';
   const previewPath = task.platform === 'ETSY'
     ? `/etsy?taskId=${taskId}&projectId=${projectId}`
     : `/amazon?taskId=${taskId}&projectId=${projectId}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader breadcrumbs={breadcrumbs} />
+    <SidebarLayout>
+      {/* Top bar with breadcrumb */}
+      <div className="bg-white border-b border-slate-200 px-8 py-5">
+        <div className="flex items-center gap-1.5 text-[12px] text-slate-400 mb-1">
+          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate('/projects')}>
+            Projects
+          </span>
+          <ChevronRight size={12} />
+          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate(`/projects/${projectId}/tasks`)}>
+            {project?.name || 'Project'}
+          </span>
+          <ChevronRight size={12} />
+          <span className="text-slate-600 font-medium truncate max-w-[200px]">{task.title}</span>
+        </div>
+        <h1 className="text-[18px] font-extrabold text-slate-900 tracking-tight truncate">
+          {task.title}
+        </h1>
+      </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-8 py-7">
         {/* Task Info Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-7 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{task.title}</h1>
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full ${statusCfg.color}`}>
-                  <StatusIcon size={14} />
+              <h2 className="text-[22px] font-extrabold text-slate-900 tracking-tight mb-3">
+                {task.title}
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Status */}
+                <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-lg ${statusCfg.cls}`}>
+                  <StatusIcon size={12} />
                   {statusCfg.label}
                 </span>
-                <span className="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                {/* Platform */}
+                <span className={`text-[12px] font-bold px-3 py-1.5 rounded-lg ${PLATFORM_BADGE[task.platform] || 'bg-slate-100 text-slate-600'}`}>
                   {task.platform || 'AMAZON'}
                 </span>
+                {/* Category */}
                 {task.category && (
-                  <span className="text-sm bg-orange-50 text-orange-600 px-3 py-1 rounded-full">
+                  <span className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600">
                     {CATEGORY_LABELS[task.category] || `Case ${task.category}`}
                   </span>
                 )}
               </div>
               {task.createdByName && (
-                <p className="text-sm text-gray-400 mt-2">
-                  Tạo bởi <span className="font-medium text-gray-600">{task.createdByName}</span>
+                <p className="text-[13px] text-slate-400 mt-3">
+                  Tạo bởi <span className="font-semibold text-slate-600">{task.createdByName}</span>
                 </p>
               )}
             </div>
 
-            <div className="flex flex-col sm:items-end gap-2">
+            {/* Actions */}
+            <div className="flex flex-col items-start sm:items-end gap-2.5 flex-shrink-0">
               <Link
                 to={previewPath}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="inline-flex items-center gap-2 text-white text-[13px] font-bold px-4 py-2.5 rounded-xl transition-colors"
+                style={{ background: '#1d4ed8', boxShadow: '0 2px 8px rgba(29,78,216,0.3)' }}
+                onMouseOver={e => e.currentTarget.style.background = '#1e40af'}
+                onMouseOut={e => e.currentTarget.style.background = '#1d4ed8'}
               >
-                <Eye size={18} />
-                Preview Product
+                <Eye size={16} />
+                Preview
               </Link>
 
               {canSubmit && (
                 <button
                   onClick={handleSubmitForReview}
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-60"
+                  className="inline-flex items-center gap-2 text-white text-[13px] font-bold px-4 py-2.5 rounded-xl disabled:opacity-60 transition-colors"
+                  style={{ background: '#059669', boxShadow: '0 2px 8px rgba(5,150,105,0.3)' }}
+                  onMouseOver={e => e.currentTarget.style.background = '#047857'}
+                  onMouseOut={e => e.currentTarget.style.background = '#059669'}
                 >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-                  Gửi để Review
+                  {submitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                  Gửi Review
                 </button>
               )}
 
               {statusMsg && (
-                <p className="text-sm text-green-600 font-medium">{statusMsg}</p>
+                <p className="text-[13px] text-green-600 font-semibold">{statusMsg}</p>
               )}
             </div>
           </div>
@@ -166,14 +186,14 @@ const TaskDetailPage = () => {
             category={task.category}
           />
         ) : (
-          <div className="bg-yellow-50 rounded-xl p-6 border border-yellow-200">
-            <p className="text-yellow-800">
-              Bạn đang ở chế độ xem. Nhấn <strong>Preview Product</strong> để xem kết quả.
+          <div className="bg-amber-50 rounded-2xl p-6 border border-amber-200">
+            <p className="text-amber-800 text-[14px]">
+              Bạn đang ở chế độ xem. Nhấn <strong>Preview</strong> để xem kết quả.
             </p>
           </div>
         )}
       </div>
-    </div>
+    </SidebarLayout>
   );
 };
 
