@@ -44,9 +44,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> 
+                .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/api/auth/**").permitAll()
-                            .requestMatchers("/uploads/**").permitAll() // allow access to uploaded files
+                            .requestMatchers("/uploads/**").permitAll()
+                            .requestMatchers("/error").permitAll()
                             .anyRequest().authenticated()
                 );
 
