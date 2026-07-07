@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Search, ShoppingCart, MapPin, Menu } from 'lucide-react';
-import { useProductStore } from '../../stores/productStore';
 
 const Header = () => {
   return (
     <header className="w-full">
       {/* Top Nav */}
       <div className="bg-amazon-light_blue text-white flex items-center px-4 py-2 space-x-4 h-16">
-        {/* Logo */}
+        {/* Wordmark — neutral, no Amazon trademark */}
         <div className="flex flex-col justify-center mt-1">
           <div className="cursor-pointer border border-transparent hover:border-white p-1 rounded-sm flex items-center justify-center">
-            <img src="/amazon-logo.svg" alt="Amazon Logo" className="h-8 object-contain mt-1" />
+            <span className="text-xl font-bold text-white leading-none">
+              shop<span style={{ color: '#ff9900' }}>·</span>preview
+            </span>
           </div>
         </div>
         
@@ -71,7 +72,7 @@ const Header = () => {
 
       {/* Fashion Sub-Nav (Case 1 Specific) */}
       <div className="bg-white border-b border-gray-200 text-sm px-4 py-2 flex items-center justify-between text-gray-800 shadow-sm">
-        <div className="font-extrabold text-2xl tracking-tighter mr-8 whitespace-nowrap">Amazon Fashion</div>
+        <div className="font-extrabold text-2xl tracking-tighter mr-8 whitespace-nowrap" style={{ color: '#ff9900' }}>Fashion</div>
         <div className="flex space-x-6 text-sm font-medium flex-grow overflow-x-auto hide-scrollbar justify-center">
           <span className="cursor-pointer hover:text-orange-500 hover:underline">Women</span>
           <span className="cursor-pointer hover:text-orange-500 hover:underline">Men</span>

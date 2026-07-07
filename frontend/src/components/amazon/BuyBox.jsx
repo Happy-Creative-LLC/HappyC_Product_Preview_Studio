@@ -1,9 +1,10 @@
-import React from 'react';
-import { MapPin, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin } from 'lucide-react';
 
 const BuyBox = ({ price, brand }) => {
   const currentPrice = Number(price) || 0;
-  
+  const [qty, setQty] = useState(1);
+
   return (
     <div className="flex flex-col w-full max-w-[280px]">
       <div className="border border-gray-300 rounded-lg p-4 mb-4 text-sm font-sans text-gray-900 shadow-sm bg-white">
@@ -38,9 +39,15 @@ const BuyBox = ({ price, brand }) => {
         </div>
 
         {/* Quantity */}
-        <div className="bg-[#F0F2F2] border border-[#D5D9D9] hover:bg-[#E3E6E6] rounded-md px-2 py-1 mb-4 flex items-center justify-between cursor-pointer shadow-[0_1px_2px_rgba(15,17,17,0.15)] w-[110px]">
-          <span className="text-[13px]">Quantity: 1</span>
-          <span className="text-[10px] ml-1">▼</span>
+        <div className="mb-4 flex items-center gap-2">
+          <label className="text-[13px] text-gray-700">Quantity:</label>
+          <select
+            value={qty}
+            onChange={e => setQty(Number(e.target.value))}
+            className="bg-[#F0F2F2] border border-[#D5D9D9] hover:bg-[#E3E6E6] rounded-md px-2 py-1 text-[13px] shadow-[0_1px_2px_rgba(15,17,17,0.15)] cursor-pointer outline-none"
+          >
+            {[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}
+          </select>
         </div>
 
         {/* Buttons */}
@@ -54,7 +61,7 @@ const BuyBox = ({ price, brand }) => {
         {/* Seller Info */}
         <div className="grid grid-cols-[3fr_4fr] gap-x-2 gap-y-1 text-[13px] text-gray-500 mb-4 items-start">
           <span>Shipper / Seller</span>
-          <span className="text-[#007185] hover:text-[#C7511F] hover:underline cursor-pointer truncate">RuiXiangHuiJun</span>
+          <span className="text-[#007185] hover:text-[#C7511F] hover:underline cursor-pointer truncate">{brand || 'Amazon'}</span>
           
           <span>Returns</span>
           <span className="text-[#007185] hover:text-[#C7511F] hover:underline cursor-pointer leading-tight">FREE 30-day<br/>refund/replacement</span>

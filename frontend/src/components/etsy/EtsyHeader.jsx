@@ -5,9 +5,9 @@ const EtsyHeader = () => {
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <div className="text-orange-500 font-serif text-3xl font-bold tracking-tighter mr-4">
-          Etsy
+        {/* Wordmark — neutral, no Etsy trademark */}
+        <div className="text-2xl font-black tracking-tight mr-4" style={{ color: '#f1641e' }}>
+          etsy<span className="text-gray-800">·preview</span>
         </div>
 
         {/* Search Bar */}

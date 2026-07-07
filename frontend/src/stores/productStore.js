@@ -34,7 +34,11 @@ const initialData = {
   description: 'Hanes Cotton Classics men\'s crewneck undershirts deliver the comfort you need. Moisture-wicking technology helps keep you cool and dry, while the generous length ensures your shirt stays tucked in. The classic crewneck design lays flat and keeps its shape, wash after wash.',
   aPlusImages: [
     'https://images.unsplash.com/photo-1489987707023-afc624154e85?auto=format&fit=crop&w=1200&q=80'
-  ]
+  ],
+  fabricType: '100% Cotton',
+  careInstructions: 'Machine Wash, Tumble Dry Low',
+  origin: 'Imported',
+  tags: ['cotton', 'comfort', 'undershirt', 'multipack', 'everyday'],
 };
 
 export const useProductStore = create((set) => ({
