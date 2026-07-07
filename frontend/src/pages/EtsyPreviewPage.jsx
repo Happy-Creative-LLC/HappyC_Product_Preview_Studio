@@ -134,6 +134,11 @@ const EtsyPreviewPage = () => {
                 rating="4.9"
                 reviewCount="4,128"
                 price={Number(pd.price || 0)}
+                listPrice={Number(pd.oldPrice || 0)}
+                lowStock={pd.lowStock || ''}
+                starSeller={true}
+                freeShipping={true}
+                bestseller={false}
                 colors={colors}
                 sizes={sizes}
                 bulletPoints={bulletPoints}
@@ -141,7 +146,7 @@ const EtsyPreviewPage = () => {
                 fabricType={pd.fabricType || ''}
                 careInstructions={pd.careInstructions || ''}
                 origin={pd.origin || ''}
-                tags={['handmade', 'gift', 'customized', 'personalized', 'trending']}
+                tags={pd.tags || ['handmade', 'gift', 'customized', 'personalized', 'trending']}
               />
             </EditableZone>
           </div>

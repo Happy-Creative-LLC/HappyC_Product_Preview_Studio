@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play } from 'lucide-react';
+import { Play, Heart } from 'lucide-react';
 
 const PLACEHOLDER = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
 
@@ -74,9 +74,17 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
             />
           )}
 
-          {/* Counter badge */}
+          {/* Heart button — top right */}
+          <button
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow text-gray-600 hover:text-red-500 transition-colors"
+            aria-label="Add to favorites"
+          >
+            <Heart size={18} />
+          </button>
+
+          {/* Counter badge — bottom left */}
           {total > 1 && (
-            <div className="absolute top-3 right-3 bg-black/50 text-white text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm select-none">
+            <div className="absolute bottom-3 left-3 bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm select-none">
               {activeIdx + 1} / {total}
             </div>
           )}

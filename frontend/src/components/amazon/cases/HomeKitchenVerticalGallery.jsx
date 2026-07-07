@@ -1,8 +1,9 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 
 const PLACEHOLDER = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
-const ZOOM_PANEL_SIZE = 430;
-const ZOOM_SCALE = 2.5;
+const ZOOM = 2.6;
+const PANEL_W = 520;
+const PANEL_H = 420;
 
 const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
   const allMedia = [
@@ -11,20 +12,33 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
   ].slice(0, 7);
 
   const [activeIdx, setActiveIdx] = useState(0);
-  const [isZooming, setIsZooming] = useState(false);
-  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [lens, setLens] = useState(null);
+  const [bg, setBg] = useState(null);
   const mainRef = useRef(null);
 
   const active = allMedia[activeIdx] || { src: PLACEHOLDER, type: 'image' };
   const canZoom = active.type === 'image';
 
-  const handleMouseMove = useCallback((e) => {
+  function handleMouseMove(e) {
     if (!mainRef.current || !canZoom) return;
-    const rect = mainRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-    setZoomPos({ x, y });
-  }, [canZoom]);
+    const r = mainRef.current.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    const lw = r.width / ZOOM;
+    const lh = r.height / ZOOM;
+    const lx = Math.max(0, Math.min(x - lw / 2, r.width - lw));
+    const ly = Math.max(0, Math.min(y - lh / 2, r.height - lh));
+    setLens({ l: lx, t: ly, w: lw, h: lh });
+    setBg({
+      size: `${r.width * ZOOM}px ${r.height * ZOOM}px`,
+      pos: `-${lx * ZOOM}px -${ly * ZOOM}px`,
+    });
+  }
+
+  function handleMouseLeave() {
+    setLens(null);
+    setBg(null);
+  }
 
   if (allMedia.length === 0) {
     return (
@@ -68,14 +82,10 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
       {/* Main view */}
       <div
         ref={mainRef}
-        className="flex-grow flex items-start justify-center overflow-hidden"
-        style={{
-          minHeight: 400,
-          cursor: canZoom ? 'crosshair' : 'default',
-        }}
+        className="flex-grow flex items-start justify-center overflow-hidden relative"
+        style={{ minHeight: 400, cursor: canZoom ? 'crosshair' : 'default' }}
         onMouseMove={handleMouseMove}
-        onMouseEnter={() => canZoom && setIsZooming(true)}
-        onMouseLeave={() => setIsZooming(false)}
+        onMouseLeave={handleMouseLeave}
       >
         {active.type === 'video' ? (
           <video
@@ -92,23 +102,43 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
             onError={e => { e.target.src = PLACEHOLDER; }}
           />
         )}
+
+        {/* Lens overlay */}
+        {lens && canZoom && (
+          <div
+            className="absolute pointer-events-none border border-gray-400"
+            style={{
+              left: lens.l,
+              top: lens.t,
+              width: lens.w,
+              height: lens.h,
+              background: 'rgba(90,140,200,0.2)',
+            }}
+          />
+        )}
       </div>
 
-      {/* Zoom panel — positioned to the right of the gallery */}
-      {isZooming && canZoom && (
+      {/* Zoom panel — right of gallery, overlaps info column */}
+      {bg && canZoom && (
         <div
-          className="absolute top-0 border border-gray-300 shadow-xl bg-white"
+          className="absolute top-0 border border-gray-200 bg-white shadow-xl rounded"
           style={{
             left: 'calc(100% + 8px)',
-            width: ZOOM_PANEL_SIZE,
-            height: ZOOM_PANEL_SIZE,
+            width: PANEL_W,
+            height: PANEL_H,
             backgroundImage: `url(${active.src})`,
-            backgroundSize: `${ZOOM_SCALE * 100}%`,
-            backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
             backgroundRepeat: 'no-repeat',
+            backgroundSize: bg.size,
+            backgroundPosition: bg.pos,
             zIndex: 50,
           }}
         />
+      )}
+
+      {canZoom && !bg && (
+        <p className="absolute -bottom-6 left-0 right-0 text-center text-xs text-gray-500 pointer-events-none">
+          Di chuột lên ảnh để phóng to
+        </p>
       )}
     </div>
   );

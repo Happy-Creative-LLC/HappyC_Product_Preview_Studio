@@ -85,7 +85,7 @@ const AmazonPreviewPage = () => {
           {/* Center Column: Info — TEXT zone */}
           <div className="md:col-span-4 lg:col-span-4">
             <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
-              <ProductInfo {...productData} />
+              <ProductInfo {...productData} caseType={caseType} />
             </EditableZone>
           </div>
 
