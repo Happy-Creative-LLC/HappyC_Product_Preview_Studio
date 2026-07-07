@@ -1,52 +1,65 @@
 import React from 'react';
-import { Search, ShoppingCart, Menu, User, Heart } from 'lucide-react';
+import { Search, ShoppingCart, Menu, Gift, ChevronDown } from 'lucide-react';
+
+const SUB_NAV = [
+  'Gifts', 'Best of Easter', 'Home Favorites', 'Fashion Finds',
+  'Vintage', 'Registry', 'Gift Cards',
+];
 
 const EtsyHeader = () => {
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
-        {/* Wordmark — neutral, no Etsy trademark */}
-        <div className="text-2xl font-black tracking-tight mr-4" style={{ color: '#f1641e' }}>
-          etsy<span className="text-gray-800">·preview</span>
+    <header className="bg-white">
+      {/* ── Row 1: logo + search + account ── */}
+      <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center gap-3">
+        {/* Wordmark */}
+        <div className="text-[28px] leading-none font-black tracking-tight mr-1" style={{ color: '#f1641e' }}>
+          Etsy
         </div>
 
+        {/* Categories */}
+        <button className="hidden md:flex items-center gap-1.5 text-sm text-gray-800 hover:bg-gray-100 px-2.5 py-2 rounded-full">
+          <Menu size={18} />
+          <span>Categories</span>
+        </button>
+
         {/* Search Bar */}
-        <div className="flex-grow max-w-2xl hidden md:block">
+        <div className="flex-grow max-w-3xl">
           <div className="relative">
-            <input 
-              type="text" 
-              className="w-full border-2 border-gray-900 rounded-full py-2 pl-4 pr-12 focus:outline-none focus:bg-gray-100 transition-colors"
+            <input
+              type="text"
+              className="w-full border border-gray-800 rounded-full py-2.5 pl-4 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 transition"
               placeholder="Search for anything"
             />
-            <button className="absolute right-0 top-0 h-full px-4 text-white bg-orange-500 rounded-r-full hover:bg-orange-600 transition-colors">
-              <Search size={20} />
+            <button className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center text-white bg-[#f1641e] rounded-full hover:bg-orange-600 transition-colors">
+              <Search size={18} />
             </button>
           </div>
         </div>
 
         {/* Right Nav */}
-        <div className="flex items-center space-x-2 md:space-x-4 ml-4 text-gray-800">
+        <div className="flex items-center gap-1 md:gap-3 text-gray-800">
+          <button className="text-sm font-medium hover:bg-gray-100 px-3 py-2 rounded-full whitespace-nowrap hidden sm:block">
+            Sign in
+          </button>
           <button className="p-2 hover:bg-gray-100 rounded-full hidden sm:block">
-            <span className="text-sm font-semibold">Sign in</span>
+            <Gift size={22} />
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full">
-            <Heart size={20} />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full flex items-center">
-            <ShoppingCart size={20} />
+          <button className="p-2 hover:bg-gray-100 rounded-full relative">
+            <ShoppingCart size={22} />
           </button>
         </div>
       </div>
-      
-      {/* Categories */}
-      <div className="max-w-[1400px] mx-auto px-8 hidden md:flex justify-between items-center text-sm font-medium text-gray-700 py-2">
-        <span className="hover:bg-gray-100 px-3 py-1 rounded-full cursor-pointer">Gifts</span>
-        <span className="hover:bg-gray-100 px-3 py-1 rounded-full cursor-pointer">Jewelry & Accessories</span>
-        <span className="hover:bg-gray-100 px-3 py-1 rounded-full cursor-pointer">Clothing & Shoes</span>
-        <span className="hover:bg-gray-100 px-3 py-1 rounded-full cursor-pointer">Home & Living</span>
-        <span className="hover:bg-gray-100 px-3 py-1 rounded-full cursor-pointer">Wedding & Party</span>
-        <span className="hover:bg-gray-100 px-3 py-1 rounded-full cursor-pointer">Toys & Entertainment</span>
-        <span className="hover:bg-gray-100 px-3 py-1 rounded-full cursor-pointer">Art & Collectibles</span>
+
+      {/* ── Row 2: sub-nav ── */}
+      <div className="border-b border-gray-200">
+        <div className="max-w-[1200px] mx-auto px-4 hidden md:flex items-center justify-center gap-7 text-[13px] text-gray-700 py-2.5">
+          {SUB_NAV.map((item) => (
+            <span key={item} className="hover:text-gray-900 hover:underline underline-offset-4 cursor-pointer whitespace-nowrap flex items-center gap-1">
+              {item}
+              {item === 'Gifts' && <ChevronDown size={13} className="text-gray-500" />}
+            </span>
+          ))}
+        </div>
       </div>
     </header>
   );
