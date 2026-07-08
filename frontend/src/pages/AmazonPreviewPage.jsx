@@ -155,7 +155,7 @@ const AmazonPreviewPage = () => {
     : ['Home & Kitchen', 'Kitchen & Dining', 'Storage & Organization'];
 
   return (
-    <div className="min-h-screen bg-[#EAEDED] text-black font-[Arial,sans-serif] text-sm relative">
+    <div className="font-amazon min-h-screen bg-[#EAEDED] text-black text-sm relative">
       <Header />
 
       {/* ── Breadcrumb ── */}

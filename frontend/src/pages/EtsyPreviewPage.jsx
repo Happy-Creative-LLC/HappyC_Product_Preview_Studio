@@ -69,7 +69,7 @@ const EtsyPreviewPage = () => {
   const reviewCount  = pd.reviewsCount || '8,512';
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans relative">
+    <div className="font-etsy min-h-screen bg-white text-gray-900 relative">
       <EtsyHeader />
 
       <main className="max-w-[1200px] mx-auto pt-4 px-4 pb-16">
