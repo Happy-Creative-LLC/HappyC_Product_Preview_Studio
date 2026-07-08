@@ -2,6 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ──────────────────────────────────────────────────────────────
+   Preview typefaces (self-hosted, offline)
+
+   Amazon Ember & Guardian Egyptian are proprietary/licensed fonts
+   and cannot be bundled. We self-host free OFL look-alikes:
+     • Inter        → Amazon Ember substitute
+     • Roboto Slab  → Guardian Egyptian (slab / "Egyptian") substitute
+   The .font-amazon / .font-etsy stacks list the REAL font names
+   first, so if the team ever licenses them and drops the files in,
+   the preview upgrades automatically with no code change.
+   ────────────────────────────────────────────────────────────── */
+
+/* Inter (Amazon Ember substitute) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/inter-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-700.woff2') format('woff2');
+}
+
+/* Roboto Slab (Guardian Egyptian substitute) */
+@font-face {
+  font-family: 'Roboto Slab';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/roboto-slab-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Roboto Slab';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/roboto-slab-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Roboto Slab';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/roboto-slab-700.woff2') format('woff2');
+}
+
+/* Scoped stacks — real font first, free substitute as fallback */
+.font-amazon {
+  font-family: 'Amazon Ember', 'Amazon Ember Display', 'Inter',
+    -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+.font-etsy {
+  font-family: 'Guardian Egyptian', 'Guardian Egyptian Web', 'Roboto Slab',
+    Georgia, 'Times New Roman', serif;
+}
+
 body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
