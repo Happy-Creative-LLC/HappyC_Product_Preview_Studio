@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { Shirt, Droplets, Globe, Scissors, Ruler, Wind } from 'lucide-react';
 import Stars from '../shared/Stars';
 
 const ProductInfo = ({
   title, brand, price, oldPrice, discountPercent, rating, reviewsCount,
   boughtRecently, salesStat, badges, bulletPoints, colors, sizes,
-  fabricType, careInstructions, origin, caseType,
+  fabricType, careInstructions, origin, caseType, variationLabel = 'Color',
 }) => {
   const isClothing = Number(caseType) === 1;
   const [selectedColor, setSelectedColor] = useState(0);
@@ -17,6 +18,16 @@ const ProductInfo = ({
     : listPrice > 0 ? Math.round((1 - currentPrice / listPrice) * 100) : 0;
 
   const colorName = (c) => (typeof c === 'object' ? c.name : c);
+
+  // Top Highlights icon grid (Amazon attribute cards)
+  const highlights = [
+    { icon: Shirt,    label: 'Fabric type', value: fabricType },
+    { icon: Droplets, label: 'Care',        value: careInstructions },
+    { icon: Globe,    label: 'Origin',      value: origin },
+    { icon: Scissors, label: 'Closure',     value: 'Button' },
+    { icon: Ruler,    label: 'Fit type',    value: 'Regular fit' },
+    { icon: Wind,     label: 'Sleeve',      value: 'Short sleeve' },
+  ].filter(h => h.value);
 
   return (
     <div className="flex flex-col px-4">
@@ -84,28 +95,52 @@ const ProductInfo = ({
         <span className="text-teal-700 hover:text-orange-600 hover:underline cursor-pointer">FREE Returns ˅</span>
       </div>
 
-      {/* Variations: Colors */}
+      {/* Variations: Pattern / Color */}
       {colors && colors.length > 0 && (
         <div className="mb-4 mt-2">
           <div className="text-sm mb-2">
-            <span className="text-gray-500">Color: </span>
+            <span className="text-gray-500">{variationLabel}: </span>
             <span className="font-medium">{colorName(colors[selectedColor])}</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {colors.map((c, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedColor(i)}
-                className={`rounded border px-2 py-1 text-xs transition-colors ${
-                  selectedColor === i
-                    ? 'border-orange-400 ring-1 ring-orange-300 bg-orange-50'
-                    : 'border-gray-300 hover:border-gray-500'
-                }`}
-              >
-                {colorName(c)}
-              </button>
-            ))}
-          </div>
+
+          {/* Image swatches when patterns carry images (Amazon-style grid) */}
+          {colors.some(c => typeof c === 'object' && c.image) ? (
+            <div className="flex flex-wrap gap-2">
+              {colors.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedColor(i)}
+                  title={colorName(c)}
+                  className={`w-16 h-16 rounded-md overflow-hidden border-2 transition-all ${
+                    selectedColor === i
+                      ? 'border-orange-500 ring-2 ring-orange-300'
+                      : 'border-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  {c.image
+                    ? <img src={c.image} alt={colorName(c)} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full bg-gray-200" />}
+                </button>
+              ))}
+            </div>
+          ) : (
+            /* Text-button swatches fallback */
+            <div className="flex flex-wrap gap-2">
+              {colors.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedColor(i)}
+                  className={`rounded border px-2 py-1 text-xs transition-colors ${
+                    selectedColor === i
+                      ? 'border-orange-400 ring-1 ring-orange-300 bg-orange-50'
+                      : 'border-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  {colorName(c)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -134,29 +169,22 @@ const ProductInfo = ({
         </div>
       )}
 
-      {/* Product Details */}
-      {(fabricType || careInstructions || origin) && (
-        <div className="mt-2 mb-4">
-          <h3 className="font-bold text-base text-gray-900 mb-2">Product details</h3>
-          <div className="flex flex-col space-y-2 text-sm text-gray-900">
-            {fabricType && (
-              <div className="flex items-start">
-                <span className="w-1/3 font-bold">Fabric type</span>
-                <span className="w-2/3">{fabricType}</span>
+      {/* Top Highlights — attribute icon grid */}
+      {highlights.length > 0 && (
+        <div className="mt-2 mb-4 border-t border-gray-300 pt-4">
+          <h3 className="font-bold text-base text-gray-900 mb-3">Top Highlights</h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            {highlights.map(({ icon: Icon, label, value }, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="w-9 h-9 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                  <Icon size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] text-gray-500 leading-tight">{label}</div>
+                  <div className="text-[13px] font-medium text-gray-900 leading-tight truncate" title={value}>{value}</div>
+                </div>
               </div>
-            )}
-            {careInstructions && (
-              <div className="flex items-start">
-                <span className="w-1/3 font-bold">Care instructions</span>
-                <span className="w-2/3">{careInstructions}</span>
-              </div>
-            )}
-            {origin && (
-              <div className="flex items-start">
-                <span className="w-1/3 font-bold">Origin</span>
-                <span className="w-2/3">{origin}</span>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       )}
