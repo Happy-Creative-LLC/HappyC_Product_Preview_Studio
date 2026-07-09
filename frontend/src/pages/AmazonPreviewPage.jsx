@@ -4,13 +4,14 @@ import axiosInstance from '../api/axiosConfig';
 import { useProductStore } from '../stores/productStore';
 import { useAppStore } from '../stores/appStore';
 import Header from '../components/amazon/Header';
+import AmazonLogo from '../components/amazon/AmazonLogo';
 import ProductGallery from '../components/amazon/ProductGallery';
 import ProductInfo from '../components/amazon/ProductInfo';
 import BuyBox from '../components/amazon/BuyBox';
 import EditableZone from '../components/shared/EditableZone';
 import CommentSection from '../components/shared/CommentSection';
 import Stars from '../components/shared/Stars';
-import { MessageCircle, Play, ChevronLeft, ChevronRight, ThumbsUp } from 'lucide-react';
+import { MessageCircle, Play, ChevronLeft, ChevronRight, ThumbsUp, ChevronDown, Flag, Share2 } from 'lucide-react';
 
 /* ══════════════════════════════════════════════════════════════
    STATIC CHROME DATA
@@ -112,6 +113,7 @@ const AmazonPreviewPage = () => {
   const [previewData, setPreviewData] = useState(null);
   const [isLoading, setIsLoading]     = useState(!!previewId);
   const [activeVideo, setActiveVideo] = useState(0);
+  const videoRowRef = React.useRef(null);
   const [commentPanelOpen, setCommentPanelOpen]     = useState(false);
   const [commentDefaultZone, setCommentDefaultZone] = useState(null);
 
@@ -155,8 +157,8 @@ const AmazonPreviewPage = () => {
     : ['Home & Kitchen', 'Kitchen & Dining', 'Storage & Organization'];
 
   return (
-    <div className="font-amazon min-h-screen bg-[#EAEDED] text-black text-sm relative">
-      <Header />
+    <div className="font-amazon min-h-screen bg-[#EAEDED] text-[#111] text-[13px] relative">
+      <Header caseType={caseType} />
 
       {/* ── Breadcrumb ── */}
       <div className="bg-white border-b border-gray-200">
@@ -180,22 +182,57 @@ const AmazonPreviewPage = () => {
         <div className="max-w-[1500px] mx-auto px-4 py-5">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-7 relative overflow-visible">
 
-            {/* Gallery — 🔴 IMAGE zone */}
-            <div className="md:col-span-5 overflow-visible">
+            {/* Gallery — 🔴 IMAGE zone (sticky) */}
+            <div className="md:col-span-5 overflow-visible md:sticky md:top-2 self-start">
               <EditableZone zone="IMAGE" onCommentClick={handleZoneComment}>
                 <ProductGallery images={images} videos={videos} caseType={caseType} />
               </EditableZone>
             </div>
 
-            {/* Info — 🟢 TEXT zone */}
-            <div className="md:col-span-4">
+            {/* Info — 🟢 TEXT zone (title + details) + About this item */}
+            <div className="md:col-span-4 space-y-4">
               <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
                 <ProductInfo {...productData} caseType={caseType} />
               </EditableZone>
+
+              {/* About this item — 🟢 separate TEXT zone (uploadable bullets) */}
+              {productData.bulletPoints && productData.bulletPoints.length > 0 && (
+                <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+                  <div className="px-1 pt-2 border-t border-gray-200">
+                    <h3 className="text-base font-bold mb-2">About this item</h3>
+                    <ul className="list-disc pl-5 space-y-2 text-[13px] text-gray-900">
+                      {productData.bulletPoints.map((point, idx) => {
+                        const m = String(point).match(/^([^–—:]{3,60}[–—:])\s*(.*)$/);
+                        return (
+                          <li key={idx} className="leading-relaxed">
+                            {m ? <><strong>{m[1]}</strong> {m[2]}</> : point}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <a href="#" className="text-[13px] text-[#007185] hover:text-[#c45500] hover:underline inline-block mt-2">˅ See more</a>
+                  </div>
+                </EditableZone>
+              )}
+
+              {/* Collapsible rows — static chrome (matches reference) */}
+              <div className="px-1">
+                {['Style', 'Item details'].map((label) => (
+                  <div key={label} className="border-t border-gray-200 py-3.5 flex items-center justify-between cursor-pointer">
+                    <span className="text-base font-bold">{label}</span>
+                    <ChevronDown size={18} className="text-gray-500" />
+                  </div>
+                ))}
+                <div className="border-t border-gray-200 pt-3.5">
+                  <span className="inline-block border border-[#d5d9d9] rounded-lg px-3.5 py-2 text-[13px] cursor-pointer shadow-sm hover:bg-gray-50">
+                    See all product specifications
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* BuyBox — static */}
-            <div className="md:col-span-3 flex md:justify-end">
+            {/* BuyBox — sticky */}
+            <div className="md:col-span-3 flex md:justify-end md:sticky md:top-2 self-start">
               <BuyBox price={basePrice} brand={productData.brand} />
             </div>
           </div>
@@ -203,42 +240,36 @@ const AmazonPreviewPage = () => {
       </div>
 
       {/* ══════════════════════════════════════════════════
-          [2] PRODUCT DESCRIPTION — 🟢 TEXT zone
+          [2] PRODUCT DESCRIPTION — 🟠 APLUS zone
+          Real Amazon renders this as stacked A+ marketing banners
+          (lifestyle photo, ordering guide, size chart, patterns…).
+          Falls back to the text description if no A+ images uploaded.
          ══════════════════════════════════════════════════ */}
-      {productData.description && (
+      {(aPlus.length > 0 || productData.description) && (
         <div className="bg-white mt-3">
           <div className="max-w-[1500px] mx-auto px-4 py-5">
-            <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
-              <h2 className="text-xl font-bold text-gray-900 mb-3 pb-2 border-b border-gray-200">Product description</h2>
-              <p className="text-sm text-gray-800 leading-relaxed max-w-4xl whitespace-pre-wrap">
-                {productData.description}
-              </p>
-            </EditableZone>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════
-          [3] FROM THE BRAND (A+ Content) — 🔴 APLUS zone
-          Full-width stacked brand marketing images
-         ══════════════════════════════════════════════════ */}
-      {aPlus.length > 0 && (
-        <div className="bg-white mt-3">
-          <div className="max-w-[1500px] mx-auto px-4 pt-5 pb-2">
-            <EditableZone zone="APLUS" onCommentClick={handleZoneComment}>
-              <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">From the brand</h2>
-              <div className="flex flex-col items-center">
-                {aPlus.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img}
-                    alt={`A+ Content ${idx + 1}`}
-                    className="w-full max-w-[970px] h-auto block"
-                    loading="lazy"
-                  />
-                ))}
-              </div>
-            </EditableZone>
+            <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Product description</h2>
+            {aPlus.length > 0 ? (
+              <EditableZone zone="APLUS" onCommentClick={handleZoneComment}>
+                <div className="flex flex-col items-center gap-2">
+                  {aPlus.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`Product description banner ${idx + 1}`}
+                      className="w-full max-w-[970px] h-auto block"
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              </EditableZone>
+            ) : (
+              <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+                <p className="text-sm text-gray-800 leading-relaxed max-w-4xl whitespace-pre-wrap">
+                  {productData.description}
+                </p>
+              </EditableZone>
+            )}
           </div>
         </div>
       )}
@@ -273,7 +304,7 @@ const AmazonPreviewPage = () => {
                 <Stars value={productData.rating || 4.5} size={13} />
                 <span className="font-bold">{Number(productData.rating || 4.5).toFixed(1)}</span>
                 <span className="text-[#007185] cursor-pointer">
-                  {Number(productData.reviewsCount || 0).toLocaleString()} ratings
+                  {Number(String(productData.reviewsCount || 0).replace(/,/g, '')).toLocaleString()} ratings
                 </span>
               </span>
             </div>
@@ -339,40 +370,64 @@ const AmazonPreviewPage = () => {
         <div className="bg-white mt-3">
           <div className="max-w-[1500px] mx-auto px-4 py-5">
             <EditableZone zone="VIDEO" onCommentClick={handleZoneComment}>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Videos for this product
-                <span className="ml-2 text-sm font-normal text-gray-500">({videos.length})</span>
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Product Videos</h2>
 
-              <div className="flex gap-6 items-start flex-wrap">
-                {/* Player */}
-                <div className="flex-shrink-0 bg-black rounded overflow-hidden"
-                  style={{ width: 620, maxWidth: '100%', aspectRatio: '16/9' }}>
-                  <video
-                    key={videos[activeVideo]}
-                    src={videos[activeVideo]}
-                    controls
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-
-                {/* Related product images beside video */}
-                <div className="flex flex-col gap-3">
-                  <p className="text-sm font-semibold text-gray-700">Product images in this video</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {images.slice(0, 6).map((img, idx) => (
-                      <div key={idx} className="w-16 h-16 border border-gray-200 overflow-hidden rounded cursor-pointer hover:border-[#007185] transition-colors">
-                        <img src={img} alt="" className="w-full h-full object-cover" />
-                      </div>
-                    ))}
+              {/* Large 16:9 player with Amazon-style overlays */}
+              <div className="relative bg-black rounded-md overflow-hidden mx-auto"
+                style={{ maxWidth: 1000, aspectRatio: '16/9' }}>
+                <video
+                  key={videos[activeVideo]}
+                  src={videos[activeVideo]}
+                  controls
+                  className="w-full h-full object-contain"
+                />
+                {/* Brand / title overlay — top left */}
+                <div className="absolute top-3 left-4 text-white pointer-events-none drop-shadow">
+                  <div className="text-sm font-bold leading-tight">{productData.brand || 'HappyCreative'}</div>
+                  <div className="text-xs opacity-90 leading-tight line-clamp-1 max-w-[240px]">
+                    {productData.title || 'Product video'}
                   </div>
-                  <p className="text-xs text-gray-400">
-                    {images.length} image{images.length !== 1 ? 's' : ''} · {videos.length} video{videos.length !== 1 ? 's' : ''}
-                  </p>
                 </div>
+                {/* Report flag — top right */}
+                <button className="absolute top-3 right-4 text-white/90 hover:text-white" aria-label="Report">
+                  <Flag size={18} />
+                </button>
+                {/* Share — bottom right (above controls) */}
+                <button className="absolute bottom-14 right-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center" aria-label="Share">
+                  <Share2 size={16} />
+                </button>
               </div>
 
-              {/* Thumbnail strip when >1 video */}
+              {/* Product cards row below the video (real Amazon layout) */}
+              <div className="relative mt-4">
+                <div ref={videoRowRef} className="flex gap-3 overflow-x-auto pb-1 pr-10" style={{ scrollbarWidth: 'none' }}>
+                  {relatedCards.slice(0, 6).map((c, idx) => (
+                    <div key={idx} className="flex-shrink-0 w-[300px] border border-[#d5d9d9] rounded-lg p-2.5 flex gap-3 cursor-pointer hover:shadow-md transition-shadow">
+                      <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                        {c.image && <img src={c.image} alt="" className="w-full h-full object-cover" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] text-[#007185] leading-snug line-clamp-2">{c.title}</p>
+                        <div className="flex items-start mt-1">
+                          <span className="text-[11px] relative top-0.5">$</span>
+                          <span className="text-[15px] leading-none">{Math.floor(c.price)}</span>
+                          <span className="text-[11px] relative top-0.5">{(c.price % 1).toFixed(2).substring(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Scroll-right arrow */}
+                <button
+                  onClick={() => videoRowRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-16 bg-white border border-gray-300 rounded shadow-md flex items-center justify-center hover:bg-gray-50"
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+
+              {/* Multi-video selector */}
               {videos.length > 1 && (
                 <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
                   {videos.map((_, idx) => (
@@ -399,10 +454,61 @@ const AmazonPreviewPage = () => {
       )}
 
       {/* ══════════════════════════════════════════════════
-          [7] SIMILAR BRANDS — static carousel
+          [7] PRODUCT DETAILS — compact list (matches real Amazon)
+         ══════════════════════════════════════════════════ */}
+      <div className="bg-white mt-3">
+        <div className="max-w-[1500px] mx-auto px-4 py-5">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Product details</h2>
+          <div className="text-sm space-y-2">
+            {[
+              ['Department', caseType === 1 ? 'unisex-adult' : 'Kitchen & Dining'],
+              ['Date First Available', 'March 5, 2024'],
+              ['Manufacturer', productData.brand || 'HappyCreative'],
+              ['ASIN', 'B0CX4GFW4T'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex gap-2">
+                <span className="font-bold text-gray-800 flex-shrink-0">{k}</span>
+                <span className="text-gray-500">:</span>
+                <span className="text-gray-700">{v}</span>
+              </div>
+            ))}
+
+            {/* Best Sellers Rank — with sub-categories */}
+            <div className="flex gap-2">
+              <span className="font-bold text-gray-800 flex-shrink-0">Best Sellers Rank</span>
+              <span className="text-gray-500">:</span>
+              <div className="text-gray-700 leading-relaxed">
+                <span className="text-[#007185] cursor-pointer hover:underline">#307,526 in Clothing, Shoes &amp; Jewelry</span>
+                <span className="text-gray-400 text-xs ml-1">
+                  (<span className="text-[#007185] cursor-pointer hover:underline">See Top 100 in Clothing, Shoes &amp; Jewelry</span>)
+                </span>
+                <br />
+                <span className="text-[#007185] cursor-pointer hover:underline">#10,447 in Men's Novelty Clothing</span>
+                <br />
+                <span className="text-[#007185] cursor-pointer hover:underline">#58,397 in Women's Novelty Clothing</span>
+              </div>
+            </div>
+
+            {/* Customer Reviews row */}
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-gray-800 flex-shrink-0">Customer Reviews</span>
+              <span className="text-gray-500">:</span>
+              <Stars value={productData.rating || 4.6} size={13} />
+              <span className="text-sm font-medium">{Number(productData.rating || 4.6).toFixed(1)}</span>
+              <span className="text-xs text-[#007185] cursor-pointer hover:underline">
+                ({Number(String(productData.reviewsCount || 143).replace(/,/g, '')).toLocaleString()})
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════
+          [8] SIMILAR BRANDS — static carousel
          ══════════════════════════════════════════════════ */}
       <Carousel title="Similar brands on Amazon" cards={relatedCards} />
 
+      {/* ══════════════════════════════════════════════════
       {/* ══════════════════════════════════════════════════
           [8] CUSTOMER REVIEWS — static
          ══════════════════════════════════════════════════ */}
@@ -413,18 +519,19 @@ const AmazonPreviewPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* LEFT: rating summary */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-1">
                 <Stars value={productData.rating || 4.5} size={20} />
                 <span className="text-lg font-medium text-gray-900">
                   {Number(productData.rating || 4.5).toFixed(1)} out of 5
                 </span>
               </div>
               <p className="text-sm text-gray-500 mb-4">
-                {Number(productData.reviewsCount || 0).toLocaleString()} global ratings
+                {Number(String(productData.reviewsCount || 0).replace(/,/g, '')).toLocaleString()} global ratings
               </p>
 
-              <div className="flex flex-col gap-1.5 mb-6">
-                {[[5, 72], [4, 15], [3, 7], [2, 3], [1, 3]].map(([s, p]) => (
+              {/* Star bars */}
+              <div className="flex flex-col gap-1.5 mb-3">
+                {[[5, 84], [4, 6], [3, 3], [2, 6], [1, 1]].map(([s, p]) => (
                   <div key={s} className="flex items-center gap-2 text-xs">
                     <span className="text-[#007185] cursor-pointer hover:underline whitespace-nowrap w-12">{s} star</span>
                     <div className="flex-1 h-4 bg-[#F0F2F2] border border-[#D5D9D9] rounded-sm overflow-hidden">
@@ -435,47 +542,126 @@ const AmazonPreviewPage = () => {
                 ))}
               </div>
 
-              {/* Reviews with images strip */}
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="font-bold text-sm mb-3">Reviews with images</h3>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {images.concat(images).slice(0, 6).map((img, i) => (
-                    <div key={i} className="w-16 h-16 flex-shrink-0 rounded overflow-hidden border border-gray-200 cursor-pointer">
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* How ratings work link */}
+              <p className="text-xs text-[#007185] cursor-pointer hover:underline mb-5 flex items-center gap-1">
+                How customer reviews and ratings work
+                <ChevronDown size={12} />
+              </p>
 
-              <div className="border-t border-gray-200 mt-4 pt-4">
+              {/* Review this product */}
+              <div className="border-t border-gray-200 pt-4">
                 <p className="font-bold text-sm mb-1">Review this product</p>
-                <p className="text-xs text-gray-500 mb-2">Share your thoughts with other customers</p>
-                <button className="w-full border border-[#D5D9D9] rounded-lg px-5 py-2 text-sm bg-white hover:bg-gray-50 transition-colors shadow-sm">
+                <p className="text-xs text-gray-500 mb-3">Share your thoughts with other customers</p>
+                <button className="w-full border border-[#D5D9D9] rounded-full px-5 py-2 text-sm bg-white hover:bg-gray-50 transition-colors shadow-sm">
                   Write a customer review
                 </button>
               </div>
             </div>
 
-            {/* RIGHT: review list */}
+            {/* RIGHT: customers say + reviews with images + review list */}
             <div className="lg:col-span-2">
+
+              {/* ── Customers say (AI summary) ── */}
+              <div className="mb-6 pb-5 border-b border-gray-200">
+                <h3 className="font-bold text-base mb-2">Customers say</h3>
+                <p className="text-sm text-gray-700 leading-relaxed mb-2">
+                  Customers find the Hawaiian shirt to be of excellent quality, with pictures coming out beautifully and a
+                  perfect fit. They appreciate its appearance, humor, and material, with one customer noting it's not scratchy,
+                  and consider it a great Father's Day gift. Regarding size, while some customers say it's true to size, others
+                  mention it runs a bit big.
+                </p>
+                <p className="text-xs text-gray-500 flex items-center gap-1 mb-4">
+                  <span>🤖</span> Generated from the text of customer reviews
+                </p>
+
+                {/* Topic tags */}
+                <p className="text-xs font-bold text-gray-800 mb-2">Select to learn more</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Quality', count: 59 },
+                    { label: 'Print quality', count: 21 },
+                    { label: 'Appearance', count: 16 },
+                    { label: 'Fit', count: 9 },
+                    { label: 'Humor', count: 8 },
+                    { label: 'Gift', count: 7 },
+                    { label: 'Material', count: 7 },
+                    { label: 'Size', count: 14, isNeutral: true },
+                  ].map(tag => (
+                    <button
+                      key={tag.label}
+                      className="flex items-center gap-1 text-xs border border-gray-300 rounded-full px-2.5 py-1 bg-white hover:bg-gray-50 text-[#007185]"
+                    >
+                      {tag.isNeutral ? '〜' : '↗'} {tag.label} ({tag.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Reviews with images ── */}
+              {images.length > 0 && (
+                <div className="mb-6 pb-5 border-b border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-base">Reviews with images</h3>
+                    <span className="text-xs text-[#007185] cursor-pointer hover:underline">See all photos »</span>
+                  </div>
+                  <div className="relative">
+                    <button className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center hover:bg-gray-50">
+                      <ChevronLeft size={16} />
+                    </button>
+                    <div className="flex gap-2 overflow-x-auto px-10 pb-1" style={{ scrollbarWidth: 'none' }}>
+                      {images.concat(images).slice(0, 7).map((img, i) => (
+                        <div key={i} className="flex-shrink-0 w-[120px] h-[120px] rounded overflow-hidden border border-gray-200 cursor-pointer">
+                          <img src={img} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                        </div>
+                      ))}
+                    </div>
+                    <button className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center hover:bg-gray-50">
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Review list ── */}
               <h3 className="font-bold text-base mb-4">Top reviews from the United States</h3>
               {STATIC_REVIEWS.map((r, i) => (
-                <div key={i} className="border-b border-gray-100 pb-5 mb-5 last:border-0">
+                <div key={i} className="border-b border-gray-100 pb-6 mb-6 last:border-0">
+                  {/* Reviewer name + avatar */}
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-[#146EB4] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                       {r.name[0]}
                     </div>
                     <span className="font-medium text-sm">{r.name}</span>
                   </div>
+
+                  {/* Stars + title */}
                   <div className="flex items-center gap-2 mb-1">
                     <Stars value={r.rating} size={13} />
                     <span className="font-bold text-sm text-gray-900">{r.title}</span>
                   </div>
-                  <p className="text-xs text-[#C45500] font-medium mb-2">
+
+                  {/* Date + color + verified */}
+                  <p className="text-xs text-gray-500 mb-2">
                     Reviewed in the United States on {r.date}
-                    {r.verified && <span className="ml-2">· Verified Purchase</span>}
                   </p>
+                  {r.verified && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      Color: Style A &nbsp;|&nbsp;
+                      <span className="text-[#C45500]">Verified Purchase</span>
+                    </p>
+                  )}
+
+                  {/* Body */}
                   <p className="text-sm text-gray-700 leading-relaxed">{r.body}</p>
+
+                  {/* Thumb image below body (first review only) */}
+                  {i === 0 && images[0] && (
+                    <div className="mt-3 w-14 h-14 rounded overflow-hidden border border-gray-200 cursor-pointer">
+                      <img src={images[0]} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                    </div>
+                  )}
+
+                  {/* Helpful row */}
                   <div className="flex items-center gap-3 mt-3">
                     <button className="flex items-center gap-1.5 text-xs border border-[#D5D9D9] rounded-full px-3 py-1 bg-white hover:bg-gray-50">
                       <ThumbsUp size={12} /> Helpful
@@ -486,6 +672,7 @@ const AmazonPreviewPage = () => {
                   </div>
                 </div>
               ))}
+
               <button className="border border-[#D5D9D9] rounded-lg px-6 py-2.5 text-sm bg-white hover:bg-gray-50 transition-colors shadow-sm">
                 See more reviews →
               </button>
@@ -504,39 +691,100 @@ const AmazonPreviewPage = () => {
           FOOTER
          ══════════════════════════════════════════════════ */}
       <footer className="mt-6">
+        {/* Back to top */}
         <div className="bg-[#37475A] text-white text-xs py-3.5 text-center cursor-pointer hover:bg-[#485769] select-none">
           Back to top
         </div>
+
+        {/* Main footer columns */}
         <div className="bg-[#232F3E] text-white py-10">
-          <div className="max-w-[1500px] mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-xs">
+          <div className="max-w-[1500px] mx-auto px-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-xs">
             {[
-              { heading: 'Get to Know Us', links: ['Careers', 'Blog', 'About Amazon', 'Investor Relations', 'Amazon Devices'] },
-              { heading: 'Make Money with Us', links: ['Sell products on Amazon', 'Sell on Amazon Business', 'Become an Affiliate', 'Advertise Your Products'] },
-              { heading: 'Amazon Payment Products', links: ['Amazon Business Card', 'Shop with Points', 'Reload Your Balance', 'Currency Converter'] },
-              { heading: 'Let Us Help You', links: ['Your Account', 'Your Orders', 'Shipping Rates & Policies', 'Returns & Replacements', 'Help'] },
+              {
+                heading: 'Get to Know Us',
+                links: [
+                  'Careers', 'Amazon Newsletter', 'About Amazon', 'Accessibility',
+                  'Sustainability', 'Press Center', 'Investor Relations',
+                  'Amazon Devices', 'Amazon Science',
+                ],
+              },
+              {
+                heading: 'Make Money with Us',
+                links: [
+                  'Sell on Amazon', 'Sell apps on Amazon', 'Supply to Amazon',
+                  'Protect & Build Your Brand', 'Become an Affiliate',
+                  'Become a Delivery Driver', 'Start a Package Delivery Business',
+                  'Advertise Your Products', 'Self-Publish with Us',
+                  'Become an Amazon Hub Partner', '› See More Ways to Make Money',
+                ],
+              },
+              {
+                heading: 'Amazon Payment Products',
+                links: [
+                  'Amazon Visa', 'Amazon Store Card', 'Amazon Secured Card',
+                  'Amazon Business Card', 'Shop with Points',
+                  'Credit Card Marketplace', 'Reload Your Balance',
+                  'Gift Cards', 'Amazon Currency Converter',
+                ],
+              },
+              {
+                heading: 'Let Us Help You',
+                links: [
+                  'Your Account', 'Your Orders', 'Shipping Rates & Policies',
+                  'Amazon Prime', 'Returns & Replacements',
+                  'Manage Your Content and Devices',
+                  'Recalls and Product Safety Alerts',
+                  'Registry & Gift List', 'Help',
+                ],
+              },
             ].map((col, i) => (
               <div key={i}>
-                <h3 className="font-bold text-sm mb-3">{col.heading}</h3>
+                <h3 className="font-bold text-[13px] mb-3 text-white">{col.heading}</h3>
                 <ul className="space-y-2">
                   {col.links.map((link, j) => (
-                    <li key={j} className="text-[#DDD] hover:text-white hover:underline cursor-pointer">{link}</li>
+                    <li key={j} className="text-[#DDD] hover:text-white hover:underline cursor-pointer leading-snug">
+                      {link}
+                    </li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
         </div>
-        <div className="bg-[#131A22] text-gray-400 text-xs py-6">
-          <div className="max-w-[1500px] mx-auto px-4 flex flex-col items-center gap-3">
-            <span className="text-white text-xl font-bold tracking-tight">
-              shop<span style={{ color: '#ff9900' }}>·</span>preview
-            </span>
-            <div className="flex gap-5 flex-wrap justify-center">
+
+        {/* Bottom bar — logo + language + country */}
+        <div className="bg-[#131A22] text-gray-400 py-8">
+          <div className="max-w-[1500px] mx-auto px-4 flex flex-col items-center gap-5">
+            {/* Logo */}
+            <AmazonLogo className="h-8 w-auto" />
+
+            {/* Language & Country selectors */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {/* Language */}
+              <div className="flex items-center gap-1.5 border border-gray-500 rounded px-3 py-1.5 cursor-pointer hover:border-gray-300 text-white text-[13px] select-none">
+                <span className="text-[14px]">🌐</span>
+                <span>English</span>
+                <svg className="w-3 h-3 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              {/* Country */}
+              <div className="flex items-center gap-1.5 border border-gray-500 rounded px-3 py-1.5 cursor-pointer hover:border-gray-300 text-white text-[13px] select-none">
+                <span className="text-[14px]">🇺🇸</span>
+                <span>United States</span>
+                <svg className="w-3 h-3 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Legal links */}
+            <div className="flex gap-5 flex-wrap justify-center text-xs">
               {['Conditions of Use', 'Privacy Notice', 'Consumer Health Data Privacy', 'Your Ads Privacy Choices'].map(l => (
                 <span key={l} className="cursor-pointer hover:text-white hover:underline">{l}</span>
               ))}
             </div>
-            <p>© 2024 Happy Creative — Internal Preview Tool</p>
+            <p className="text-xs">©2026 Happy Creative LLC — Internal Preview Tool</p>
           </div>
         </div>
       </footer>
