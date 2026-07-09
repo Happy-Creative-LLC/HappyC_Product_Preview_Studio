@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@SuppressWarnings("unused")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
