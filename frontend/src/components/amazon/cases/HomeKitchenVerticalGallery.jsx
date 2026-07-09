@@ -1,23 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 
-const PLACEHOLDER = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
 const ZOOM = 2.6;
 const PANEL_W = 520;
 const PANEL_H = 420;
 
 const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
-  const allMedia = [
-    ...images.map(src => ({ src, type: 'image' })),
-    ...(videos || []).map(src => ({ src, type: 'video' })),
-  ].slice(0, 7);
-
+  const [brokenSet, setBrokenSet] = useState(new Set());
   const [activeIdx, setActiveIdx] = useState(0);
   const [lens, setLens] = useState(null);
   const [bg, setBg] = useState(null);
   const mainRef = useRef(null);
 
-  const active = allMedia[activeIdx] || { src: PLACEHOLDER, type: 'image' };
-  const canZoom = active.type === 'image';
+  const allMedia = [
+    ...images.map(src => ({ src, type: 'image' })),
+    ...(videos || []).map(src => ({ src, type: 'video' })),
+  ].slice(0, 7);
+
+  const validMedia = allMedia.filter((_, idx) => !brokenSet.has(idx));
+  const safeActiveIdx = Math.min(activeIdx, Math.max(validMedia.length - 1, 0));
+  const active = validMedia[safeActiveIdx];
+  const canZoom = active?.type === 'image';
+
+  const handleError = useCallback((originalIdx) => {
+    setBrokenSet(prev => new Set([...prev, originalIdx]));
+    setActiveIdx(0);
+  }, []);
 
   function handleMouseMove(e) {
     if (!mainRef.current || !canZoom) return;
@@ -40,7 +47,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
     setBg(null);
   }
 
-  if (allMedia.length === 0) {
+  if (validMedia.length === 0) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-100 rounded text-gray-400 text-sm">
         Chưa có ảnh / video
@@ -52,31 +59,34 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
     <div className="flex flex-row sticky top-5 relative" style={{ zIndex: 10 }}>
       {/* Vertical thumbnails */}
       <div className="flex flex-col space-y-2 mr-3 flex-shrink-0" style={{ width: 60 }}>
-        {allMedia.map((media, idx) => (
-          <div
-            key={idx}
-            onMouseEnter={() => setActiveIdx(idx)}
-            onClick={() => setActiveIdx(idx)}
-            className={`cursor-pointer rounded overflow-hidden flex items-center justify-center border
-              ${activeIdx === idx
-                ? 'border-[#007185] ring-[1.5px] ring-[#007185]'
-                : 'border-gray-300 hover:border-[#007185]'}`}
-            style={{ width: 52, height: 52 }}
-          >
-            {media.type === 'video' ? (
-              <div className="w-full h-full bg-black flex items-center justify-center">
-                <span className="text-white text-[9px] font-bold">▶ VIDEO</span>
-              </div>
-            ) : (
-              <img
-                src={media.src}
-                alt=""
-                className="w-full h-full object-cover p-0.5"
-                onError={e => { e.target.src = PLACEHOLDER; }}
-              />
-            )}
-          </div>
-        ))}
+        {validMedia.map((media, idx) => {
+          const originalIdx = allMedia.indexOf(media);
+          return (
+            <div
+              key={idx}
+              onMouseEnter={() => setActiveIdx(idx)}
+              onClick={() => setActiveIdx(idx)}
+              className={`cursor-pointer rounded overflow-hidden flex items-center justify-center border
+                ${safeActiveIdx === idx
+                  ? 'border-[#007185] ring-[1.5px] ring-[#007185]'
+                  : 'border-gray-300 hover:border-[#007185]'}`}
+              style={{ width: 52, height: 52 }}
+            >
+              {media.type === 'video' ? (
+                <div className="w-full h-full bg-black flex items-center justify-center">
+                  <span className="text-white text-[9px] font-bold">▶ VIDEO</span>
+                </div>
+              ) : (
+                <img
+                  src={media.src}
+                  alt=""
+                  className="w-full h-full object-cover p-0.5"
+                  onError={() => handleError(originalIdx)}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Main view */}
@@ -99,7 +109,10 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
             alt="Main product view"
             className="max-h-[600px] w-full object-contain select-none"
             draggable={false}
-            onError={e => { e.target.src = PLACEHOLDER; }}
+            onError={() => {
+              const originalIdx = allMedia.indexOf(active);
+              handleError(originalIdx);
+            }}
           />
         )}
 
@@ -108,24 +121,21 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
           <div
             className="absolute pointer-events-none border border-gray-400"
             style={{
-              left: lens.l,
-              top: lens.t,
-              width: lens.w,
-              height: lens.h,
+              left: lens.l, top: lens.t,
+              width: lens.w, height: lens.h,
               background: 'rgba(90,140,200,0.2)',
             }}
           />
         )}
       </div>
 
-      {/* Zoom panel — right of gallery, overlaps info column */}
+      {/* Zoom panel */}
       {bg && canZoom && (
         <div
           className="absolute top-0 border border-gray-200 bg-white shadow-xl rounded"
           style={{
             left: 'calc(100% + 8px)',
-            width: PANEL_W,
-            height: PANEL_H,
+            width: PANEL_W, height: PANEL_H,
             backgroundImage: `url(${active.src})`,
             backgroundRepeat: 'no-repeat',
             backgroundSize: bg.size,
