@@ -3,9 +3,10 @@ import { Play, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PLACEHOLDER = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
 
-// EtsyGallery — vertical thumbnail rail + large main image (Etsy listing layout)
+// EtsyGallery — vertical thumbnail rail + large main image.
+// Real Etsy keeps the vertical rail on mobile too, so this stays one
+// responsive component (rail narrows, arrows stay visible for touch).
 const EtsyGallery = ({ images = [], videos = [] }) => {
-  // Etsy shows the video as the 2nd media item after the primary image.
   const [first, ...restImages] = images;
   const allMedia = [
     ...(first ? [{ src: first, type: 'image' }] : []),
@@ -16,7 +17,6 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
   const [activeIdx, setActiveIdx] = useState(0);
   const total = allMedia.length;
   const active = allMedia[activeIdx] || { src: PLACEHOLDER, type: 'image' };
-
   const go = (dir) => setActiveIdx((i) => (i + dir + total) % total);
 
   if (total === 0) {
@@ -28,25 +28,26 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2 sm:gap-3">
       {/* Vertical thumbnail rail */}
-      <div className="hidden sm:flex flex-col gap-2 flex-shrink-0" style={{ width: 64 }}>
+      <div className="flex flex-col gap-1.5 sm:gap-2 flex-shrink-0 w-12 sm:w-16">
         {allMedia.map((media, idx) => (
           <button
             key={idx}
             onClick={() => setActiveIdx(idx)}
-            className={`relative cursor-pointer rounded-lg overflow-hidden border transition-all flex-shrink-0
+            aria-label={media.type === 'video' ? `Video ${idx + 1}` : `Ảnh ${idx + 1}`}
+            aria-pressed={activeIdx === idx}
+            className={`relative rounded-lg overflow-hidden border transition-all aspect-square
               ${activeIdx === idx ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-400'}`}
-            style={{ width: 60, height: 60 }}
           >
             {media.type === 'video' ? (
               <div className="w-full h-full bg-gray-900/80 flex items-center justify-center">
-                <Play size={16} className="text-white fill-white" />
+                <Play size={14} className="text-white fill-white" />
               </div>
             ) : (
               <img
                 src={media.src}
-                alt={`Thumbnail ${idx + 1}`}
+                alt=""
                 loading="lazy"
                 className="w-full h-full object-cover"
                 onError={(e) => { e.target.src = PLACEHOLDER; }}
@@ -78,25 +79,25 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
 
           {/* Favorite — top right */}
           <button
-            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow text-gray-700 hover:text-red-500 transition-colors"
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow text-gray-700 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Add to favorites"
           >
             <Heart size={18} />
           </button>
 
-          {/* Prev / Next arrows */}
+          {/* Prev / Next — always visible on mobile, hover on desktop */}
           {total > 1 && (
             <>
               <button
                 onClick={() => go(-1)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow text-gray-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity active:bg-white"
                 aria-label="Previous"
               >
                 <ChevronLeft size={20} />
               </button>
               <button
                 onClick={() => go(1)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow text-gray-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity active:bg-white"
                 aria-label="Next"
               >
                 <ChevronRight size={20} />
@@ -110,28 +111,6 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
               {activeIdx + 1} / {total}
             </div>
           )}
-        </div>
-
-        {/* Mobile horizontal strip */}
-        <div className="flex sm:hidden gap-2 mt-3 overflow-x-auto pb-1">
-          {allMedia.map((media, idx) => (
-            <button
-              key={idx}
-              onClick={() => setActiveIdx(idx)}
-              className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all
-                ${activeIdx === idx ? 'border-gray-900' : 'border-transparent'}`}
-              style={{ width: 56, height: 56 }}
-            >
-              {media.type === 'video' ? (
-                <div className="w-full h-full bg-gray-900/80 flex items-center justify-center">
-                  <Play size={14} className="text-white fill-white" />
-                </div>
-              ) : (
-                <img src={media.src} alt="" loading="lazy" className="w-full h-full object-cover"
-                  onError={(e) => { e.target.src = PLACEHOLDER; }} />
-              )}
-            </button>
-          ))}
         </div>
       </div>
     </div>

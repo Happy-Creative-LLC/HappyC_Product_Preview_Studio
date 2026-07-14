@@ -5,6 +5,12 @@ import { useProductStore } from '../stores/productStore';
 import { useAppStore } from '../stores/appStore';
 import Header from '../components/amazon/Header';
 import AmazonLogo from '../components/amazon/AmazonLogo';
+import MobileSectionNav from '../components/amazon/mobile/MobileSectionNav';
+import ProductTitleBlock from '../components/amazon/ProductTitleBlock';
+import MobileStickyCTA from '../components/amazon/mobile/MobileStickyCTA';
+import UploadPlaceholder from '../components/amazon/UploadPlaceholder';
+import AplusCarousel from '../components/amazon/AplusCarousel';
+import AplusContent from '../components/amazon/AplusContent';
 import ProductGallery from '../components/amazon/ProductGallery';
 import ProductInfo from '../components/amazon/ProductInfo';
 import BuyBox from '../components/amazon/BuyBox';
@@ -44,6 +50,23 @@ const STATIC_REVIEWS = [
     title: 'Amazing personalization!',
     body: "Ordered this with our dog's face on it. The image quality is incredible. Arrived quickly and packaged nicely. Perfect for summer! The process to upload the custom image was very easy too." },
 ];
+
+/* ─── Dev-only neutral placeholders (?case=2|3 QA path — see below) ───
+   Flat gray numbered squares, NOT product photos, NOT Unsplash. Only used
+   so the thumbnail rail + zoom lens can actually be exercised while testing
+   Case 2/3 without a real backend task. Never used on the real /amazon
+   default path or when a real task provides its own media. ─── */
+const devPlaceholderImages = (n) => Array.from({ length: n }, (_, i) => {
+  const label = i + 1;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'>`
+    + `<rect width='400' height='400' fill='#c9ccd1'/>`
+    + `<rect width='400' height='400' fill='none' stroke='#9aa0a8' stroke-width='2'/>`
+    + `<text x='50%' y='50%' font-size='36' fill='#6b7280' text-anchor='middle' dominant-baseline='middle'>${label}</text>`
+    + `</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+});
+const devPlaceholderVideo = () =>
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
 
 /* ─── Reusable product card (recommendation carousels) ─── */
 const ProductCard = ({ image, title, price, rating, reviews, w = 'w-44' }) => (
@@ -108,7 +131,11 @@ const AmazonPreviewPage = () => {
     ? tasks[projectId].find(t => t.id === taskId)
     : null;
   const taskProductData = task?.productData;
-  const caseType = task?.category ? Number(task.category) : 1;
+  // Dev/preview convenience: ?case=2|3 lets you preview a case without a real
+  // backend task (tasks are only populated from the live API — no mock data
+  // since Sprint 1). A real task's category always takes priority.
+  const caseOverride = Number(searchParams.get('case'));
+  const caseType = task?.category ? Number(task.category) : ([2, 3].includes(caseOverride) ? caseOverride : 1);
 
   const [previewData, setPreviewData] = useState(null);
   const [isLoading, setIsLoading]     = useState(!!previewId);
@@ -135,10 +162,21 @@ const AmazonPreviewPage = () => {
   };
 
   const productData = taskProductData || previewData || storeData;
-  const images  = productData.images      || [];
-  const videos  = productData.videos      || [];
-  const aPlus   = productData.aPlusImages || [];
+
+  // Dev-only: when previewing via ?case=2|3 with no real task/media, inject a
+  // handful of NEUTRAL synthetic placeholders (flat SVG squares — not real
+  // photos, not Unsplash) so the thumbnail rail + zoom lens are actually
+  // exercisable during QA. Only fires for the dev override path with zero
+  // real images; a real task's media (or the production empty scaffold on
+  // plain /amazon) is never touched.
+  const isDevCaseOverride = !task && [2, 3].includes(caseType) && (productData.images || []).length === 0;
+  const images = isDevCaseOverride ? devPlaceholderImages(8) : (productData.images || []);
+  const videos = isDevCaseOverride ? [devPlaceholderVideo()] : (productData.videos || []);
   const basePrice = Number(productData.price) || 24.99;
+
+  // Amazon "you might also like" recommendation blocks are just filler for a
+  // pre-publish preview — hidden for now, decision pending.
+  const showAmazonSuggestions = false;
 
   const relatedCards = REL_TITLES.map((title, i) => ({
     image: images[i % Math.max(images.length, 1)],
@@ -180,12 +218,19 @@ const AmazonPreviewPage = () => {
          ══════════════════════════════════════════════════ */}
       <div className="bg-white">
         <div className="max-w-[1500px] mx-auto px-4 py-5">
+          {/* Mobile: title / store / rating above the gallery (real Amazon mobile order) */}
+          <div className="md:hidden mb-3">
+            <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+              <ProductTitleBlock {...productData} />
+            </EditableZone>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-7 relative overflow-visible">
 
             {/* Gallery — 🔴 IMAGE zone (sticky) */}
             <div className="md:col-span-5 overflow-visible md:sticky md:top-2 self-start">
               <EditableZone zone="IMAGE" onCommentClick={handleZoneComment}>
-                <ProductGallery images={images} videos={videos} caseType={caseType} />
+                <ProductGallery images={images} videos={videos} caseType={caseType} onCommentClick={handleZoneComment} />
               </EditableZone>
             </div>
 
@@ -239,40 +284,21 @@ const AmazonPreviewPage = () => {
         </div>
       </div>
 
+      {/* Sticky in-page section tabs — mobile only (Top / Details / Explore / Reviews) */}
+      <MobileSectionNav />
+
       {/* ══════════════════════════════════════════════════
-          [2] PRODUCT DESCRIPTION — 🟠 APLUS zone
-          Real Amazon renders this as stacked A+ marketing banners
-          (lifestyle photo, ordering guide, size chart, patterns…).
-          Falls back to the text description if no A+ images uploaded.
+          [2] PRODUCT DESCRIPTION — A+ content  (anchor: Details)
+          Featured-content carousel (measured 1293×530) + stacked static
+          banners. Both data-driven & placeholder-scaffolded — no hardcoded art.
          ══════════════════════════════════════════════════ */}
-      {(aPlus.length > 0 || productData.description) && (
-        <div className="bg-white mt-3">
-          <div className="max-w-[1500px] mx-auto px-4 py-5">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Product description</h2>
-            {aPlus.length > 0 ? (
-              <EditableZone zone="APLUS" onCommentClick={handleZoneComment}>
-                <div className="flex flex-col items-center gap-2">
-                  {aPlus.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img}
-                      alt={`Product description banner ${idx + 1}`}
-                      className="w-full max-w-[970px] h-auto block"
-                      loading="lazy"
-                    />
-                  ))}
-                </div>
-              </EditableZone>
-            ) : (
-              <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
-                <p className="text-sm text-gray-800 leading-relaxed max-w-4xl whitespace-pre-wrap">
-                  {productData.description}
-                </p>
-              </EditableZone>
-            )}
-          </div>
+      <div id="amz-details" className="bg-white mt-3 scroll-mt-12">
+        <div className="max-w-[1500px] mx-auto px-4 py-5">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Product description</h2>
+          <AplusCarousel slides={productData.aPlusSlides || []} onCommentClick={handleZoneComment} />
+          <AplusContent banners={productData.aPlusBanners || []} onCommentClick={handleZoneComment} />
         </div>
-      )}
+      </div>
 
       {/* ══════════════════════════════════════════════════
           [4] PRODUCT INFORMATION TABLE — static
@@ -320,9 +346,8 @@ const AmazonPreviewPage = () => {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════
-          [5] COMPARE WITH SIMILAR ITEMS — static table
-         ══════════════════════════════════════════════════ */}
+      {/* [5] COMPARE WITH SIMILAR ITEMS — filler, hidden behind flag */}
+      {showAmazonSuggestions && (
       <div className="bg-white mt-3">
         <div className="max-w-[1500px] mx-auto px-4 py-5">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Compare with similar items</h2>
@@ -362,43 +387,48 @@ const AmazonPreviewPage = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* ══════════════════════════════════════════════════
           [6] PRODUCT VIDEOS — 🟣 VIDEO zone
          ══════════════════════════════════════════════════ */}
-      {videos.length > 0 && (
-        <div className="bg-white mt-3">
+      {/* Always shown as a scaffold — video slot or upload placeholder (VIDEO zone) */}
+      <div className="bg-white mt-3">
           <div className="max-w-[1500px] mx-auto px-4 py-5">
             <EditableZone zone="VIDEO" onCommentClick={handleZoneComment}>
               <h2 className="text-xl font-bold text-gray-900 mb-4">Product Videos</h2>
 
-              {/* Large 16:9 player with Amazon-style overlays */}
+              {/* Large 16:9 player — video or upload placeholder */}
               <div className="relative bg-black rounded-md overflow-hidden mx-auto"
                 style={{ maxWidth: 1000, aspectRatio: '16/9' }}>
-                <video
-                  key={videos[activeVideo]}
-                  src={videos[activeVideo]}
-                  controls
-                  className="w-full h-full object-contain"
-                />
-                {/* Brand / title overlay — top left */}
-                <div className="absolute top-3 left-4 text-white pointer-events-none drop-shadow">
-                  <div className="text-sm font-bold leading-tight">{productData.brand || 'HappyCreative'}</div>
-                  <div className="text-xs opacity-90 leading-tight line-clamp-1 max-w-[240px]">
-                    {productData.title || 'Product video'}
-                  </div>
-                </div>
-                {/* Report flag — top right */}
-                <button className="absolute top-3 right-4 text-white/90 hover:text-white" aria-label="Report">
-                  <Flag size={18} />
-                </button>
-                {/* Share — bottom right (above controls) */}
-                <button className="absolute bottom-14 right-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center" aria-label="Share">
-                  <Share2 size={16} />
-                </button>
+                {videos.length > 0 ? (
+                  <>
+                    <video
+                      key={videos[activeVideo]}
+                      src={videos[activeVideo]}
+                      controls
+                      className="w-full h-full object-contain"
+                    />
+                    <div className="absolute top-3 left-4 text-white pointer-events-none drop-shadow">
+                      <div className="text-sm font-bold leading-tight">{productData.brand || 'HappyCreative'}</div>
+                      <div className="text-xs opacity-90 leading-tight line-clamp-1 max-w-[240px]">
+                        {productData.title || 'Product video'}
+                      </div>
+                    </div>
+                    <button className="absolute top-3 right-4 text-white/90 hover:text-white" aria-label="Report">
+                      <Flag size={18} />
+                    </button>
+                    <button className="absolute bottom-14 right-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center" aria-label="Share">
+                      <Share2 size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <UploadPlaceholder zone="VIDEO" radius={6} label="Upload video sản phẩm (16:9)" />
+                )}
               </div>
 
-              {/* Product cards row below the video (real Amazon layout) */}
+              {/* Product cards row — filler, hidden behind flag */}
+              {showAmazonSuggestions && (
               <div className="relative mt-4">
                 <div ref={videoRowRef} className="flex gap-3 overflow-x-auto pb-1 pr-10" style={{ scrollbarWidth: 'none' }}>
                   {relatedCards.slice(0, 6).map((c, idx) => (
@@ -426,6 +456,7 @@ const AmazonPreviewPage = () => {
                   <ChevronRight size={18} />
                 </button>
               </div>
+              )}
 
               {/* Multi-video selector */}
               {videos.length > 1 && (
@@ -451,7 +482,6 @@ const AmazonPreviewPage = () => {
             </EditableZone>
           </div>
         </div>
-      )}
 
       {/* ══════════════════════════════════════════════════
           [7] PRODUCT DETAILS — compact list (matches real Amazon)
@@ -506,13 +536,15 @@ const AmazonPreviewPage = () => {
       {/* ══════════════════════════════════════════════════
           [8] SIMILAR BRANDS — static carousel
          ══════════════════════════════════════════════════ */}
-      <Carousel title="Similar brands on Amazon" cards={relatedCards} />
+      <div id="amz-explore" className="scroll-mt-12">
+        {showAmazonSuggestions && <Carousel title="Similar brands on Amazon" cards={relatedCards} />}
+      </div>
 
       {/* ══════════════════════════════════════════════════
       {/* ══════════════════════════════════════════════════
-          [8] CUSTOMER REVIEWS — static
+          [8] CUSTOMER REVIEWS — static  (anchor: Reviews)
          ══════════════════════════════════════════════════ */}
-      <div className="bg-white mt-3">
+      <div id="amz-reviews" className="bg-white mt-3 scroll-mt-12">
         <div className="max-w-[1500px] mx-auto px-4 py-6">
           <h2 className="text-xl font-bold text-gray-900 mb-5 pb-2 border-b border-gray-200">Customer reviews</h2>
 
@@ -681,11 +713,13 @@ const AmazonPreviewPage = () => {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════
-          [9] BOTTOM CAROUSELS — static
-         ══════════════════════════════════════════════════ */}
-      <Carousel title="Based on your recent shopping trends" cards={[...relatedCards].reverse()} />
-      <Carousel title="Best Sellers in Men's Casual Button-Down Shirts" cards={relatedCards} />
+      {/* [9] BOTTOM CAROUSELS — filler, hidden behind flag */}
+      {showAmazonSuggestions && (
+        <>
+          <Carousel title="Based on your recent shopping trends" cards={[...relatedCards].reverse()} />
+          <Carousel title="Best Sellers in Men's Casual Button-Down Shirts" cards={relatedCards} />
+        </>
+      )}
 
       {/* ══════════════════════════════════════════════════
           FOOTER
@@ -789,10 +823,16 @@ const AmazonPreviewPage = () => {
         </div>
       </footer>
 
-      {/* ── Floating Comment FAB ── */}
+      {/* Spacer so the sticky CTA never covers the footer bottom (mobile) */}
+      <div className="h-16 md:hidden bg-[#131A22]" />
+
+      {/* ── Sticky bottom CTA — mobile only ── */}
+      <MobileStickyCTA price={basePrice} />
+
+      {/* ── Floating Comment FAB (sits above the sticky CTA on mobile) ── */}
       <button
         onClick={() => setCommentPanelOpen(prev => !prev)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-full shadow-xl transition-all"
+        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-full shadow-xl transition-all"
       >
         <MessageCircle size={18} />
         Comments
@@ -800,7 +840,10 @@ const AmazonPreviewPage = () => {
 
       {/* ── Comment slide-in panel ── */}
       <div
-        className={`fixed top-0 right-0 h-full w-[380px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${
+        role="dialog"
+        aria-modal="true"
+        aria-label="Comments"
+        className={`fixed top-0 right-0 h-full w-full sm:w-[400px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${
           commentPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

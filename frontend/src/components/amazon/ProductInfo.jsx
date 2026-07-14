@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import Stars from '../shared/Stars';
+import ProductTitleBlock from './ProductTitleBlock';
+import UploadPlaceholder from './UploadPlaceholder';
 
 const ProductInfo = ({
   title, brand, price, rating, reviewsCount,
@@ -12,15 +13,11 @@ const ProductInfo = ({
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize,  setSelectedSize]  = useState(0);
   const [highlightsOpen, setHighlightsOpen] = useState(true);
+  const [showAllColors, setShowAllColors] = useState(false);
 
   const currentPrice = Number(price) || 0;
   const cents        = (currentPrice % 1).toFixed(2).substring(1); // ".99"
   const colorName    = (c) => (typeof c === 'object' ? c.name : c);
-
-  const parseCount = (v) => {
-    const n = Number(String(v || 0).replace(/,/g, ''));
-    return isNaN(n) ? 0 : n;
-  };
 
   const detailRows = [
     ['Fabric type',        fabricType],
@@ -39,58 +36,20 @@ const ProductInfo = ({
   return (
     <div className="flex flex-col px-1 text-[13px] text-gray-900">
 
-      {/* Amazon's Choice badge */}
-      <div className="mb-1.5">
-        <span className="inline-flex items-center bg-[#232F3E] text-white text-[11px] font-bold px-2 py-0.5 rounded-sm">
-          Amazon's <span className="text-[#FF9900] ml-1">Choice</span>
-        </span>
-        <span className="text-[12px] text-[#565959] ml-2">in Men's Casual Button-Down Shirts</span>
+      {/* Title block — desktop only (mobile renders it above the gallery) */}
+      <div className="hidden md:block">
+        <ProductTitleBlock
+          title={title} brand={brand} rating={rating} reviewsCount={reviewsCount}
+          boughtRecently={boughtRecently} salesStat={salesStat} badges={badges}
+        />
+        <div className="border-t border-[#E7E7E7] my-2" />
       </div>
-
-      {/* Store link */}
-      <a href="#" className="text-[13px] text-[#007185] hover:text-[#C45500] hover:underline mb-1.5 block">
-        Visit the {brand || 'Brand'} Store
-      </a>
-
-      {/* Title */}
-      <h1 className="text-[21px] leading-[1.3] font-medium text-gray-900 mb-1.5">
-        {title}
-      </h1>
-
-      {/* Rating row */}
-      {rating && (
-        <div className="flex items-center flex-wrap gap-1 mb-1 text-[13px]">
-          <span className="text-gray-800 font-medium">{Number(rating).toFixed(1)}</span>
-          <Stars value={rating} size={14} />
-          <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">
-            {parseCount(reviewsCount).toLocaleString()} ratings
-          </a>
-        </div>
-      )}
-
-      {/* Bought recently */}
-      {(boughtRecently || salesStat) && (
-        <div className="text-[12px] text-gray-600 mb-1">{boughtRecently || salesStat}</div>
-      )}
-
-      {/* Extra badges */}
-      {badges && badges.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
-          {badges.map((b, i) => (
-            <span key={i} className="text-xs bg-blue-50 border border-blue-200 text-blue-800 px-2 py-0.5 rounded font-medium">
-              {b}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className="border-t border-[#E7E7E7] my-2" />
 
       {/* Price */}
       <div className="flex items-start mb-1">
-        <span className="text-[13px] text-[#B12704] relative top-1.5 mr-px">$</span>
-        <span className="text-[28px] text-[#B12704] leading-none font-medium tracking-tight">{Math.floor(currentPrice)}</span>
-        <span className="text-[13px] text-[#B12704] relative top-1.5 ml-px">{cents}</span>
+        <span className="text-[13px] text-[#0F1111] relative top-1.5 mr-px">$</span>
+        <span className="text-[28px] text-[#0F1111] leading-none font-medium tracking-tight">{Math.floor(currentPrice)}</span>
+        <span className="text-[13px] text-[#0F1111] relative top-1.5 ml-px">{cents}</span>
       </div>
 
       {/* Coupon */}
@@ -121,39 +80,56 @@ const ProductInfo = ({
       <div className="border-t border-[#E7E7E7] my-2" />
 
       {/* Color grid */}
-      {colors && colors.length > 0 && (
-        <div className="mb-3">
-          <div className="mb-1.5">
-            <strong>{variationLabel}:</strong>{' '}
-            <span>{colorName(colors[selectedColor])}</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {colors.map((c, i) => (
+      {colors && colors.length > 0 && (() => {
+        const PER_PAGE = 14;
+        const shown = showAllColors ? colors : colors.slice(0, PER_PAGE);
+        const hasMore = colors.length > PER_PAGE;
+        return (
+          <div className="mb-3">
+            <div className="mb-1.5">
+              <strong>{variationLabel}:</strong>{' '}
+              <span>{colorName(colors[selectedColor])}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {shown.map((c, i) => {
+                const price = Number(c.price) || currentPrice;
+                const selected = selectedColor === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedColor(i)}
+                    title={colorName(c)}
+                    aria-pressed={selected}
+                    className="flex flex-col items-center rounded-md p-0.5 transition-all"
+                    style={{ width: 72 }}
+                  >
+                    <div
+                      className="overflow-hidden rounded"
+                      style={{
+                        width: 72, height: 72,
+                        border: selected ? '2px solid #2162A1' : '1px solid #D5D9D9',
+                      }}
+                    >
+                      {c.image
+                        ? <img src={c.image} alt={colorName(c)} className="w-full h-full" style={{ objectFit: 'fill' }} />
+                        : <UploadPlaceholder zone="IMAGE" compact radius={4} />}
+                    </div>
+                    <span className="text-[10px] leading-none text-gray-600 mt-1">${price.toFixed(2)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {hasMore && (
               <button
-                key={i}
-                onClick={() => setSelectedColor(i)}
-                title={colorName(c)}
-                className={`rounded-md p-0.5 transition-all ${
-                  selectedColor === i
-                    ? 'border-2 border-[#E77600] ring-1 ring-[#E77600]'
-                    : 'border-2 border-[#D5D9D9] hover:border-[#E77600]'
-                }`}
-                style={{ width: 50, height: 62 }}
+                onClick={() => setShowAllColors((v) => !v)}
+                className="text-[#007185] hover:text-[#C45500] hover:underline text-[13px] mt-2 inline-block"
               >
-                <div className="w-full rounded overflow-hidden bg-gray-100" style={{ height: 44 }}>
-                  {c.image
-                    ? <img src={c.image} alt={colorName(c)} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full bg-gray-200" />
-                  }
-                </div>
-                <div className="text-[9px] text-center mt-0.5 leading-none text-gray-600 truncate px-0.5">
-                  ${currentPrice.toFixed(2)}
-                </div>
+                {showAllColors ? 'Thu gọn' : `Xem tất cả ${colors.length} tùy chọn ›`}
               </button>
-            ))}
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Size (clothing only) */}
       {isClothing && sizes && sizes.length > 0 && (
