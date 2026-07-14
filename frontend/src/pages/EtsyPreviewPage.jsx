@@ -139,7 +139,10 @@ const EtsyPreviewPage = () => {
 
       {/* Right-side Comment Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-[380px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${
+        role="dialog"
+        aria-modal="true"
+        aria-label="Comments"
+        className={`fixed top-0 right-0 h-full w-full sm:w-[400px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${
           commentPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

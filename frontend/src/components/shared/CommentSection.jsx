@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, X, CheckCircle, Loader2, MessageCircle } from 'lucide-react';
+import { Send, X, CheckCircle, Loader2, MessageCircle, Image as ImageIcon, Video, FileText, PanelsTopLeft, LayoutList } from 'lucide-react';
 import axiosInstance from '../../api/axiosConfig';
 import { useAppStore } from '../../stores/appStore';
 
 const COMPONENT_TABS = [
-  { key: null,      label: 'Tất cả' },
-  { key: 'IMAGE',   label: '🖼 Ảnh' },
-  { key: 'VIDEO',   label: '🎬 Video' },
-  { key: 'TEXT',    label: '✏ Text' },
-  { key: 'APLUS',   label: '📊 A+' },
-  { key: 'GENERAL', label: 'Chung' },
+  { key: null,      label: 'Tất cả', icon: LayoutList },
+  { key: 'IMAGE',   label: 'Ảnh', icon: ImageIcon },
+  { key: 'VIDEO',   label: 'Video', icon: Video },
+  { key: 'TEXT',    label: 'Text', icon: FileText },
+  { key: 'APLUS',   label: 'A+', icon: PanelsTopLeft },
+  { key: 'GENERAL', label: 'Chung', icon: MessageCircle },
 ];
 
 const ROLE_STYLES = {
@@ -151,11 +151,12 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
           <button
             key={tab.key ?? 'all'}
             onClick={() => setActiveComponent(tab.key)}
-            className={`flex-shrink-0 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap
+            className={`flex min-h-11 flex-shrink-0 items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap
               ${activeComponent === tab.key
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
+            <tab.icon size={14} aria-hidden="true" />
             {tab.label}
           </button>
         ))}

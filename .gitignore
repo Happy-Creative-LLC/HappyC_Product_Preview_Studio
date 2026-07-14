@@ -11,6 +11,9 @@
 # AI context files
 claude.md
 .claude/
+.agents/
+AGENTS.md
+agents.md
 
 # Project internal folders (not for source control)
 database/

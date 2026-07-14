@@ -9,12 +9,14 @@ const IMG = {
   e: 'https://images.unsplash.com/photo-1489987707023-afc624154e85?auto=format&fit=crop&w=800&q=80',
 };
 
-// Initial demo data — mirrors the reference Amazon listing (Custom Hawaiian Shirt)
-// so the preview frame looks populated before real content is uploaded.
-// Only the colored EditableZones (image/text/video/A+) are replaced on upload.
+// Initial demo data — a "ready to upload" scaffold. Text fields are populated
+// so copy/pricing render, but MEDIA (images/videos/A+/swatch images) is left
+// EMPTY on purpose: the frame shows upload placeholders until real content is
+// uploaded, and swaps to the real media without any layout shift.
+// (IMG kept below only for quickly restoring a filled demo state if needed.)
 const initialData = {
-  images: [IMG.a, IMG.b, IMG.c, IMG.d, IMG.e, IMG.a, IMG.b],
-  videos: ['https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'],
+  images: [],
+  videos: [],
 
   title: 'Custom Hawaiian Shirt Personalized Name & Photo, Custom Face Aloha Shirt for Men Women, Personalized Beach Button-Down Shirt, Gift for Boyfriend Girlfriend',
   brand: 'AlohaInk Custom',
@@ -31,14 +33,14 @@ const initialData = {
   // Pattern selector — rendered as image swatches (Amazon "Pattern Name:")
   variationLabel: 'Pattern Name',
   colors: [
-    { name: 'Aloha Blue',      image: IMG.a, price: 29.95 },
-    { name: 'Sunset Hibiscus', image: IMG.b, price: 29.95 },
-    { name: 'Palm Green',      image: IMG.c, price: 29.95 },
-    { name: 'Pineapple Gold',  image: IMG.d, price: 31.95 },
-    { name: 'Ocean Wave',      image: IMG.e, price: 29.95 },
-    { name: 'Classic Red',     image: IMG.a, price: 29.95 },
-    { name: 'Tropical Night',  image: IMG.b, price: 32.95 },
-    { name: 'Golden Coast',    image: IMG.c, price: 29.95 },
+    { name: 'Aloha Blue',      price: 29.95 },
+    { name: 'Sunset Hibiscus', price: 29.95 },
+    { name: 'Palm Green',      price: 29.95 },
+    { name: 'Pineapple Gold',  price: 31.95 },
+    { name: 'Ocean Wave',      price: 29.95 },
+    { name: 'Classic Red',     price: 29.95 },
+    { name: 'Tropical Night',  price: 32.95 },
+    { name: 'Golden Coast',    price: 29.95 },
   ],
   sizes: ['S', 'M', 'L', 'XL', 'XXL', '3XL'],
 
@@ -52,10 +54,13 @@ const initialData = {
   description:
     'Turn heads with a fully personalized Hawaiian shirt made just for you. Upload a name, face or favorite photo and our team prints it onto a premium, breathable aloha shirt. Whether it is a beach wedding, a bachelor party, a family cruise or a backyard luau, this custom button-down is the ultimate statement piece. Available for men, women and youth in a relaxed unisex fit, with over 50 tropical patterns to choose from.',
 
-  aPlusImages: [
-    'https://images.unsplash.com/photo-1489987707023-afc624154e85?auto=format&fit=crop&w=970&q=80',
-    'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=970&q=80',
-  ],
+  aPlusImages: [],
+
+  // A+ content scaffold — measured from the real page: 6 carousel slides + 4
+  // stacked banners. Empty slots (null) render upload placeholders; a real
+  // upload replaces the null with an image URL.
+  aPlusSlides: [null, null, null, null, null, null],
+  aPlusBanners: [null, null, null, null],
 
   fabricType: '100% Breathable Rayon',
   careInstructions: 'Machine Wash Cold, Hang Dry',

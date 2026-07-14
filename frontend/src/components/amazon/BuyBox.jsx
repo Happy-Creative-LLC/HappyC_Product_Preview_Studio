@@ -15,7 +15,7 @@ const BuyBox = ({ price, brand }) => {
   const deliveryRange = `${fmt(start)} - ${end.getDate()}`;
 
   return (
-    <div className="w-full max-w-[300px] text-[13px] text-[#0F1111]">
+    <div className="w-full md:max-w-[300px] text-[13px] text-[#0F1111]">
       {/* ── Main purchase box ── */}
       <div className="border border-[#D5D9D9] rounded-lg p-4 bg-white">
 

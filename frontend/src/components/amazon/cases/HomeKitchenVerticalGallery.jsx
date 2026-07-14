@@ -1,155 +1,177 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
+import EditableZone from '../../shared/EditableZone';
+import UploadPlaceholder from '../UploadPlaceholder';
+import ZoomLens from '../ZoomLens';
+import amazonCase2Tokens from '../amazonCase2Tokens';
 
-const ZOOM = 2.6;
-const PANEL_W = 520;
-const PANEL_H = 420;
+const { thumbRail, videoSlot, moreBadge } = amazonCase2Tokens;
 
-const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
-  const [brokenSet, setBrokenSet] = useState(new Set());
+// How many image thumbnails the rail shows before collapsing the rest behind
+// a "+N" badge on the last visible one. This is a LAYOUT constant (how many
+// slots fit visually) — NOT the seller-facing upload limit for Case 2, which
+// is Open Issue #1 in CLAUDE.md and still unresolved. images/videos below are
+// rendered fully dynamically from productData; nothing about the actual
+// allowed upload count is hardcoded here.
+const VISIBLE_THUMB_LIMIT = 6;
+
+// Case 2 (Home & Kitchen) desktop gallery — vertical thumbnail rail + hover
+// zoom lens. Thumbnail/video counts are 100% data-driven (productData.images /
+// productData.videos): 0 images renders 0 thumbs (just an upload prompt in
+// the main viewer), N images renders N thumbs (collapsing into "+N" past
+// VISIBLE_THUMB_LIMIT). No fixed image/video count is assumed anywhere.
+const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }) => {
+  // activeIdx: 0..images.length-1 = image thumbs, images.length = video slot
   const [activeIdx, setActiveIdx] = useState(0);
-  const [lens, setLens] = useState(null);
-  const [bg, setBg] = useState(null);
-  const mainRef = useRef(null);
 
-  const allMedia = [
-    ...images.map(src => ({ src, type: 'image' })),
-    ...(videos || []).map(src => ({ src, type: 'video' })),
-  ].slice(0, 7);
+  const hasVideo = videos.length > 0;
+  const videoIdx = images.length; // video slot's virtual index, if present
+  const isVideoActive = hasVideo && activeIdx === videoIdx;
+  const activeImageSrc = !isVideoActive ? images[activeIdx] ?? null : null;
 
-  const validMedia = allMedia.filter((_, idx) => !brokenSet.has(idx));
-  const safeActiveIdx = Math.min(activeIdx, Math.max(validMedia.length - 1, 0));
-  const active = validMedia[safeActiveIdx];
-  const canZoom = active?.type === 'image';
+  const visibleThumbs = images.slice(0, VISIBLE_THUMB_LIMIT);
+  const hiddenCount = Math.max(0, images.length - VISIBLE_THUMB_LIMIT);
 
-  const handleError = useCallback((originalIdx) => {
-    setBrokenSet(prev => new Set([...prev, originalIdx]));
-    setActiveIdx(0);
-  }, []);
-
-  function handleMouseMove(e) {
-    if (!mainRef.current || !canZoom) return;
-    const r = mainRef.current.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-    const lw = r.width / ZOOM;
-    const lh = r.height / ZOOM;
-    const lx = Math.max(0, Math.min(x - lw / 2, r.width - lw));
-    const ly = Math.max(0, Math.min(y - lh / 2, r.height - lh));
-    setLens({ l: lx, t: ly, w: lw, h: lh });
-    setBg({
-      size: `${r.width * ZOOM}px ${r.height * ZOOM}px`,
-      pos: `-${lx * ZOOM}px -${ly * ZOOM}px`,
-    });
-  }
-
-  function handleMouseLeave() {
-    setLens(null);
-    setBg(null);
-  }
-
-  if (validMedia.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-96 bg-gray-100 rounded text-gray-400 text-sm">
-        Chưa có ảnh / video
-      </div>
-    );
-  }
+  const thumbBtnStyle = {
+    width: thumbRail.buttonSize,
+    height: thumbRail.buttonSize,
+    borderRadius: thumbRail.buttonRadius,
+  };
+  const thumbImgStyle = {
+    width: thumbRail.imageSize,
+    height: thumbRail.imageSize,
+    borderRadius: thumbRail.imageRadius,
+  };
 
   return (
-    <div className="flex flex-row sticky top-5 relative" style={{ zIndex: 10 }}>
-      {/* Vertical thumbnails */}
-      <div className="flex flex-col space-y-2 mr-3 flex-shrink-0" style={{ width: 60 }}>
-        {validMedia.map((media, idx) => {
-          const originalIdx = allMedia.indexOf(media);
+    <div className="flex flex-row gap-3">
+      {/* ── Vertical thumbnail rail — width = thumbRail.containerWidth ── */}
+      <div className="flex flex-col flex-shrink-0" style={{ width: thumbRail.containerWidth }}>
+        {visibleThumbs.map((src, i) => {
+          const isLastVisible = i === visibleThumbs.length - 1;
+          const showMoreBadge = isLastVisible && hiddenCount > 0;
+          const selected = !isVideoActive && activeIdx === i;
+          const isLastRailItem = isLastVisible && !hasVideo;
+
           return (
-            <div
-              key={idx}
-              onMouseEnter={() => setActiveIdx(idx)}
-              onClick={() => setActiveIdx(idx)}
-              className={`cursor-pointer rounded overflow-hidden flex items-center justify-center border
-                ${safeActiveIdx === idx
-                  ? 'border-[#007185] ring-[1.5px] ring-[#007185]'
-                  : 'border-gray-300 hover:border-[#007185]'}`}
-              style={{ width: 52, height: 52 }}
-            >
-              {media.type === 'video' ? (
-                <div className="w-full h-full bg-black flex items-center justify-center">
-                  <span className="text-white text-[9px] font-bold">▶ VIDEO</span>
-                </div>
-              ) : (
-                <img
-                  src={media.src}
-                  alt=""
-                  className="w-full h-full object-cover p-0.5"
-                  onError={() => handleError(originalIdx)}
-                />
-              )}
+            // marginBottom lives on this OUTER div (not passed as a `style`
+            // prop to EditableZone — EditableZone's contract only forwards
+            // zone/onCommentClick/className/children/id/group, no `style`).
+            <div key={i} style={{ marginBottom: isLastRailItem ? 0 : thumbRail.gapBottom }}>
+              <EditableZone zone="IMAGE" onCommentClick={onCommentClick} className="rounded-none">
+                <button
+                  type="button"
+                  onClick={() => setActiveIdx(i)}
+                  onMouseEnter={() => setActiveIdx(i)}
+                  aria-label={`Ảnh ${i + 1}${showMoreBadge ? ` (+${hiddenCount} ảnh khác)` : ''}`}
+                  aria-pressed={selected}
+                  className="relative flex items-center justify-center border transition-colors"
+                  style={{
+                    ...thumbBtnStyle,
+                    borderColor: selected ? thumbRail.borderSelected : thumbRail.borderIdle,
+                    borderWidth: 1,
+                  }}
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    style={{ ...thumbImgStyle, objectFit: 'cover' }}
+                    onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+                  />
+                  {showMoreBadge && (
+                    <span
+                      className="absolute inset-0 flex items-center justify-center font-bold"
+                      style={{
+                        width: moreBadge.size,
+                        height: moreBadge.size,
+                        margin: 'auto',
+                        background: moreBadge.bg,
+                        color: moreBadge.textColor,
+                        fontSize: moreBadge.textSize,
+                        borderRadius: thumbRail.imageRadius,
+                      }}
+                    >
+                      +{hiddenCount}
+                    </span>
+                  )}
+                </button>
+              </EditableZone>
             </div>
           );
         })}
+
+        {/* Video slot — ONE aggregated slot for all videos, dynamic count label.
+            Play/overlay badge is expected baked into the uploaded thumbnail
+            itself (no extra CSS overlay layer drawn here). */}
+        {hasVideo && (
+          <EditableZone zone="VIDEO" onCommentClick={onCommentClick} className="rounded-none">
+            <div className="flex flex-col items-center">
+              <button
+                type="button"
+                onClick={() => setActiveIdx(videoIdx)}
+                onMouseEnter={() => setActiveIdx(videoIdx)}
+                aria-label={`${videos.length} video sản phẩm`}
+                aria-pressed={isVideoActive}
+                className="flex items-center justify-center border overflow-hidden transition-colors"
+                style={{
+                  width: thumbRail.buttonSize,
+                  height: videoSlot.height,
+                  borderRadius: thumbRail.buttonRadius,
+                  borderColor: isVideoActive ? thumbRail.borderSelected : thumbRail.borderIdle,
+                  borderWidth: 1,
+                }}
+              >
+                <video
+                  src={videos[0]}
+                  muted
+                  style={{ width: thumbRail.imageSize, height: videoSlot.height - 2, borderRadius: thumbRail.imageRadius, objectFit: 'cover' }}
+                />
+              </button>
+              <span
+                className="mt-1 text-center leading-tight"
+                style={{
+                  fontSize: videoSlot.labelFontSize,
+                  fontWeight: videoSlot.labelFontWeight,
+                  color: videoSlot.labelColor,
+                }}
+              >
+                {videos.length} VIDEO{videos.length !== 1 ? 'S' : ''}
+              </span>
+            </div>
+          </EditableZone>
+        )}
       </div>
 
-      {/* Main view */}
-      <div
-        ref={mainRef}
-        className="flex-grow flex items-start justify-center overflow-hidden relative"
-        style={{ minHeight: 400, cursor: canZoom ? 'crosshair' : 'default' }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
-        {active.type === 'video' ? (
-          <video
-            src={active.src}
-            controls
-            className="max-h-[600px] w-full object-contain"
-          />
+      {/* ── Main viewer ──
+          Case 2's main-image box size isn't in the measured token set — kept
+          fluid (square) here; ZoomLens self-measures the real rendered size
+          at hover time, so the 2.5× mapping stays accurate regardless. */}
+      <div className="flex-grow min-w-0" style={{ maxWidth: 480 }}>
+        {isVideoActive ? (
+          <EditableZone zone="VIDEO" onCommentClick={onCommentClick}>
+            <div className="w-full overflow-hidden rounded bg-black" style={{ aspectRatio: '1 / 1' }}>
+              <video src={videos[0]} controls className="w-full h-full" style={{ objectFit: 'contain' }} />
+            </div>
+          </EditableZone>
         ) : (
-          <img
-            src={active.src}
-            alt="Main product view"
-            className="max-h-[600px] w-full object-contain select-none"
-            draggable={false}
-            onError={() => {
-              const originalIdx = allMedia.indexOf(active);
-              handleError(originalIdx);
-            }}
-          />
-        )}
-
-        {/* Lens overlay */}
-        {lens && canZoom && (
-          <div
-            className="absolute pointer-events-none border border-gray-400"
-            style={{
-              left: lens.l, top: lens.t,
-              width: lens.w, height: lens.h,
-              background: 'rgba(90,140,200,0.2)',
-            }}
-          />
+          <EditableZone zone="IMAGE" onCommentClick={onCommentClick}>
+            <div className="relative w-full overflow-hidden rounded bg-white" style={{ aspectRatio: '1 / 1' }}>
+              <ZoomLens src={activeImageSrc}>
+                {activeImageSrc ? (
+                  <img
+                    src={activeImageSrc}
+                    alt="Main product view"
+                    className="w-full h-full select-none"
+                    style={{ objectFit: 'cover' }}
+                    draggable={false}
+                  />
+                ) : (
+                  <UploadPlaceholder zone="IMAGE" radius={8} label="Upload ảnh chính" />
+                )}
+              </ZoomLens>
+            </div>
+          </EditableZone>
         )}
       </div>
-
-      {/* Zoom panel */}
-      {bg && canZoom && (
-        <div
-          className="absolute top-0 border border-gray-200 bg-white shadow-xl rounded"
-          style={{
-            left: 'calc(100% + 8px)',
-            width: PANEL_W, height: PANEL_H,
-            backgroundImage: `url(${active.src})`,
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: bg.size,
-            backgroundPosition: bg.pos,
-            zIndex: 50,
-          }}
-        />
-      )}
-
-      {canZoom && !bg && (
-        <p className="absolute -bottom-6 left-0 right-0 text-center text-xs text-gray-500 pointer-events-none">
-          Di chuột lên ảnh để phóng to
-        </p>
-      )}
     </div>
   );
 };
