@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 /documents
+
+# Local scratch/render files
+.tmp-*

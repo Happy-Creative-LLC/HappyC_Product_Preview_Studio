@@ -2,13 +2,15 @@ package com.happycreative.productpreview.controller;
 
 import com.happycreative.productpreview.dto.AuthRequest;
 import com.happycreative.productpreview.dto.AuthResponse;
+import com.happycreative.productpreview.dto.GoogleAuthRequest;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import com.happycreative.productpreview.security.JwtTokenProvider;
+import com.happycreative.productpreview.service.GoogleAuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -25,6 +27,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final GoogleAuthService googleAuthService;
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody AuthRequest loginRequest) {
@@ -49,5 +52,11 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Tên đăng nhập hoặc mật khẩu không đúng."));
         }
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> authenticateWithGoogle(
+            @Valid @RequestBody GoogleAuthRequest request) {
+        return ResponseEntity.ok(googleAuthService.authenticate(request.getCredential()));
     }
 }

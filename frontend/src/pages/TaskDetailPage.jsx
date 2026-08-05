@@ -1,70 +1,281 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  AlertCircle,
+  CheckCircle2,
+  CircleDashed,
+  Clock3,
+  Eye,
+  FileCheck2,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  Save,
+  Search,
+  ShieldCheck,
+  Video,
+  XCircle,
+} from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
-import { Eye, CheckCircle, Clock, XCircle, Search, Loader2, ChevronRight } from 'lucide-react';
 import SidebarLayout from '../components/shared/SidebarLayout';
 import AmazonUploadForm from '../components/upload/AmazonUploadForm';
+import { canSubmitTaskReview, getRoleLabel, isSingleProjectRole } from '../utils/permissions';
 
 const STATUS_CONFIG = {
-  PENDING_UPLOADS: { label: 'Chờ upload',  icon: Clock,       cls: 'bg-amber-100 text-amber-700' },
-  IN_REVIEW:       { label: 'Đang review', icon: Search,      cls: 'bg-blue-100 text-blue-700' },
-  APPROVED:        { label: 'Đã duyệt',    icon: CheckCircle, cls: 'bg-green-100 text-green-700' },
-  REJECTED:        { label: 'Từ chối',     icon: XCircle,     cls: 'bg-red-100 text-red-600' },
+  PENDING_UPLOADS: {
+    label: 'Chờ upload',
+    className: 'hc-status--pending',
+    icon: Clock3,
+  },
+  IN_REVIEW: {
+    label: 'Đang review',
+    className: 'hc-status--review',
+    icon: Search,
+  },
+  APPROVED: {
+    label: 'Đã duyệt',
+    className: 'hc-status--approved',
+    icon: CheckCircle2,
+  },
+  REJECTED: {
+    label: 'Từ chối',
+    className: 'hc-status--rejected',
+    icon: XCircle,
+  },
 };
 
 const CATEGORY_LABELS = {
-  1: 'Clothing, Shoes & Jewelry',
-  2: 'Home & Kitchen — Vertical',
-  3: 'Home & Kitchen — Horizontal',
+  1: 'Case 1 · Clothing, Shoes & Jewelry',
+  2: 'Case 2 · Home & Kitchen dọc',
+  3: 'Case 3 · Home & Kitchen ngang',
 };
 
-const PLATFORM_BADGE = {
-  AMAZON: 'bg-orange-50 text-orange-600 border border-orange-200',
-  ETSY:   'bg-rose-50 text-rose-600 border border-rose-200',
+const ROLE_WORKSPACE = {
+  ADMIN: {
+    bannerClass: 'hc-role-banner--admin',
+    badgeClass: 'bg-[var(--hc-navy-900)] text-white',
+    description: 'Bạn có toàn quyền chỉnh sửa hình ảnh, video và nội dung listing.',
+  },
+  SELLER: {
+    bannerClass: '',
+    badgeClass: 'bg-[var(--hc-role-seller)] text-white',
+    description: 'Bạn chỉnh sửa nội dung và kích cỡ; vùng hình ảnh, A+ và video ở chế độ chỉ xem.',
+  },
+  PRODUCT_DESIGN: {
+    bannerClass: 'hc-role-banner--design',
+    badgeClass: 'bg-[var(--hc-role-design)] text-white',
+    description: 'Bạn chỉnh sửa hình ảnh sản phẩm, ảnh màu và A+ Content; các vùng khác chỉ xem.',
+  },
+  MARVEL: {
+    bannerClass: 'hc-role-banner--marvel',
+    badgeClass: 'bg-[var(--hc-role-marvel)] text-white',
+    description: 'Bạn chỉnh sửa video sản phẩm; vùng hình ảnh và nội dung ở chế độ chỉ xem.',
+  },
+};
+
+const EMPTY_READINESS = {
+  hasTitle: false,
+  imageCount: 0,
+  imageLimit: null,
+  imageLimitPending: false,
+  hasVideo: false,
+  colorCount: 0,
+  sizeCount: 0,
+  aPlusCount: 0,
+  savedPreviewId: null,
+  hasUnsavedChanges: false,
+};
+
+const ReadinessItem = ({ icon: Icon, title, detail, pending = false, neutral = false }) => (
+  <div className={`hc-readiness__item ${pending ? 'hc-readiness__item--pending' : ''} ${neutral ? '!text-[var(--hc-gray-500)]' : ''}`}>
+    <Icon size={20} aria-hidden="true" />
+    <div>
+      <strong>{title}</strong>
+      <small>{detail}</small>
+    </div>
+  </div>
+);
+
+const formatDateTime = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const TaskDetailPage = () => {
   const { projectId, taskId } = useParams();
   const navigate = useNavigate();
-  const { user, projects, tasks, fetchTask, updateTaskStatus } = useAppStore();
+  const {
+    user,
+    projects,
+    tasks,
+    fetchTask,
+    updateTaskStatus,
+  } = useAppStore();
 
-  const [loading, setLoading]     = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [statusMsg, setStatusMsg]   = useState('');
+  const [loadState, setLoadState] = useState({ taskId: null, loading: true, error: '' });
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [reviewSubmission, setReviewSubmission] = useState({ taskId: null, submitting: false });
+  const [reviewFeedbackState, setReviewFeedbackState] = useState({ taskId: null, feedback: null });
+  const [previewState, setPreviewState] = useState({ taskId: null, previewId: null });
+  const [statusState, setStatusState] = useState({ taskId: null, status: null });
+  const [readinessState, setReadinessState] = useState({ taskId: null, value: EMPTY_READINESS });
 
   useEffect(() => {
-    if (!user) { navigate('/'); return; }
-    const found = (tasks[projectId] || []).find(t => t.id === taskId);
-    if (!found) {
-      setLoading(true);
-      fetchTask(projectId, taskId).catch(() => {}).finally(() => setLoading(false));
+    if (!user) {
+      navigate('/', { replace: true });
+      return undefined;
     }
-  }, [user, projectId, taskId]);
 
-  const project = projects.find(p => p.id === projectId);
-  const task    = (tasks[projectId] || []).find(t => t.id === taskId);
+    let active = true;
+    const cachedTask = (useAppStore.getState().tasks[projectId] || [])
+      .find((item) => item.id === taskId);
+
+    fetchTask(projectId, taskId)
+      .then(() => {
+        if (active) setLoadState({ taskId, loading: false, error: '' });
+      })
+      .catch(() => {
+        if (active) {
+          setLoadState({
+            taskId,
+            loading: false,
+            error: cachedTask ? 'STALE_CACHE' : 'Không thể tải chi tiết task. Vui lòng kiểm tra kết nối và thử lại.',
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [fetchTask, loadAttempt, navigate, projectId, taskId, user]);
+
+  const task = (tasks[projectId] || []).find((item) => item.id === taskId);
+  const loading = loadState.taskId === taskId ? loadState.loading : !task;
+  const loadError = loadState.taskId === taskId ? loadState.error : '';
+  const submittingReview = reviewSubmission.taskId === taskId && reviewSubmission.submitting;
+  const reviewFeedback = reviewFeedbackState.taskId === taskId ? reviewFeedbackState.feedback : null;
+  const savedPreviewId = previewState.taskId === taskId ? previewState.previewId : null;
+  const statusOverride = statusState.taskId === taskId ? statusState.status : null;
+  const readiness = readinessState.taskId === taskId ? readinessState.value : EMPTY_READINESS;
+  const project = projects.find((item) => item.id === projectId);
+  const projectName = project?.name || task?.projectName || 'Project';
+  const displayedStatus = statusOverride || task?.status || 'PENDING_UPLOADS';
+  const statusConfig = STATUS_CONFIG[displayedStatus] || STATUS_CONFIG.PENDING_UPLOADS;
+  const roleWorkspace = ROLE_WORKSPACE[user?.role] || {
+    bannerClass: 'hc-role-banner--admin',
+    badgeClass: 'bg-[var(--hc-gray-600)] text-white',
+    description: 'Vai trò hiện tại chưa có vùng chỉnh sửa được cấu hình.',
+  };
+  const canReview = canSubmitTaskReview(user?.role);
+  const canSendCurrentTask = canReview && displayedStatus === 'PENDING_UPLOADS';
+
+  const previewUrl = savedPreviewId
+    ? `${task?.platform === 'ETSY' ? '/etsy' : '/amazon'}?${new URLSearchParams({
+      taskId,
+      projectId,
+      previewId: savedPreviewId,
+    }).toString()}`
+    : null;
+
+  const breadcrumbs = [
+    ...(isSingleProjectRole(user?.role) ? [] : [{ label: 'Projects', to: '/projects' }]),
+    { label: task?.projectName || projectName, to: `/projects/${projectId}/tasks` },
+    { label: task?.title || 'Task' },
+  ];
+
+  const handleSaved = useCallback((previewId) => {
+    setPreviewState({ taskId, previewId });
+    setReviewFeedbackState({ taskId, feedback: null });
+  }, [taskId]);
+
+  const handleReadinessChange = useCallback((nextReadiness) => {
+    setReadinessState({ taskId, value: nextReadiness });
+  }, [taskId]);
+
+  const handleRetry = () => {
+    setLoadState({ taskId, loading: true, error: '' });
+    setLoadAttempt((value) => value + 1);
+  };
 
   const handleSubmitForReview = async () => {
-    setSubmitting(true);
-    setStatusMsg('');
+    if (!canReview) {
+      setReviewFeedbackState({
+        taskId,
+        feedback: { type: 'error', text: 'Chỉ ADMIN hoặc SELLER được gửi task để review.' },
+      });
+      return;
+    }
+    if (!savedPreviewId) {
+      setReviewFeedbackState({
+        taskId,
+        feedback: { type: 'error', text: 'Hãy lưu một bản Preview trước khi gửi task để review.' },
+      });
+      return;
+    }
+    if (readiness.hasUnsavedChanges) {
+      setReviewFeedbackState({
+        taskId,
+        feedback: { type: 'error', text: 'Hãy lưu thay đổi mới trước khi gửi review.' },
+      });
+      return;
+    }
+
+    setReviewSubmission({ taskId, submitting: true });
+    setReviewFeedbackState({ taskId, feedback: null });
     try {
-      await updateTaskStatus(taskId, 'IN_REVIEW');
-      await fetchTask(projectId, taskId);
-      setStatusMsg('Đã gửi để review!');
-    } catch {
-      setStatusMsg('Gửi thất bại. Vui lòng thử lại.');
+      const updatedTask = await updateTaskStatus(taskId, 'IN_REVIEW');
+      setStatusState({ taskId, status: updatedTask?.status || 'IN_REVIEW' });
+      setReviewFeedbackState({
+        taskId,
+        feedback: { type: 'success', text: 'Đã gửi task để review.' },
+      });
+      fetchTask(projectId, taskId).catch(() => {});
+    } catch (requestError) {
+      const message = requestError.response?.status === 403
+        ? 'Bạn không có quyền gửi task này để review.'
+        : 'Không thể gửi task để review. Vui lòng thử lại.';
+      setReviewFeedbackState({ taskId, feedback: { type: 'error', text: message } });
     } finally {
-      setSubmitting(false);
+      setReviewSubmission({ taskId, submitting: false });
     }
   };
 
   if (!user) return null;
 
-  if (loading) {
+  if (loading && !task) {
     return (
-      <SidebarLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 size={40} className="animate-spin text-blue-600" />
+      <SidebarLayout breadcrumbs={breadcrumbs} previewPath={null}>
+        <div className="hc-loading-page" role="status" aria-live="polite">
+          <Loader2 size={34} className="animate-spin" aria-hidden="true" />
+          <span>Đang tải workspace...</span>
+        </div>
+      </SidebarLayout>
+    );
+  }
+
+  if (loadError && !task) {
+    return (
+      <SidebarLayout breadcrumbs={breadcrumbs} previewPath={null}>
+        <div className="hc-card hc-empty-state" role="alert">
+          <AlertCircle size={34} aria-hidden="true" />
+          <strong>Không thể mở task</strong>
+          <p>{loadError}</p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <button className="hc-button hc-button--primary" type="button" onClick={handleRetry}>
+              Thử lại
+            </button>
+            <Link className="hc-button hc-button--secondary" to={`/projects/${projectId}/tasks`}>
+              Quay lại danh sách task
+            </Link>
+          </div>
         </div>
       </SidebarLayout>
     );
@@ -72,126 +283,204 @@ const TaskDetailPage = () => {
 
   if (!task) {
     return (
-      <SidebarLayout>
-        <div className="flex items-center justify-center min-h-screen text-slate-500 text-[14px] gap-2">
-          Task không tìm thấy.
-          <Link to={`/projects/${projectId}/tasks`} className="text-blue-600 hover:underline">
-            Quay lại
+      <SidebarLayout breadcrumbs={breadcrumbs} previewPath={null}>
+        <div className="hc-card hc-empty-state">
+          <FileText size={34} aria-hidden="true" />
+          <strong>Không tìm thấy task</strong>
+          <p>Task có thể đã bị xóa hoặc bạn không có quyền truy cập project này.</p>
+          <Link className="hc-button hc-button--secondary mt-5" to={`/projects/${projectId}/tasks`}>
+            Quay lại danh sách task
           </Link>
         </div>
       </SidebarLayout>
     );
   }
 
-  const statusCfg = STATUS_CONFIG[task.status] || STATUS_CONFIG.PENDING_UPLOADS;
-  const StatusIcon = statusCfg.icon;
-  const canEdit    = ['ADMIN', 'SELLER', 'MARVEL', 'PRODUCT_DESIGN'].includes(user.role);
-  const canSubmit  = canEdit && task.status === 'PENDING_UPLOADS';
-  const previewPath = task.platform === 'ETSY'
-    ? `/etsy?taskId=${taskId}&projectId=${projectId}`
-    : `/amazon?taskId=${taskId}&projectId=${projectId}`;
+  const createdAt = formatDateTime(task.createdAt);
+  const imageReadinessText = readiness.imageLimit === null
+    ? `${readiness.imageCount} ảnh · giới hạn Case 2/3 đang chờ chốt`
+    : `${readiness.imageCount}/${readiness.imageLimit} ảnh trong form`;
+  const savedPreviewDetail = savedPreviewId
+    ? (readiness.hasUnsavedChanges
+      ? 'Có thay đổi mới chưa lưu; link mở bản đã lưu gần nhất'
+      : `Đã lưu · ${String(savedPreviewId).slice(0, 8)}…`)
+    : 'Chưa lưu Preview trong phiên làm việc này';
 
   return (
-    <SidebarLayout>
-      {/* Top bar with breadcrumb */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-center gap-1.5 text-[12px] text-slate-400 mb-1">
-          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate('/projects')}>
-            Projects
-          </span>
-          <ChevronRight size={12} />
-          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate(`/projects/${projectId}/tasks`)}>
-            {project?.name || 'Project'}
-          </span>
-          <ChevronRight size={12} />
-          <span className="text-slate-600 font-medium truncate max-w-[200px]">{task.title}</span>
-        </div>
-        <h1 className="text-[18px] font-extrabold text-slate-900 tracking-tight truncate">
-          {task.title}
-        </h1>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-8 py-7">
-        {/* Task Info Card */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-7 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5">
-            <div>
-              <h2 className="text-[22px] font-extrabold text-slate-900 tracking-tight mb-3">
-                {task.title}
-              </h2>
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Status */}
-                <span className={`inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-lg ${statusCfg.cls}`}>
-                  <StatusIcon size={12} />
-                  {statusCfg.label}
+    <SidebarLayout breadcrumbs={breadcrumbs} previewPath={previewUrl}>
+      <div className="hc-page">
+        <header className="hc-page-heading">
+          <div className="min-w-0">
+            <span className="hc-eyebrow">TASK WORKSPACE</span>
+            <h1 className="break-words">{task.title}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={`hc-platform ${task.platform === 'ETSY' ? 'hc-platform--etsy' : 'hc-platform--amazon'}`}>
+                {task.platform === 'ETSY' ? 'Etsy' : 'amazon'}
+              </span>
+              <span className={`hc-status ${statusConfig.className}`}>{statusConfig.label}</span>
+              {task.platform !== 'ETSY' && task.category && (
+                <span className="rounded-full bg-[var(--hc-gray-100)] px-2.5 py-1 text-[11px] font-bold text-[var(--hc-gray-600)]">
+                  {CATEGORY_LABELS[task.category] || `Case ${task.category}`}
                 </span>
-                {/* Platform */}
-                <span className={`text-[12px] font-bold px-3 py-1.5 rounded-lg ${PLATFORM_BADGE[task.platform] || 'bg-slate-100 text-slate-600'}`}>
-                  {task.platform || 'AMAZON'}
-                </span>
-                {/* Category */}
-                {task.category && (
-                  <span className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600">
-                    {CATEGORY_LABELS[task.category] || `Case ${task.category}`}
-                  </span>
-                )}
-              </div>
-              {task.createdByName && (
-                <p className="text-[13px] text-slate-400 mt-3">
-                  Tạo bởi <span className="font-semibold text-slate-600">{task.createdByName}</span>
-                </p>
               )}
             </div>
+            <p>
+              {projectName}
+              {task.createdByName ? ` · Tạo bởi ${task.createdByName}` : ''}
+              {createdAt ? ` · ${createdAt}` : ''}
+            </p>
+          </div>
 
-            {/* Actions */}
-            <div className="flex flex-col items-start sm:items-end gap-2.5 flex-shrink-0">
-              <Link
-                to={previewPath}
-                className="inline-flex items-center gap-2 text-white text-[13px] font-bold px-4 py-2.5 rounded-xl transition-colors"
-                style={{ background: '#1d4ed8', boxShadow: '0 2px 8px rgba(29,78,216,0.3)' }}
-                onMouseOver={e => e.currentTarget.style.background = '#1e40af'}
-                onMouseOut={e => e.currentTarget.style.background = '#1d4ed8'}
-              >
-                <Eye size={16} />
-                Preview
-              </Link>
-
-              {canSubmit && (
-                <button
-                  onClick={handleSubmitForReview}
-                  disabled={submitting}
-                  className="inline-flex items-center gap-2 text-white text-[13px] font-bold px-4 py-2.5 rounded-xl disabled:opacity-60 transition-colors"
-                  style={{ background: '#059669', boxShadow: '0 2px 8px rgba(5,150,105,0.3)' }}
-                  onMouseOver={e => e.currentTarget.style.background = '#047857'}
-                  onMouseOut={e => e.currentTarget.style.background = '#059669'}
-                >
-                  {submitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-                  Gửi Review
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {previewUrl ? (
+                <Link className="hc-button hc-button--secondary" to={previewUrl}>
+                  <Eye size={17} aria-hidden="true" />
+                  Xem Preview đã lưu
+                </Link>
+              ) : (
+                <button className="hc-button hc-button--secondary" type="button" disabled aria-describedby="preview-disabled-help">
+                  <Eye size={17} aria-hidden="true" />
+                  Xem Preview
                 </button>
               )}
 
-              {statusMsg && (
-                <p className="text-[13px] text-green-600 font-semibold">{statusMsg}</p>
+              {canSendCurrentTask && (
+                <button
+                  className="hc-button hc-button--success"
+                  type="button"
+                  onClick={handleSubmitForReview}
+                  disabled={submittingReview || !savedPreviewId || readiness.hasUnsavedChanges}
+                  aria-describedby={(!savedPreviewId || readiness.hasUnsavedChanges) ? 'review-disabled-help' : undefined}
+                >
+                  {submittingReview
+                    ? <Loader2 size={17} className="animate-spin" aria-hidden="true" />
+                    : <CheckCircle2 size={17} aria-hidden="true" />}
+                  {submittingReview ? 'Đang gửi...' : 'Gửi Review'}
+                </button>
               )}
             </div>
+            {!previewUrl && (
+              <p id="preview-disabled-help" className="max-w-sm text-xs text-[var(--hc-gray-500)]">
+                Lưu form để tạo previewId trước khi mở Preview.
+              </p>
+            )}
+            {canSendCurrentTask && (!savedPreviewId || readiness.hasUnsavedChanges) && (
+              <span id="review-disabled-help" className="text-xs text-[var(--hc-orange-600)]">
+                {readiness.hasUnsavedChanges
+                  ? 'Hãy lưu thay đổi mới trước khi gửi review.'
+                  : 'Cần lưu một bản Preview trước khi gửi Review.'}
+              </span>
+            )}
           </div>
+        </header>
+
+        {loadError && (
+          <div className="hc-alert hc-alert--info mb-5" role="status">
+            <AlertCircle size={18} aria-hidden="true" />
+            <span>Đang hiển thị dữ liệu đã tải trước đó. Không thể làm mới task từ máy chủ.</span>
+          </div>
+        )}
+
+        {reviewFeedback && (
+          <div
+            className={`hc-alert mb-5 ${reviewFeedback.type === 'success' ? 'hc-alert--success' : 'hc-alert--error'}`}
+            role={reviewFeedback.type === 'error' ? 'alert' : 'status'}
+            aria-live="polite"
+          >
+            {reviewFeedback.type === 'success'
+              ? <CheckCircle2 size={18} aria-hidden="true" />
+              : <AlertCircle size={18} aria-hidden="true" />}
+            <span>{reviewFeedback.text}</span>
+          </div>
+        )}
+
+        <div className={`hc-role-banner ${roleWorkspace.bannerClass}`}>
+          <ShieldCheck size={22} aria-hidden="true" />
+          <div className="hc-role-banner__copy">
+            <strong>Bạn đang làm việc với vai trò {getRoleLabel(user.role)}</strong>
+            <span>{roleWorkspace.description}</span>
+          </div>
+          <span className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold tracking-[0.08em] ${roleWorkspace.badgeClass}`}>
+            {user.role}
+          </span>
         </div>
 
-        {/* Upload Form */}
-        {canEdit ? (
+        <div className="hc-workspace-grid">
           <AmazonUploadForm
+            key={taskId}
             projectId={projectId}
             taskId={taskId}
             platform={task.platform}
             category={task.category}
+            role={user.role}
+            initialTitle={task.title}
+            onSaved={handleSaved}
+            onReadinessChange={handleReadinessChange}
           />
-        ) : (
-          <div className="bg-amber-50 rounded-2xl p-6 border border-amber-200">
-            <p className="text-amber-800 text-[14px]">
-              Bạn đang ở chế độ xem. Nhấn <strong>Preview</strong> để xem kết quả.
+
+          <aside className="hc-card hc-readiness" aria-labelledby="workspace-readiness-title">
+            <div className="hc-readiness__score">
+              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[var(--hc-orange-50)] text-[var(--hc-orange-600)]">
+                <FileCheck2 size={25} aria-hidden="true" />
+              </span>
+              <div>
+                <h2 id="workspace-readiness-title">Trạng thái workspace</h2>
+                <p>Chỉ hiển thị dữ liệu thật đang có trong form</p>
+              </div>
+            </div>
+
+            <div className="hc-readiness__list">
+              <ReadinessItem
+                icon={readiness.hasTitle ? CheckCircle2 : CircleDashed}
+                title="Tiêu đề listing"
+                detail={readiness.hasTitle ? 'Đã có nội dung' : 'Chưa nhập tiêu đề'}
+                pending={!readiness.hasTitle}
+              />
+              <ReadinessItem
+                icon={readiness.imageCount > 0 ? ImageIcon : CircleDashed}
+                title="Hình ảnh trong form"
+                detail={imageReadinessText}
+                pending={readiness.imageCount === 0}
+              />
+              <ReadinessItem
+                icon={Video}
+                title="Video trong form"
+                detail={readiness.hasVideo ? 'Đã chọn 1 video' : 'Chưa chọn · trường tùy chọn'}
+                neutral={!readiness.hasVideo}
+              />
+              <ReadinessItem
+                icon={savedPreviewId && !readiness.hasUnsavedChanges ? CheckCircle2 : Save}
+                title="Bản Preview"
+                detail={savedPreviewDetail}
+                pending={!savedPreviewId || readiness.hasUnsavedChanges}
+              />
+              <ReadinessItem
+                icon={statusConfig.icon}
+                title="Trạng thái task"
+                detail={statusConfig.label}
+                neutral={displayedStatus === 'PENDING_UPLOADS'}
+              />
+            </div>
+
+            {previewUrl ? (
+              <Link className="hc-button hc-button--primary hc-button--block" to={previewUrl}>
+                <Eye size={17} aria-hidden="true" />
+                Mở {task.platform === 'ETSY' ? 'Etsy' : 'Amazon'} Preview
+              </Link>
+            ) : (
+              <button className="hc-button hc-button--primary hc-button--block" type="button" disabled>
+                <Eye size={17} aria-hidden="true" />
+                Chưa có previewId
+              </button>
+            )}
+
+            <p className="mt-3 flex items-start gap-2 text-[10px] leading-4 text-[var(--hc-gray-500)]">
+              <ShieldCheck size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+              Preview chỉ mở bản đã lưu gần nhất; thay đổi chưa lưu không được đưa vào URL.
             </p>
-          </div>
-        )}
+          </aside>
+        </div>
       </div>
     </SidebarLayout>
   );

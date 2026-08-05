@@ -1,12 +1,12 @@
-# Amazon Product Preview
+# HappyC Product Preview Studio
 
-Internal tool cho team **Happy Creative** — xem trước giao diện listing sản phẩm trên Amazon và Etsy trước khi publish chính thức.
+Internal tool cho **Happy Creative** — xem trước giao diện listing sản phẩm trên Amazon và Etsy trước khi publish chính thức.
 
 ---
 
 ## Mục tiêu
 
-Trước khi đăng sản phẩm lên Amazon / Etsy, team muốn xem thử listing trông như thế nào trên trang thật (preview giả lập giao diện), từ đó review và chỉnh sửa nội dung (title, ảnh, bullet points, giá...) mà không cần publish thử.
+Trước khi đăng sản phẩm lên Amazon / Etsy, các project muốn xem thử listing trông như thế nào trên trang thật (preview giả lập giao diện), từ đó review và chỉnh sửa nội dung (title, ảnh, bullet points, giá...) mà không cần publish thử.
 
 ---
 
@@ -15,9 +15,9 @@ Trước khi đăng sản phẩm lên Amazon / Etsy, team muốn xem thử listi
 | Layer | Công nghệ |
 |-------|-----------|
 | Frontend | React 19, Vite, TailwindCSS 3, Zustand, React Router v7, Axios |
-| Backend | Spring Boot 4 (Java 25), Spring Security, JWT |
+| Backend | Spring Boot 4 (Java 21), Spring Security, JWT |
 | Database | PostgreSQL 15 |
-| File storage | Local disk (`backend/uploads/`) — Cloudinary sẵn sàng tích hợp |
+| File storage | Provider abstraction, sẵn sàng sử dụng Cloudflare R2 |
 | External API | RapidAPI (scrape Amazon search results) |
 | Container | Docker + Docker Compose |
 
@@ -27,7 +27,7 @@ Trước khi đăng sản phẩm lên Amazon / Etsy, team muốn xem thử listi
 
 ```
 amazon_product_preview/
-├── frontend/          # React + Vite (port 5174)
+├── frontend/          # React + Vite
 │   └── src/
 │       ├── api/           # Axios instance + JWT interceptor
 │       ├── stores/        # Zustand stores (app state, product state)
@@ -39,14 +39,14 @@ amazon_product_preview/
 │           ├── upload/    # AmazonUploadForm
 │           ├── layout/    # Layout wrappers
 │           └── shared/    # ControlPanel, CommentSection, EditableZone
-├── backend/           # Spring Boot (port 8081)
+├── backend/           # Spring Boot
 │   └── src/main/java/com/happycreative/productpreview/
 │       ├── controller/    # Auth, Preview, Amazon, Comment, Project*, Task*
 │       ├── service/       # PreviewService, AmazonScraperService, FileStorageService
 │       ├── entity/        # User, Project, Task, Preview, Comment, SearchCache
 │       ├── repository/    # JPA repositories
 │       ├── security/      # JWT, CustomUserDetails
-│       ├── config/        # CORS, SecurityConfig, CloudinaryConfig
+│       ├── config/        # CORS, SecurityConfig, StorageProperties, R2StorageConfig
 │       └── dto/           # AuthRequest, AuthResponse
 ├── database/
 │   ├── init.sql           # Schema đầy đủ + seed data (chạy 1 lần trên DB trống)
@@ -104,74 +104,12 @@ Mỗi case hỗ trợ tối đa **7 ảnh** hoặc **6 ảnh + 1 video**.
 
 ---
 
-## Cài đặt và chạy local
-
-### Yêu cầu
-- Node.js 20+
-- Java 25, Maven
-- Docker Desktop
-
-### 1. Khởi động Database
-
-```bash
-docker compose up -d
-```
-
-Database PostgreSQL sẽ chạy ở `localhost:5432`, schema được tự động import từ `database/init.sql`.
-
-### 2. Chạy Backend
-
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
-Backend chạy ở `http://localhost:8081`.
-
-### 3. Chạy Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend chạy ở `http://localhost:5174`.
-
----
-
-## Biến môi trường
-
-### Backend (`backend/src/main/resources/application.properties`)
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/productpreview
-spring.datasource.username=dev
-spring.datasource.password=dev123
-
-jwt.secret=<chuỗi >= 256 bit>
-jwt.expiration=86400000
-
-rapidapi.key=<RapidAPI key>
-rapidapi.host=real-time-amazon-data.p.rapidapi.com
-
-app.base-url=http://localhost:8081
-app.upload-dir=uploads/
-```
-
-### Frontend (`frontend/.env.local`)
-
-```env
-VITE_API_BASE_URL=http://localhost:8081
-```
-
----
-
 ## API chính
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
 | POST | `/api/auth/login` | Đăng nhập, nhận JWT |
+| POST | `/api/auth/google` | Xác minh Google ID token, đối chiếu email được Admin cấp phép và nhận JWT |
 | GET | `/api/projects` | Danh sách project theo role |
 | GET | `/api/projects/{id}/tasks` | Danh sách task |
 | POST | `/api/projects/{id}/tasks` | Tạo task mới |
@@ -188,7 +126,7 @@ VITE_API_BASE_URL=http://localhost:8081
 
 | Bảng | Mô tả |
 |------|-------|
-| `users` | Tài khoản — role, projectKey, auth_provider (LOCAL/GOOGLE), status (PENDING/ACTIVE/LOCKED) |
+| `users` | Nhân sự — role, projectKey, phương thức xác thực và trạng thái truy cập |
 | `projects` | 4 project: happy, creative, hapify84, global |
 | `tasks` | Task trong project — platform (AMAZON/ETSY), category, layout_case |
 | `previews` | Dữ liệu preview — product_data (JSONB): title, price, images, bulletPoints... |
@@ -196,19 +134,6 @@ VITE_API_BASE_URL=http://localhost:8081
 | `search_cache` | Cache kết quả scrape Amazon theo keyword |
 
 Chi tiết xem tại [database/init.sql](database/init.sql) và [database/ERD.md](database/ERD.md).
-
----
-
-## Tài khoản test (mock, chỉ dùng local)
-
-> Các tài khoản mock này chỉ hoạt động khi backend chưa kết nối. Sẽ bị xóa trước khi deploy.
-
-| Username | Password | Role | Project |
-|----------|----------|------|---------|
-| `happyc.admin` | `123456` | Admin | Tất cả |
-| `happyc.marvel` | `123456` | Marvel | Tất cả |
-| `happyc.seller.happy` | `123456` | Seller | happy |
-| `happyc.pd.happy` | `123456` | Product Design | happy |
 
 ---
 
@@ -221,7 +146,7 @@ Chi tiết xem tại [database/init.sql](database/init.sql) và [database/ERD.md
 | Phase 2 | Amazon 3 Cases hoàn chỉnh, Etsy 20 ảnh + video, Permission zones UI, Comment | 3–7 |
 | Phase 3 | Mobile responsive — Carousel, pinch-to-zoom, bottom tab bar, step wizard upload | 8–11 |
 | Phase 4 | Docker production, config môi trường, backup PostgreSQL | 12 |
-| Phase 5 | Deploy Hostinger VPS, DNS + SSL (Certbot), UAT toàn team | 13 |
+| Phase 5 | Deploy Hostinger VPS, DNS + SSL (Certbot), UAT toàn hệ thống | 13 |
 
 ---
 
@@ -231,8 +156,7 @@ Chi tiết xem tại [database/init.sql](database/init.sql) và [database/ERD.md
 
 ```nginx
 location /          → /var/www/frontend/dist  (React static)
-location /api/      → http://localhost:8081    (Spring Boot)
-location /uploads/  → /var/data/uploads/       (file media, cache 30d)
+location /api/      → http://backend:8081       (Spring Boot service)
 ```
 
 **Checklist trước go-live:**
@@ -242,6 +166,7 @@ location /uploads/  → /var/data/uploads/       (file media, cache 30d)
 - [ ] HTTPS toàn bộ (HTTP redirect → HTTPS)
 - [ ] PostgreSQL backup tự động (cron + pg_dump)
 - [ ] RapidAPI key trong biến môi trường
+- [ ] R2 dùng token giới hạn đúng bucket và custom domain production (khi bật `STORAGE_PROVIDER=r2`)
 - [ ] Tất cả trang responsive >= 375px (iPhone SE)
 - [ ] Test từng role trên mobile + desktop
 
@@ -249,4 +174,4 @@ location /uploads/  → /var/data/uploads/       (file media, cache 30d)
 
 ## Liên hệ
 
-**Happy Creative Technical Team** — happyc.technical@gmail.com
+**Happy Creative Technical** — happyc.technical@gmail.com

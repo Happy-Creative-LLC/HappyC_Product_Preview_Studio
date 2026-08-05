@@ -8,7 +8,6 @@ import com.happycreative.productpreview.repository.PreviewRepository;
 import com.happycreative.productpreview.repository.TaskRepository;
 import com.happycreative.productpreview.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,9 +25,6 @@ public class PreviewService {
     private final FileStorageService fileStorageService;
     private final ObjectMapper objectMapper;
     private final AmazonScraperService amazonScraperService;
-
-    @Value("${app.base-url:http://localhost:8081}")
-    private String baseUrl;
 
     public Preview createPreview(UUID taskId, UUID userId, String platform, String title, Double price,
                                  String brand, String fabricType, String careInstructions, String origin,
@@ -110,12 +106,12 @@ public class PreviewService {
 
         ArrayNode imagesArray = data.putArray("images");
         String mainImageUrl = fileStorageService.storeFile(mainImage);
-        if (mainImageUrl != null) imagesArray.add(baseUrl + mainImageUrl);
+        if (mainImageUrl != null) imagesArray.add(mainImageUrl);
 
         if (galleryImages != null) {
             for (MultipartFile img : galleryImages) {
                 String url = fileStorageService.storeFile(img);
-                if (url != null) imagesArray.add(baseUrl + url);
+                if (url != null) imagesArray.add(url);
             }
         }
 
@@ -126,7 +122,7 @@ public class PreviewService {
                 if (url != null) {
                     ObjectNode colorObj = objectMapper.createObjectNode();
                     colorObj.put("name", (colorNames != null && colorNames.size() > i) ? colorNames.get(i) : "");
-                    colorObj.put("image", baseUrl + url);
+                    colorObj.put("image", url);
                     colorsArray.add(colorObj);
                 }
             }
@@ -139,14 +135,14 @@ public class PreviewService {
 
         String videoUrl = fileStorageService.storeFile(video);
         if (videoUrl != null) {
-            data.putArray("videos").add(baseUrl + videoUrl);
+            data.putArray("videos").add(videoUrl);
         }
 
         if (aPlusImages != null && !aPlusImages.isEmpty()) {
             ArrayNode aPlusArray = data.putArray("aPlusImages");
             for (MultipartFile ap : aPlusImages) {
                 String url = fileStorageService.storeFile(ap);
-                if (url != null) aPlusArray.add(baseUrl + url);
+                if (url != null) aPlusArray.add(url);
             }
         }
 

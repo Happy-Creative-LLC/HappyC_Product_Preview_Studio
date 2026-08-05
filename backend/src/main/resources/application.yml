@@ -27,6 +27,23 @@ cloudinary:
 
 server:
   port: 8081
+  address: ${SERVER_ADDRESS:0.0.0.0}
+
+app:
+  base-url: ${APP_BASE_URL:}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+    key-prefix: ${STORAGE_KEY_PREFIX:product-previews}
+    local:
+      directory: ${LOCAL_STORAGE_DIRECTORY:uploads}
+    r2:
+      account-id: ${R2_ACCOUNT_ID:}
+      access-key-id: ${R2_ACCESS_KEY_ID:}
+      secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+      bucket: ${R2_BUCKET:}
+      public-base-url: ${R2_PUBLIC_BASE_URL:}
 
 
 

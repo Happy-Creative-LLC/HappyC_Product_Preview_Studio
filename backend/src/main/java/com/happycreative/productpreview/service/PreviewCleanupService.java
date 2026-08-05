@@ -9,10 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,6 +19,7 @@ public class PreviewCleanupService {
 
     private final PreviewRepository previewRepository;
     private final ObjectMapper objectMapper;
+    private final FileStorageService fileStorageService;
 
     // Run every day at 02:00 AM
     @Scheduled(cron = "0 0 2 * * ?")
@@ -39,18 +36,10 @@ public class PreviewCleanupService {
                 if (preview.getProductData() != null) {
                     JsonNode data = objectMapper.readTree(preview.getProductData());
                     
-                    // Extract main image
-                    if (data.has("images") && data.get("images").isArray()) {
-                        for (JsonNode imgNode : data.get("images")) {
-                            deletePhysicalFile(imgNode.asText());
-                        }
-                    }
-                    // Extract videos
-                    if (data.has("videos") && data.get("videos").isArray()) {
-                        for (JsonNode vidNode : data.get("videos")) {
-                            deletePhysicalFile(vidNode.asText());
-                        }
-                    }
+                    deleteUrlArray(data.get("images"));
+                    deleteUrlArray(data.get("videos"));
+                    deleteUrlArray(data.get("aPlusImages"));
+                    deleteColorImages(data.get("colors"));
                 }
                 
                 // Delete the record from DB (cascade might not cover comments if not configured, but we assume it deletes or orphans)
@@ -65,20 +54,23 @@ public class PreviewCleanupService {
         log.info("Completed cleanup. Deleted {} old previews.", count);
     }
 
-    private void deletePhysicalFile(String fileUrl) {
-        if (fileUrl == null || fileUrl.isEmpty()) return;
-        
-        // Example url: /uploads/abc.jpg
-        if (fileUrl.startsWith("/uploads/")) {
-            String filename = fileUrl.substring("/uploads/".length());
-            try {
-                Path filePath = Paths.get("uploads").resolve(filename).normalize();
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                    log.debug("Deleted physical file: {}", filePath);
-                }
-            } catch (IOException e) {
-                log.error("Could not delete physical file {}: {}", filename, e.getMessage());
+    private void deleteUrlArray(JsonNode urls) {
+        if (urls == null || !urls.isArray()) {
+            return;
+        }
+        for (JsonNode url : urls) {
+            fileStorageService.deleteFile(url.asText());
+        }
+    }
+
+    private void deleteColorImages(JsonNode colors) {
+        if (colors == null || !colors.isArray()) {
+            return;
+        }
+        for (JsonNode color : colors) {
+            JsonNode image = color.get("image");
+            if (image != null && image.isTextual()) {
+                fileStorageService.deleteFile(image.asText());
             }
         }
     }
