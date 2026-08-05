@@ -20,6 +20,7 @@ import { canEditZone } from '../../utils/permissions';
 
 const CASE_ONE_IMAGE_LIMIT = 7;
 const ETSY_IMAGE_LIMIT = 20;
+const SINGLE_VIDEO_LIMIT = 1;
 const SIZES_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
 const createFileItemId = (file) => {
@@ -107,7 +108,7 @@ const AmazonUploadForm = ({
   const [bulletPoints, setBulletPoints] = useState(['', '', '', '', '']);
 
   const [images, setImages] = useState([]);
-  const [video, setVideo] = useState(null);
+  const [videos, setVideos] = useState([]);
   const [colors, setColors] = useState([]);
   const [newColorName, setNewColorName] = useState('');
   const [sizes, setSizes] = useState([]);
@@ -116,7 +117,12 @@ const AmazonUploadForm = ({
 
   const imageLimit = normalizedPlatform === 'ETSY'
     ? ETSY_IMAGE_LIMIT
-    : (isAmazonCaseOne ? (video ? CASE_ONE_IMAGE_LIMIT - 1 : CASE_ONE_IMAGE_LIMIT) : null);
+    : (isAmazonCaseOne ? (videos.length > 0 ? CASE_ONE_IMAGE_LIMIT - 1 : CASE_ONE_IMAGE_LIMIT) : null);
+
+  // TechBrief chốt rõ 1 video cho Case 1 ("7 ảnh, hoặc 6 ảnh + 1 Video") và cho Etsy
+  // ("tối đa 20 ảnh + 1 Video"). Case 2/3 brief ghi 2 video nhưng con số này còn mâu
+  // thuẫn (Open Issue #1) → để null = không chặn, chờ team chốt.
+  const videoLimit = (normalizedPlatform === 'ETSY' || isAmazonCaseOne) ? SINGLE_VIDEO_LIMIT : null;
 
   const [submitting, setSubmitting] = useState(false);
   const [savedPreviewId, setSavedPreviewId] = useState(null);
@@ -159,7 +165,7 @@ const AmazonUploadForm = ({
     origin,
     bulletPoints,
     images: images.map((item) => item.id),
-    video: video?.id || null,
+    videos: videos.map((item) => item.id),
     colors: colors.map((item) => `${item.id}:${item.name}`),
     sizes,
     aPlusImages: aPlusImages.map((item) => item.id),
@@ -172,7 +178,7 @@ const AmazonUploadForm = ({
     origin,
     bulletPoints,
     images,
-    video,
+    videos,
     colors,
     sizes,
     aPlusImages,
@@ -185,7 +191,9 @@ const AmazonUploadForm = ({
     imageCount: images.length,
     imageLimit,
     imageLimitPending: isCaseWithPendingLimit,
-    hasVideo: Boolean(video),
+    hasVideo: videos.length > 0,
+    videoCount: videos.length,
+    videoLimit,
     colorCount: colors.length,
     sizeCount: sizes.length,
     aPlusCount: aPlusImages.length,
@@ -196,7 +204,8 @@ const AmazonUploadForm = ({
     images.length,
     imageLimit,
     isCaseWithPendingLimit,
-    video,
+    videos.length,
+    videoLimit,
     colors.length,
     sizes.length,
     aPlusImages.length,
@@ -220,7 +229,7 @@ const AmazonUploadForm = ({
     const acceptedFiles = imageLimit === null ? selectedFiles : selectedFiles.slice(0, remaining);
 
     if (imageLimit !== null && selectedFiles.length > acceptedFiles.length) {
-      setMediaNotice(isAmazonCaseOne && video
+      setMediaNotice(isAmazonCaseOne && videos.length > 0
         ? `Case 1 đã có video nên chỉ thêm ${acceptedFiles.length} ảnh, tối đa 6 ảnh + 1 video.`
         : `Chỉ thêm ${acceptedFiles.length} ảnh để không vượt quá giới hạn ${imageLimit} ảnh.`);
     } else {
@@ -250,8 +259,8 @@ const AmazonUploadForm = ({
 
   const handleVideoUpload = (event) => {
     if (!canEditVideo) return;
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
 
     if (isAmazonCaseOne && images.length >= CASE_ONE_IMAGE_LIMIT) {
       const message = 'Case 1 cho phép 7 ảnh, hoặc 6 ảnh + 1 video. Hãy xóa bớt 1 ảnh trước khi chọn video.';
@@ -261,25 +270,36 @@ const AmazonUploadForm = ({
       return;
     }
 
-    const nextVideo = {
+    const remaining = videoLimit === null
+      ? selectedFiles.length
+      : Math.max(videoLimit - videos.length, 0);
+    const acceptedFiles = selectedFiles.slice(0, remaining);
+
+    if (acceptedFiles.length < selectedFiles.length) {
+      setVideoNotice(videoLimit === SINGLE_VIDEO_LIMIT
+        ? 'Danh mục này chỉ cho phép 1 video. Hãy xóa video hiện tại trước khi chọn video khác.'
+        : `Chỉ thêm ${acceptedFiles.length} video để không vượt quá giới hạn ${videoLimit} video.`);
+    } else {
+      setMediaNotice('');
+      setVideoNotice('');
+    }
+
+    const nextItems = acceptedFiles.map((file) => ({
       id: createFileItemId(file),
       file,
       preview: createPreviewUrl(file),
-    };
-    setVideo((current) => {
-      revokePreviewUrl(current?.preview);
-      return nextVideo;
-    });
-    setMediaNotice('');
-    setVideoNotice('');
+    }));
+    if (nextItems.length > 0) setVideos((current) => [...current, ...nextItems]);
     event.target.value = '';
   };
 
-  const removeVideo = () => {
-    setVideo((current) => {
-      revokePreviewUrl(current?.preview);
-      return null;
+  const removeVideo = (id) => {
+    setVideos((current) => {
+      const item = current.find((entry) => entry.id === id);
+      revokePreviewUrl(item?.preview);
+      return current.filter((entry) => entry.id !== id);
     });
+    setVideoNotice('');
   };
 
   const handleColorImageUpload = (event) => {
@@ -397,7 +417,8 @@ const AmazonUploadForm = ({
         formData.append('mainImage', images[0].file);
         images.slice(1).forEach((item) => formData.append('galleryImages', item.file));
       }
-      if (video) formData.append('video', video.file);
+      // Key "videos" (nhiều file) — backend vẫn nhận key "video" cũ để tương thích ngược.
+      videos.forEach((item) => formData.append('videos', item.file));
 
       colors.forEach((item) => formData.append('colorNames', item.name));
       colors.forEach((item) => formData.append('colorImages', item.file));
@@ -430,9 +451,9 @@ const AmazonUploadForm = ({
     : (isAmazonCaseOne
       ? 'Case 1 cho phép 7 ảnh, hoặc 6 ảnh + 1 video. Ảnh đầu tiên được gửi bằng key mainImage.'
       : `Tối đa ${imageLimit} ảnh. Ảnh đầu tiên được gửi bằng key mainImage.`);
-  const videoDescription = isCaseWithPendingLimit
-    ? 'API hiện nhận một file qua key video; hạn mức tổng media Case 2/3 vẫn đang chờ team chốt.'
-    : 'Một file video tùy chọn được gửi bằng key video.';
+  const videoDescription = videoLimit === null
+    ? 'Thêm được nhiều video. Chưa áp giới hạn cứng vì hạn mức media Case 2/3 đang chờ team chốt.'
+    : `Danh mục này cho phép tối đa ${videoLimit} video.`;
 
   return (
     <form
@@ -672,42 +693,58 @@ const AmazonUploadForm = ({
               <span>{videoNotice}</span>
             </div>
           )}
-          {video ? (
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-center">
-              <div className="hc-upload-tile" style={{ aspectRatio: '16 / 9' }}>
-                <video src={video.preview} controls preload="metadata" aria-label={`Video ${video.file.name}`} />
-                {canEditVideo && (
-                  <UploadTileRemoveButton label="Xóa video sản phẩm" onClick={removeVideo} />
-                )}
-              </div>
-              <div className="min-w-0">
-                <strong className="block truncate text-sm text-[var(--hc-navy-900)]">{video.file.name}</strong>
-                <span className="mt-1 block text-xs text-[var(--hc-gray-500)]">
-                  {(video.file.size / (1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} MB
-                </span>
-                {canEditVideo && (
-                  <button className="hc-button hc-button--danger mt-4" type="button" onClick={removeVideo}>
-                    <Trash2 size={17} aria-hidden="true" />
-                    Xóa video
-                  </button>
-                )}
-              </div>
+          {videos.length > 0 && (
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[var(--hc-navy-900)]">Video đã chọn</h3>
+              <span className="text-xs font-bold tabular-nums text-[var(--hc-gray-600)]">
+                {videos.length}{videoLimit === null ? ' video' : `/${videoLimit} video`}
+              </span>
             </div>
-          ) : canEditVideo ? (
-            <label className="hc-upload-tile hc-upload-tile--add min-h-32 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-500" style={{ aspectRatio: 'auto' }}>
-              <Upload size={23} aria-hidden="true" />
-              <span>Chọn video sản phẩm</span>
-              <small className="px-4 text-center text-[10px]">Chưa áp validation dung lượng/định dạng vì NFR upload đang chờ chốt.</small>
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/*"
-                className="sr-only"
-                onChange={handleVideoUpload}
-                aria-label="Chọn video sản phẩm"
-              />
-            </label>
-          ) : (
+          )}
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {videos.map((item, index) => (
+              <div className="hc-upload-tile" style={{ aspectRatio: '16 / 9' }} key={item.id}>
+                <video
+                  src={item.preview}
+                  controls
+                  preload="metadata"
+                  aria-label={`Video ${index + 1}: ${item.file.name}`}
+                />
+                {canEditVideo && (
+                  <UploadTileRemoveButton
+                    label={`Xóa video ${index + 1}`}
+                    onClick={() => removeVideo(item.id)}
+                  />
+                )}
+                <span className="hc-upload-tile__badge">
+                  VIDEO {index + 1} · {(item.file.size / (1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} MB
+                </span>
+              </div>
+            ))}
+
+            {canEditVideo && (videoLimit === null || videos.length < videoLimit) && (
+              <label
+                className="hc-upload-tile hc-upload-tile--add focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-500"
+                style={{ aspectRatio: '16 / 9' }}
+              >
+                <Upload size={23} aria-hidden="true" />
+                <span>{videos.length > 0 ? 'Thêm video' : 'Chọn video sản phẩm'}</span>
+                <small className="px-4 text-center text-[10px]">Chưa áp validation dung lượng/định dạng vì NFR upload đang chờ chốt.</small>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  multiple={videoLimit === null || videoLimit > 1}
+                  className="sr-only"
+                  onChange={handleVideoUpload}
+                  aria-label="Chọn video sản phẩm"
+                />
+              </label>
+            )}
+          </div>
+
+          {!canEditVideo && videos.length === 0 && (
             <p className="text-xs text-[var(--hc-gray-500)]">
               Chưa có video được chọn trong form của phiên làm việc này.
             </p>

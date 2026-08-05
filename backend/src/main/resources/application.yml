@@ -34,7 +34,11 @@ app:
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
   storage:
-    provider: ${STORAGE_PROVIDER:local}
+    # db    = lưu media vào Postgres (bảng stored_files) — mặc định giai đoạn test,
+    #         data demo đi theo volume Docker / pg_dump thay vì backend/uploads/
+    # r2    = Cloudflare R2 — dùng cho production (STORAGE_PROVIDER=r2), DB khởi động rỗng
+    # local = ghi xuống đĩa backend/uploads/
+    provider: ${STORAGE_PROVIDER:db}
     key-prefix: ${STORAGE_KEY_PREFIX:product-previews}
     local:
       directory: ${LOCAL_STORAGE_DIRECTORY:uploads}
