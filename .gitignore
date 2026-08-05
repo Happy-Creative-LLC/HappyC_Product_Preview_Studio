@@ -18,3 +18,6 @@ agents.md
 # Project internal folders (not for source control)
 database/
 documents/
+
+# Media upload khi chạy STORAGE_PROVIDER=local — không commit data demo
+backend/uploads/

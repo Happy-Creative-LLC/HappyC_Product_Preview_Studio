@@ -15,7 +15,11 @@ public class StorageProperties {
     private R2 r2 = new R2();
 
     public enum Provider {
+        /** Ghi file xuống đĩa backend/uploads/ — mặc định cũ. */
         LOCAL,
+        /** Ghi file vào Postgres (bảng stored_files) — dùng cho giai đoạn test. */
+        DB,
+        /** Cloudflare R2 — dùng cho production. */
         R2
     }
 
