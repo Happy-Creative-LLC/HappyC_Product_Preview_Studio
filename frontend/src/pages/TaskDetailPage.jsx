@@ -19,7 +19,7 @@ import {
 import { useAppStore } from '../stores/appStore';
 import SidebarLayout from '../components/shared/SidebarLayout';
 import AmazonUploadForm from '../components/upload/AmazonUploadForm';
-import { canSubmitTaskReview, getRoleLabel, isSingleProjectRole } from '../utils/permissions';
+import { canSubmitTaskReview, isSingleProjectRole } from '../utils/permissions';
 
 const STATUS_CONFIG = {
   PENDING_UPLOADS: {
@@ -50,35 +50,14 @@ const CATEGORY_LABELS = {
   3: 'Case 3 · Home & Kitchen ngang',
 };
 
-const ROLE_WORKSPACE = {
-  ADMIN: {
-    bannerClass: 'hc-role-banner--admin',
-    badgeClass: 'bg-[var(--hc-navy-900)] text-white',
-    description: 'Bạn có toàn quyền chỉnh sửa hình ảnh, video và nội dung listing.',
-  },
-  SELLER: {
-    bannerClass: '',
-    badgeClass: 'bg-[var(--hc-role-seller)] text-white',
-    description: 'Bạn chỉnh sửa nội dung và kích cỡ; vùng hình ảnh, A+ và video ở chế độ chỉ xem.',
-  },
-  PRODUCT_DESIGN: {
-    bannerClass: 'hc-role-banner--design',
-    badgeClass: 'bg-[var(--hc-role-design)] text-white',
-    description: 'Bạn chỉnh sửa hình ảnh sản phẩm, ảnh màu và A+ Content; các vùng khác chỉ xem.',
-  },
-  MARVEL: {
-    bannerClass: 'hc-role-banner--marvel',
-    badgeClass: 'bg-[var(--hc-role-marvel)] text-white',
-    description: 'Bạn chỉnh sửa video sản phẩm; vùng hình ảnh và nội dung ở chế độ chỉ xem.',
-  },
-};
-
 const EMPTY_READINESS = {
   hasTitle: false,
   imageCount: 0,
   imageLimit: null,
   imageLimitPending: false,
   hasVideo: false,
+  videoCount: 0,
+  videoLimit: null,
   colorCount: 0,
   sizeCount: 0,
   aPlusCount: 0,
@@ -169,11 +148,6 @@ const TaskDetailPage = () => {
   const projectName = project?.name || task?.projectName || 'Project';
   const displayedStatus = statusOverride || task?.status || 'PENDING_UPLOADS';
   const statusConfig = STATUS_CONFIG[displayedStatus] || STATUS_CONFIG.PENDING_UPLOADS;
-  const roleWorkspace = ROLE_WORKSPACE[user?.role] || {
-    bannerClass: 'hc-role-banner--admin',
-    badgeClass: 'bg-[var(--hc-gray-600)] text-white',
-    description: 'Vai trò hiện tại chưa có vùng chỉnh sửa được cấu hình.',
-  };
   const canReview = canSubmitTaskReview(user?.role);
   const canSendCurrentTask = canReview && displayedStatus === 'PENDING_UPLOADS';
 
@@ -300,6 +274,12 @@ const TaskDetailPage = () => {
   const imageReadinessText = readiness.imageLimit === null
     ? `${readiness.imageCount} ảnh · giới hạn Case 2/3 đang chờ chốt`
     : `${readiness.imageCount}/${readiness.imageLimit} ảnh trong form`;
+  const videoCount = readiness.videoCount ?? (readiness.hasVideo ? 1 : 0);
+  const videoReadinessText = videoCount === 0
+    ? 'Chưa chọn · trường tùy chọn'
+    : (readiness.videoLimit === null
+      ? `Đã chọn ${videoCount} video · giới hạn Case 2/3 đang chờ chốt`
+      : `Đã chọn ${videoCount}/${readiness.videoLimit} video`);
   const savedPreviewDetail = savedPreviewId
     ? (readiness.hasUnsavedChanges
       ? 'Có thay đổi mới chưa lưu; link mở bản đã lưu gần nhất'
@@ -395,17 +375,6 @@ const TaskDetailPage = () => {
           </div>
         )}
 
-        <div className={`hc-role-banner ${roleWorkspace.bannerClass}`}>
-          <ShieldCheck size={22} aria-hidden="true" />
-          <div className="hc-role-banner__copy">
-            <strong>Bạn đang làm việc với vai trò {getRoleLabel(user.role)}</strong>
-            <span>{roleWorkspace.description}</span>
-          </div>
-          <span className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold tracking-[0.08em] ${roleWorkspace.badgeClass}`}>
-            {user.role}
-          </span>
-        </div>
-
         <div className="hc-workspace-grid">
           <AmazonUploadForm
             key={taskId}
@@ -446,7 +415,7 @@ const TaskDetailPage = () => {
               <ReadinessItem
                 icon={Video}
                 title="Video trong form"
-                detail={readiness.hasVideo ? 'Đã chọn 1 video' : 'Chưa chọn · trường tùy chọn'}
+                detail={videoReadinessText}
                 neutral={!readiness.hasVideo}
               />
               <ReadinessItem

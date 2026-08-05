@@ -7,7 +7,6 @@ import LoginPage from './pages/LoginPage';
 import ProjectsPage from './pages/ProjectsPage';
 import TaskDetailPage from './pages/TaskDetailPage';
 import TaskListPage from './pages/TaskListPage';
-import ControlPanel from './components/shared/ControlPanel';
 import { useAppStore } from './stores/appStore';
 
 const RequireAuth = ({ children, roles }) => {
@@ -17,13 +16,6 @@ const RequireAuth = ({ children, roles }) => {
   if (roles && !roles.includes(user.role)) return <Navigate to="/projects" replace />;
   return children;
 };
-
-const PreviewRoute = ({ children }) => (
-  <>
-    {children}
-    <ControlPanel />
-  </>
-);
 
 const FallbackRoute = () => {
   const { user, token } = useAppStore();
@@ -50,19 +42,11 @@ function App() {
 
         <Route
           path="/amazon"
-          element={(
-            <RequireAuth>
-              <PreviewRoute><AmazonPreviewPage /></PreviewRoute>
-            </RequireAuth>
-          )}
+          element={<RequireAuth><AmazonPreviewPage /></RequireAuth>}
         />
         <Route
           path="/etsy"
-          element={(
-            <RequireAuth>
-              <PreviewRoute><EtsyPreviewPage /></PreviewRoute>
-            </RequireAuth>
-          )}
+          element={<RequireAuth><EtsyPreviewPage /></RequireAuth>}
         />
         <Route
           path="/search"

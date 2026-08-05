@@ -68,39 +68,7 @@ const initialData = {
   tags: ['hawaiian shirt', 'custom face', 'personalized gift', 'aloha', 'beach party'],
 };
 
-export const useProductStore = create((set) => ({
-  ...initialData,
-
-  // Design Team Actions
-  setImages: (images) => set({ images }),
-  addImage: (image) => set((state) => ({ images: [...state.images, image] })),
-  removeImage: (index) => set((state) => ({ images: state.images.filter((_, i) => i !== index) })),
-  reorderImages: (newImages) => set({ images: newImages }),
-
-  addAPlusImage: (image) => set((state) => ({ aPlusImages: [...state.aPlusImages, image] })),
-  removeAPlusImage: (index) => set((state) => ({ aPlusImages: state.aPlusImages.filter((_, i) => i !== index) })),
-
-  // Media Team Actions
-  setVideos: (videos) => set({ videos }),
-  addVideo: (video) => set((state) => ({ videos: [...state.videos, video] })),
-  removeVideo: (index) => set((state) => ({ videos: state.videos.filter((_, i) => i !== index) })),
-
-  // Seller Team Actions
-  setTextInfo: (info) => set((state) => ({ ...state, ...info })),
-  addBulletPoint: (point) => set((state) => ({ bulletPoints: [...state.bulletPoints, point] })),
-  updateBulletPoint: (index, newPoint) => set((state) => {
-    const newPoints = [...state.bulletPoints];
-    newPoints[index] = newPoint;
-    return { bulletPoints: newPoints };
-  }),
-  removeBulletPoint: (index) => set((state) => ({ bulletPoints: state.bulletPoints.filter((_, i) => i !== index) })),
-
-  // Variations Actions
-  addColor: (color) => set((state) => ({ colors: [...state.colors, color] })),
-  removeColor: (index) => set((state) => ({ colors: state.colors.filter((_, i) => i !== index) })),
-  addSize: (size) => set((state) => ({ sizes: [...state.sizes, size] })),
-  removeSize: (index) => set((state) => ({ sizes: state.sizes.filter((_, i) => i !== index) })),
-
-  // Global Action
-  resetData: () => set(initialData)
-}));
+// Store chỉ còn dùng để ĐỌC: scaffold hiển thị khi vào /amazon, /etsy, /search
+// mà chưa có preview thật. Toàn bộ action ghi trước đây chỉ phục vụ ControlPanel
+// (đã xoá) — nội dung thật đi qua AmazonUploadForm → API → previews.product_data.
+export const useProductStore = create(() => ({ ...initialData }));
