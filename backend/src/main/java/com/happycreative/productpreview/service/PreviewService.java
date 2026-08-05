@@ -31,7 +31,7 @@ public class PreviewService {
                                  List<String> bulletPoints, MultipartFile mainImage,
                                  List<MultipartFile> galleryImages, List<String> colorNames,
                                  List<MultipartFile> colorImages, List<String> sizes,
-                                 MultipartFile video, List<MultipartFile> aPlusImages) {
+                                 List<MultipartFile> videos, List<MultipartFile> aPlusImages) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
@@ -40,7 +40,7 @@ public class PreviewService {
                 .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
 
         ObjectNode productData = buildProductData(title, price, brand, fabricType, careInstructions,
-                origin, bulletPoints, mainImage, galleryImages, colorNames, colorImages, sizes, video, aPlusImages);
+                origin, bulletPoints, mainImage, galleryImages, colorNames, colorImages, sizes, videos, aPlusImages);
 
         Preview preview = new Preview();
         preview.setUser(user);
@@ -89,7 +89,7 @@ public class PreviewService {
                                         String careInstructions, String origin, List<String> bulletPoints,
                                         MultipartFile mainImage, List<MultipartFile> galleryImages,
                                         List<String> colorNames, List<MultipartFile> colorImages,
-                                        List<String> sizes, MultipartFile video,
+                                        List<String> sizes, List<MultipartFile> videos,
                                         List<MultipartFile> aPlusImages) {
         ObjectNode data = objectMapper.createObjectNode();
         data.put("title", title);
@@ -133,9 +133,14 @@ public class PreviewService {
             sizes.forEach(sizesArray::add);
         }
 
-        String videoUrl = fileStorageService.storeFile(video);
-        if (videoUrl != null) {
-            data.putArray("videos").add(videoUrl);
+        // Nhiều video: Case 2/3 theo TechBrief cho phép hơn 1. Số lượng tối đa chưa
+        // chốt (Open Issue #1) nên không chặn ở đây — chỉ lưu đúng những gì gửi lên.
+        if (videos != null && !videos.isEmpty()) {
+            ArrayNode videosArray = data.putArray("videos");
+            for (MultipartFile videoFile : videos) {
+                String url = fileStorageService.storeFile(videoFile);
+                if (url != null) videosArray.add(url);
+            }
         }
 
         if (aPlusImages != null && !aPlusImages.isEmpty()) {

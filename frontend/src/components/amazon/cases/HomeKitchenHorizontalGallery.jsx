@@ -11,10 +11,13 @@ const HomeKitchenHorizontalGallery = ({ images = [], videos = [] }) => {
   const [bg, setBg] = useState(null);
   const mainRef = useRef(null);
 
+  // Render đầy đủ theo productData — KHÔNG cắt cứng số lượng. Trước đây có
+  // .slice(0, 7) khiến 7 ảnh + video thì video bị cắt mất hoàn toàn. Hạn mức
+  // media Case 3 vẫn là Open Issue #1, chốt xong mới enforce ở tầng upload.
   const allMedia = [
     ...images.map(src => ({ src, type: 'image' })),
     ...(videos || []).map(src => ({ src, type: 'video' })),
-  ].slice(0, 7);
+  ];
 
   const validMedia = allMedia.filter((_, idx) => !brokenSet.has(idx));
   const safeActiveIdx = Math.min(activeIdx, Math.max(validMedia.length - 1, 0));

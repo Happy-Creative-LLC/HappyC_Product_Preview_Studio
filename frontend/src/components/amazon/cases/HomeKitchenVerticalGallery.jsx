@@ -22,8 +22,13 @@ const VISIBLE_THUMB_LIMIT = 6;
 const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }) => {
   // activeIdx: 0..images.length-1 = image thumbs, images.length = video slot
   const [activeIdx, setActiveIdx] = useState(0);
+  // Video nào đang phát trong slot video. Rail giữ MỘT ô gộp "N VIDEOS" đúng như
+  // Amazon thật; chọn giữa các video diễn ra ở khung chính bên dưới player.
+  const [activeVideoIdx, setActiveVideoIdx] = useState(0);
 
   const hasVideo = videos.length > 0;
+  const safeVideoIdx = Math.min(activeVideoIdx, Math.max(videos.length - 1, 0));
+  const activeVideoSrc = videos[safeVideoIdx] ?? null;
   const videoIdx = images.length; // video slot's virtual index, if present
   const isVideoActive = hasVideo && activeIdx === videoIdx;
   const activeImageSrc = !isVideoActive ? images[activeIdx] ?? null : null;
@@ -121,7 +126,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
                 }}
               >
                 <video
-                  src={videos[0]}
+                  src={videos[safeVideoIdx]}
                   muted
                   style={{ width: thumbRail.imageSize, height: videoSlot.height - 2, borderRadius: thumbRail.imageRadius, objectFit: 'cover' }}
                 />
@@ -149,8 +154,37 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
         {isVideoActive ? (
           <EditableZone zone="VIDEO" onCommentClick={onCommentClick}>
             <div className="w-full overflow-hidden rounded bg-black" style={{ aspectRatio: '1 / 1' }}>
-              <video src={videos[0]} controls className="w-full h-full" style={{ objectFit: 'contain' }} />
+              <video
+                key={activeVideoSrc}
+                src={activeVideoSrc}
+                controls
+                className="w-full h-full"
+                style={{ objectFit: 'contain' }}
+              />
             </div>
+
+            {/* Chọn video khi có nhiều hơn 1 — rail chỉ có một ô gộp nên
+                việc chuyển video phải nằm ở đây, nếu không các video sau
+                sẽ không có cách nào xem được. */}
+            {videos.length > 1 && (
+              <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Chọn video">
+                {videos.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveVideoIdx(idx)}
+                    aria-pressed={safeVideoIdx === idx}
+                    className={`rounded border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                      safeVideoIdx === idx
+                        ? 'border-[#007185] bg-[#e7f3f5] text-[#007185]'
+                        : 'border-[#D5D9D9] text-gray-600 hover:border-[#007185]'
+                    }`}
+                  >
+                    Video {idx + 1}
+                  </button>
+                ))}
+              </div>
+            )}
           </EditableZone>
         ) : (
           <EditableZone zone="IMAGE" onCommentClick={onCommentClick}>
