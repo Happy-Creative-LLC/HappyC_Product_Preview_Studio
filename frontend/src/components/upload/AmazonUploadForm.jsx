@@ -1,478 +1,972 @@
-import React, { useState } from 'react';
-import { Upload, X, Plus, Save, Loader2, CheckCircle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Image as ImageIcon,
+  Images,
+  Loader2,
+  Lock,
+  Palette,
+  Plus,
+  Save,
+  ShieldCheck,
+  Trash2,
+  Type,
+  Upload,
+  Video,
+} from 'lucide-react';
 import axiosInstance from '../../api/axiosConfig';
+import { canEditZone } from '../../utils/permissions';
 
-const MAX_IMAGES = 7;
-const MAX_APLUS = 5;
-
+const CASE_ONE_IMAGE_LIMIT = 7;
+const ETSY_IMAGE_LIMIT = 20;
 const SIZES_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
-const AmazonUploadForm = ({ projectId, taskId, platform = 'AMAZON', category = 1 }) => {
-  // Text fields
-  const [title, setTitle] = useState('');
+const createFileItemId = (file) => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${file.name}-${file.lastModified}-${file.size}-${Math.random().toString(36).slice(2)}`;
+};
+
+const ZoneHeader = ({
+  id,
+  icon: Icon,
+  label,
+  title,
+  description,
+  editable,
+}) => (
+  <div className="hc-zone__header">
+    <div className="hc-zone__heading">
+      <span className="hc-zone__icon" aria-hidden="true">
+        <Icon size={20} />
+      </span>
+      <div>
+        <span className="hc-zone__label">{label}</span>
+        <h2 id={id}>{title}</h2>
+        <p>{description}</p>
+      </div>
+    </div>
+    <span className="hc-zone__permission">
+      {editable ? <ShieldCheck size={15} aria-hidden="true" /> : <Lock size={15} aria-hidden="true" />}
+      {editable ? 'Được chỉnh sửa' : 'Chỉ xem'}
+    </span>
+  </div>
+);
+
+const ZoneFooter = ({ editable, editableText, lockedText }) => (
+  <div className="hc-zone__footer">
+    <span className="inline-flex items-center gap-2">
+      {editable ? <ShieldCheck size={15} aria-hidden="true" /> : <Lock size={15} aria-hidden="true" />}
+      {editable ? editableText : lockedText}
+    </span>
+  </div>
+);
+
+const UploadTileRemoveButton = ({ label, onClick }) => (
+  <button
+    type="button"
+    className="hc-upload-tile__remove"
+    style={{ width: '2.75rem', height: '2.75rem' }}
+    onClick={onClick}
+    aria-label={label}
+    title={label}
+  >
+    <Trash2 size={17} aria-hidden="true" />
+  </button>
+);
+
+const AmazonUploadForm = ({
+  projectId,
+  taskId,
+  platform = 'AMAZON',
+  category = 1,
+  role,
+  initialTitle = '',
+  onSaved,
+  onReadinessChange,
+}) => {
+  const normalizedPlatform = String(platform || 'AMAZON').toUpperCase();
+  const normalizedCategory = Number(category);
+  const isClothing = normalizedPlatform === 'AMAZON' && normalizedCategory === 1;
+  const isAmazonCaseOne = normalizedPlatform === 'AMAZON' && normalizedCategory === 1;
+  const isCaseWithPendingLimit = normalizedPlatform === 'AMAZON' && [2, 3].includes(normalizedCategory);
+
+  const canEditText = canEditZone(role, 'SELLER');
+  const canEditImages = canEditZone(role, 'PRODUCT_DESIGN');
+  const canEditVideo = canEditZone(role, 'MARVEL');
+  const canSave = canEditText || canEditImages || canEditVideo;
+
+  const [title, setTitle] = useState(initialTitle);
   const [price, setPrice] = useState('');
   const [brand, setBrand] = useState('');
   const [fabricType, setFabricType] = useState('');
   const [careInstructions, setCareInstructions] = useState('');
   const [origin, setOrigin] = useState('');
-
-  // Bullet points
   const [bulletPoints, setBulletPoints] = useState(['', '', '', '', '']);
 
-  // Images: { file: File, preview: string }[]
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
-
-  // Colors: { name: string, file: File, preview: string }[]
   const [colors, setColors] = useState([]);
   const [newColorName, setNewColorName] = useState('');
-
-  // Sizes
   const [sizes, setSizes] = useState([]);
-
-  // A+ Content
+  const [customSize, setCustomSize] = useState('');
   const [aPlusImages, setAPlusImages] = useState([]);
 
-  // Submit state
+  const imageLimit = normalizedPlatform === 'ETSY'
+    ? ETSY_IMAGE_LIMIT
+    : (isAmazonCaseOne ? (video ? CASE_ONE_IMAGE_LIMIT - 1 : CASE_ONE_IMAGE_LIMIT) : null);
+
   const [submitting, setSubmitting] = useState(false);
   const [savedPreviewId, setSavedPreviewId] = useState(null);
+  const [savedSignature, setSavedSignature] = useState(null);
   const [error, setError] = useState('');
+  const [titleError, setTitleError] = useState('');
+  const [mediaNotice, setMediaNotice] = useState('');
+  const [videoNotice, setVideoNotice] = useState('');
 
-  // ── Image handlers ──────────────────────────────────────────────
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const remaining = MAX_IMAGES - images.length;
-    files.slice(0, remaining).forEach(file => {
-      setImages(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
-    });
-    e.target.value = '';
+  const titleInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+  const colorInputRef = useRef(null);
+  const aPlusInputRef = useRef(null);
+  const objectUrlsRef = useRef(new Set());
+
+  const createPreviewUrl = (file) => {
+    const url = URL.createObjectURL(file);
+    objectUrlsRef.current.add(url);
+    return url;
   };
 
-  const removeImage = (idx) => {
-    setImages(prev => {
-      URL.revokeObjectURL(prev[idx].preview);
-      return prev.filter((_, i) => i !== idx);
-    });
+  const revokePreviewUrl = (url) => {
+    if (!url) return;
+    URL.revokeObjectURL(url);
+    objectUrlsRef.current.delete(url);
   };
 
-  const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) setVideo({ file, preview: URL.createObjectURL(file) });
-    e.target.value = '';
+  useEffect(() => () => {
+    objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrlsRef.current.clear();
+  }, []);
+
+  const currentSignature = useMemo(() => JSON.stringify({
+    title,
+    price,
+    brand,
+    fabricType,
+    careInstructions,
+    origin,
+    bulletPoints,
+    images: images.map((item) => item.id),
+    video: video?.id || null,
+    colors: colors.map((item) => `${item.id}:${item.name}`),
+    sizes,
+    aPlusImages: aPlusImages.map((item) => item.id),
+  }), [
+    title,
+    price,
+    brand,
+    fabricType,
+    careInstructions,
+    origin,
+    bulletPoints,
+    images,
+    video,
+    colors,
+    sizes,
+    aPlusImages,
+  ]);
+
+  const hasUnsavedChanges = Boolean(savedSignature && savedSignature !== currentSignature);
+
+  const readiness = useMemo(() => ({
+    hasTitle: Boolean(title.trim()),
+    imageCount: images.length,
+    imageLimit,
+    imageLimitPending: isCaseWithPendingLimit,
+    hasVideo: Boolean(video),
+    colorCount: colors.length,
+    sizeCount: sizes.length,
+    aPlusCount: aPlusImages.length,
+    savedPreviewId,
+    hasUnsavedChanges,
+  }), [
+    title,
+    images.length,
+    imageLimit,
+    isCaseWithPendingLimit,
+    video,
+    colors.length,
+    sizes.length,
+    aPlusImages.length,
+    savedPreviewId,
+    hasUnsavedChanges,
+  ]);
+
+  useEffect(() => {
+    onReadinessChange?.(readiness);
+  }, [onReadinessChange, readiness]);
+
+  const scrollToZone = (zoneId) => {
+    document.getElementById(zoneId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // ── Color handlers ──────────────────────────────────────────────
-  const handleColorImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && newColorName.trim()) {
-      setColors(prev => [...prev, { name: newColorName.trim(), file, preview: URL.createObjectURL(file) }]);
-      setNewColorName('');
+  const handleImageUpload = (event) => {
+    if (!canEditImages) return;
+
+    const selectedFiles = Array.from(event.target.files || []);
+    const remaining = imageLimit === null ? selectedFiles.length : Math.max(imageLimit - images.length, 0);
+    const acceptedFiles = imageLimit === null ? selectedFiles : selectedFiles.slice(0, remaining);
+
+    if (imageLimit !== null && selectedFiles.length > acceptedFiles.length) {
+      setMediaNotice(isAmazonCaseOne && video
+        ? `Case 1 đã có video nên chỉ thêm ${acceptedFiles.length} ảnh, tối đa 6 ảnh + 1 video.`
+        : `Chỉ thêm ${acceptedFiles.length} ảnh để không vượt quá giới hạn ${imageLimit} ảnh.`);
+    } else {
+      setMediaNotice('');
     }
-    e.target.value = '';
+
+    const nextItems = acceptedFiles.map((file) => ({
+      id: createFileItemId(file),
+      file,
+      preview: createPreviewUrl(file),
+    }));
+    if (nextItems.length > 0) setImages((current) => [...current, ...nextItems]);
+    event.target.value = '';
   };
 
-  const removeColor = (idx) => {
-    setColors(prev => {
-      URL.revokeObjectURL(prev[idx].preview);
-      return prev.filter((_, i) => i !== idx);
+  const removeImage = (id) => {
+    if (isAmazonCaseOne && images.length === CASE_ONE_IMAGE_LIMIT) {
+      setMediaNotice('');
+      setVideoNotice('');
+    }
+    setImages((current) => {
+      const item = current.find((entry) => entry.id === id);
+      revokePreviewUrl(item?.preview);
+      return current.filter((entry) => entry.id !== id);
     });
   };
 
-  // ── Size handlers ───────────────────────────────────────────────
+  const handleVideoUpload = (event) => {
+    if (!canEditVideo) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (isAmazonCaseOne && images.length >= CASE_ONE_IMAGE_LIMIT) {
+      const message = 'Case 1 cho phép 7 ảnh, hoặc 6 ảnh + 1 video. Hãy xóa bớt 1 ảnh trước khi chọn video.';
+      setMediaNotice(message);
+      setVideoNotice(message);
+      event.target.value = '';
+      return;
+    }
+
+    const nextVideo = {
+      id: createFileItemId(file),
+      file,
+      preview: createPreviewUrl(file),
+    };
+    setVideo((current) => {
+      revokePreviewUrl(current?.preview);
+      return nextVideo;
+    });
+    setMediaNotice('');
+    setVideoNotice('');
+    event.target.value = '';
+  };
+
+  const removeVideo = () => {
+    setVideo((current) => {
+      revokePreviewUrl(current?.preview);
+      return null;
+    });
+  };
+
+  const handleColorImageUpload = (event) => {
+    if (!canEditImages) return;
+    const file = event.target.files?.[0];
+    const colorName = newColorName.trim();
+    if (!file || !colorName) return;
+
+    setColors((current) => [...current, {
+      id: createFileItemId(file),
+      name: colorName,
+      file,
+      preview: createPreviewUrl(file),
+    }]);
+    setNewColorName('');
+    event.target.value = '';
+  };
+
+  const removeColor = (id) => {
+    setColors((current) => {
+      const item = current.find((entry) => entry.id === id);
+      revokePreviewUrl(item?.preview);
+      return current.filter((entry) => entry.id !== id);
+    });
+  };
+
   const toggleSize = (size) => {
-    setSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
+    if (!canEditText) return;
+    setSizes((current) => (
+      current.includes(size)
+        ? current.filter((item) => item !== size)
+        : [...current, size]
+    ));
   };
 
-  const addCustomSize = (e) => {
-    if (e.key === 'Enter') {
-      const val = e.target.value.trim().toUpperCase();
-      if (val && !sizes.includes(val)) setSizes(prev => [...prev, val]);
-      e.target.value = '';
+  const commitCustomSize = () => {
+    if (!canEditText) return;
+    const value = customSize.trim().toUpperCase();
+    if (value && !sizes.includes(value)) setSizes((current) => [...current, value]);
+    setCustomSize('');
+  };
+
+  const handleCustomSizeKeyDown = (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    event.stopPropagation();
+    commitCustomSize();
+  };
+
+  const handleAPlusUpload = (event) => {
+    if (!canEditImages) return;
+    const files = Array.from(event.target.files || []);
+    const nextItems = files.map((file) => ({
+      id: createFileItemId(file),
+      file,
+      preview: createPreviewUrl(file),
+    }));
+    if (nextItems.length > 0) setAPlusImages((current) => [...current, ...nextItems]);
+    event.target.value = '';
+  };
+
+  const removeAPlus = (id) => {
+    setAPlusImages((current) => {
+      const item = current.find((entry) => entry.id === id);
+      revokePreviewUrl(item?.preview);
+      return current.filter((entry) => entry.id !== id);
+    });
+  };
+
+  const handleTitleChange = (event) => {
+    setTitle(event.target.value);
+    if (event.target.value.trim()) setTitleError('');
+  };
+
+  const handleBulletPointChange = (index, value) => {
+    setBulletPoints((current) => current.map((item, itemIndex) => (
+      itemIndex === index ? value : item
+    )));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!canSave || submitting) return;
+
+    if (!title.trim()) {
+      const message = 'Vui lòng nhập tiêu đề sản phẩm trước khi lưu Preview.';
+      setTitleError(message);
+      setError(message);
+      titleInputRef.current?.focus();
+      return;
     }
-  };
-
-  // ── A+ Content ──────────────────────────────────────────────────
-  const handleAPlusUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const remaining = MAX_APLUS - aPlusImages.length;
-    files.slice(0, remaining).forEach(file => {
-      setAPlusImages(prev => [...prev, { file, preview: URL.createObjectURL(file) }]);
-    });
-    e.target.value = '';
-  };
-
-  const removeAPlus = (idx) => {
-    setAPlusImages(prev => {
-      URL.revokeObjectURL(prev[idx].preview);
-      return prev.filter((_, i) => i !== idx);
-    });
-  };
-
-  // ── Submit ──────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!title.trim()) { setError('Vui lòng nhập tiêu đề sản phẩm.'); return; }
 
     setSubmitting(true);
     setError('');
+    setTitleError('');
 
     try {
-      const fd = new FormData();
-      fd.append('taskId', taskId);
-      fd.append('platform', platform);
-      fd.append('title', title);
-      if (price) fd.append('price', price);
-      if (brand) fd.append('brand', brand);
-      if (fabricType) fd.append('fabricType', fabricType);
-      if (careInstructions) fd.append('careInstructions', careInstructions);
-      if (origin) fd.append('origin', origin);
+      const formData = new FormData();
+      formData.append('taskId', taskId);
+      formData.append('platform', normalizedPlatform);
+      formData.append('title', title.trim());
+      if (price !== '') formData.append('price', price);
+      if (brand.trim()) formData.append('brand', brand.trim());
+      if (fabricType.trim()) formData.append('fabricType', fabricType.trim());
+      if (careInstructions.trim()) formData.append('careInstructions', careInstructions.trim());
+      if (origin.trim()) formData.append('origin', origin.trim());
 
-      bulletPoints.filter(b => b.trim()).forEach(b => fd.append('bulletPoints', b));
-      sizes.forEach(s => fd.append('sizes', s));
+      bulletPoints
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .forEach((item) => formData.append('bulletPoints', item));
+      sizes.forEach((size) => formData.append('sizes', size));
 
       if (images.length > 0) {
-        fd.append('mainImage', images[0].file);
-        images.slice(1).forEach(img => fd.append('galleryImages', img.file));
+        formData.append('mainImage', images[0].file);
+        images.slice(1).forEach((item) => formData.append('galleryImages', item.file));
       }
-      if (video) fd.append('video', video.file);
+      if (video) formData.append('video', video.file);
 
-      colors.forEach(c => fd.append('colorNames', c.name));
-      colors.forEach(c => fd.append('colorImages', c.file));
+      colors.forEach((item) => formData.append('colorNames', item.name));
+      colors.forEach((item) => formData.append('colorImages', item.file));
+      aPlusImages.forEach((item) => formData.append('aPlusImages', item.file));
 
-      aPlusImages.forEach(ap => fd.append('aPlusImages', ap.file));
+      const response = await axiosInstance.post('/api/previews/upload', formData);
+      const previewId = response.data?.id;
+      if (!previewId) throw new Error('MISSING_PREVIEW_ID');
 
-      const response = await axiosInstance.post('/api/previews/upload', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      setSavedPreviewId(response.data.id);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Upload thất bại. Vui lòng thử lại.');
+      setSavedPreviewId(previewId);
+      setSavedSignature(currentSignature);
+      onSaved?.(previewId);
+    } catch (requestError) {
+      if (!requestError.response) {
+        setError('Không thể kết nối máy chủ. Kiểm tra mạng rồi thử lưu lại.');
+      } else if (requestError.response.status === 401) {
+        setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      } else if (requestError.response.status === 403) {
+        setError('Bạn không có quyền lưu phần nội dung này. Vui lòng kiểm tra vai trò được phân công.');
+      } else {
+        setError('Upload thất bại. Vui lòng kiểm tra dữ liệu và thử lại.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
+  const imageLimitDescription = imageLimit === null
+    ? 'Chưa áp giới hạn cứng vì hạn mức media Case 2/3 đang chờ team chốt.'
+    : (isAmazonCaseOne
+      ? 'Case 1 cho phép 7 ảnh, hoặc 6 ảnh + 1 video. Ảnh đầu tiên được gửi bằng key mainImage.'
+      : `Tối đa ${imageLimit} ảnh. Ảnh đầu tiên được gửi bằng key mainImage.`);
+  const videoDescription = isCaseWithPendingLimit
+    ? 'API hiện nhận một file qua key video; hạn mức tổng media Case 2/3 vẫn đang chờ team chốt.'
+    : 'Một file video tùy chọn được gửi bằng key video.';
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* ── Section 1: Thông tin cơ bản ── */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-sm font-bold flex items-center justify-center">1</span>
-          Thông tin sản phẩm
-        </h2>
+    <form
+      className="hc-upload-form"
+      data-project-id={projectId}
+      data-task-id={taskId}
+      onSubmit={handleSubmit}
+      noValidate
+    >
+      <nav className="hc-mobile-wizard" aria-label="Đi tới vùng chỉnh sửa">
+        <button type="button" onClick={() => scrollToZone('workspace-images')}>Ảnh &amp; A+</button>
+        <button type="button" onClick={() => scrollToZone('workspace-video')}>Video</button>
+        <button type="button" onClick={() => scrollToZone('workspace-text')}>Nội dung</button>
+      </nav>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tiêu đề sản phẩm <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              maxLength={200}
-              placeholder="VD: Men's Classic Fit Crewneck T-Shirt, 100% Cotton..."
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-            />
-            <p className="text-xs text-gray-400 mt-1">{title.length}/200 ký tự</p>
-          </div>
+      <section
+        id="workspace-images"
+        className={`hc-zone hc-zone--design ${canEditImages ? '' : 'hc-zone--locked'}`}
+        aria-labelledby="workspace-images-title"
+      >
+        <ZoneHeader
+          id="workspace-images-title"
+          icon={Images}
+          label="PRODUCT DESIGN"
+          title="Hình ảnh, màu sắc & A+ Content"
+          description={imageLimitDescription}
+          editable={canEditImages}
+        />
 
+        <div className="hc-zone__content space-y-7">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Giá ($)</label>
-            <input
-              type="number"
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              step="0.01" min="0"
-              placeholder="19.99"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-            <input
-              type="text"
-              value={brand}
-              onChange={e => setBrand(e.target.value)}
-              placeholder="VD: Hanes, Amazon Essentials..."
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-            />
-          </div>
-
-          {(category === 1) && (
-            <>
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fabric Type</label>
-                <input
-                  type="text"
-                  value={fabricType}
-                  onChange={e => setFabricType(e.target.value)}
-                  placeholder="VD: 100% Cotton, Polyester Blend..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-                />
+                <h3 className="text-sm font-bold text-[var(--hc-navy-900)]">Hình ảnh sản phẩm</h3>
+                <p className="mt-1 text-xs text-[var(--hc-gray-500)]">
+                  Ảnh đầu tiên là ảnh chính. Chưa áp validation dung lượng/định dạng vì NFR upload đang chờ chốt.
+                </p>
               </div>
+              <span className="text-xs font-bold tabular-nums text-[var(--hc-gray-600)]">
+                {images.length}{imageLimit === null ? ' ảnh' : `/${imageLimit} ảnh`}
+              </span>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Care Instructions</label>
-                <input
-                  type="text"
-                  value={careInstructions}
-                  onChange={e => setCareInstructions(e.target.value)}
-                  placeholder="VD: Machine wash cold, tumble dry low"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-                />
+            {mediaNotice && (
+              <div className="hc-alert hc-alert--info mb-3" role="status">
+                <AlertCircle size={18} aria-hidden="true" />
+                <span>{mediaNotice}</span>
               </div>
-            </>
-          )}
+            )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Country of Origin</label>
-            <input
-              type="text"
-              value={origin}
-              onChange={e => setOrigin(e.target.value)}
-              placeholder="VD: Vietnam, China, Bangladesh..."
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section 2: Bullet Points ── */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-sm font-bold flex items-center justify-center">2</span>
-          Bullet Points (tối đa 5)
-        </h2>
-        <div className="space-y-3">
-          {bulletPoints.map((bp, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm w-5 flex-shrink-0">•</span>
-              <input
-                type="text"
-                value={bp}
-                onChange={e => {
-                  const copy = [...bulletPoints];
-                  copy[idx] = e.target.value;
-                  setBulletPoints(copy);
-                }}
-                placeholder={`Bullet point ${idx + 1}`}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Section 3: Hình ảnh ── */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-red-100 text-red-600 text-sm font-bold flex items-center justify-center">3</span>
-          Hình ảnh sản phẩm
-          <span className="text-xs font-normal text-gray-400 ml-1">(tối đa {MAX_IMAGES} ảnh, tỷ lệ 1:1)</span>
-        </h2>
-        <p className="text-xs text-gray-400 mb-4">Ảnh đầu tiên là ảnh chính. Khuyến nghị 1000×1000px trở lên.</p>
-
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
-          {images.map((img, idx) => (
-            <div key={idx} className="relative aspect-square border-2 border-gray-200 rounded-lg overflow-hidden group">
-              <img src={img.preview} alt={`img-${idx}`} className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => removeImage(idx)}
-                className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity text-red-500"
-              >
-                <X size={14} />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs text-center py-0.5">
-                {idx === 0 ? 'Main' : `Slot ${idx + 1}`}
-              </div>
-            </div>
-          ))}
-
-          {images.length < MAX_IMAGES && (
-            <label className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
-              <Upload size={20} className="text-gray-400 mb-1" />
-              <span className="text-xs text-gray-400">Thêm ảnh</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-            </label>
-          )}
-        </div>
-
-        {/* Video */}
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            Video sản phẩm
-            <span className="text-xs font-normal text-gray-400 ml-1">(tùy chọn, tối đa 1 video)</span>
-          </h3>
-          {video ? (
-            <div className="relative inline-block">
-              <video
-                src={video.preview}
-                className="h-32 rounded-lg border border-gray-200"
-                controls
-              />
-              <button
-                type="button"
-                onClick={() => setVideo(null)}
-                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow text-red-500"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ) : (
-            <label className="inline-flex items-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-lg px-4 py-3 hover:border-orange-400 hover:bg-orange-50 transition-colors text-sm text-gray-500">
-              <Upload size={18} />
-              Upload Video
-              <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
-            </label>
-          )}
-        </div>
-      </section>
-
-      {/* ── Section 4: Màu sắc & Size (chỉ cho Clothing) ── */}
-      {category === 1 && (
-        <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-5 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-sm font-bold flex items-center justify-center">4</span>
-            Màu sắc & Kích cỡ
-          </h2>
-
-          {/* Colors */}
-          <div className="mb-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Màu sắc</h3>
-            <div className="flex flex-wrap gap-3 mb-3">
-              {colors.map((c, idx) => (
-                <div key={idx} className="relative group">
-                  <img src={c.preview} alt={c.name} className="w-14 h-14 rounded-lg object-cover border-2 border-gray-200" />
-                  <p className="text-xs text-center text-gray-500 mt-0.5 truncate max-w-[56px]">{c.name}</p>
-                  <button
-                    type="button"
-                    onClick={() => removeColor(idx)}
-                    className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity text-red-500"
-                  >
-                    <X size={12} />
-                  </button>
+            <div className="hc-upload-grid">
+              {images.map((item, index) => (
+                <div className="hc-upload-tile" key={item.id}>
+                  <img src={item.preview} alt={`Ảnh ${index + 1}: ${item.file.name}`} />
+                  {canEditImages && (
+                    <UploadTileRemoveButton
+                      label={`Xóa ảnh ${index + 1}`}
+                      onClick={() => removeImage(item.id)}
+                    />
+                  )}
+                  <span className="hc-upload-tile__badge">
+                    {index === 0 ? 'ẢNH CHÍNH' : `ẢNH ${index + 1}`}
+                  </span>
                 </div>
               ))}
+
+              {canEditImages && (imageLimit === null || images.length < imageLimit) && (
+                <label className="hc-upload-tile hc-upload-tile--add focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-500">
+                  <Upload size={22} aria-hidden="true" />
+                  <span>Thêm ảnh</span>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    multiple
+                    className="sr-only"
+                    onChange={handleImageUpload}
+                    aria-label="Chọn hình ảnh sản phẩm"
+                  />
+                </label>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newColorName}
-                onChange={e => setNewColorName(e.target.value)}
-                placeholder="Tên màu (VD: Navy Blue)"
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 w-48"
-              />
-              <label className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${newColorName.trim() ? 'bg-orange-50 border border-orange-300 text-orange-600 hover:bg-orange-100' : 'bg-gray-50 border border-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                <Plus size={16} />
-                Chọn ảnh màu
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={!newColorName.trim()}
-                  onChange={handleColorImageUpload}
-                />
-              </label>
-            </div>
+
+            {images.length === 0 && !canEditImages && (
+              <p className="mt-3 text-xs text-[var(--hc-gray-500)]">
+                Chưa có ảnh được chọn trong form của phiên làm việc này.
+              </p>
+            )}
           </div>
 
-          {/* Sizes */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Kích cỡ</h3>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {SIZES_PRESETS.map(size => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => toggleSize(size)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${sizes.includes(size) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-200 text-gray-600 hover:border-orange-300'}`}
-                >
-                  {size}
-                </button>
-              ))}
+          {isClothing && (
+            <div className="border-t border-[var(--hc-gray-200)] pt-6">
+              <div className="mb-3 flex items-start gap-3">
+                <Palette size={19} className="mt-0.5 text-[var(--hc-role-design)]" aria-hidden="true" />
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--hc-navy-900)]">Biến thể màu</h3>
+                  <p className="mt-1 text-xs text-[var(--hc-gray-500)]">
+                    Tên màu đi cùng ảnh swatch nên được quản lý trong vùng Product Design.
+                  </p>
+                </div>
+              </div>
+
+              {colors.length > 0 && (
+                <div className="hc-upload-grid mb-4">
+                  {colors.map((item) => (
+                    <div className="hc-upload-tile" key={item.id}>
+                      <img src={item.preview} alt={`Màu ${item.name}`} />
+                      {canEditImages && (
+                        <UploadTileRemoveButton
+                          label={`Xóa màu ${item.name}`}
+                          onClick={() => removeColor(item.id)}
+                        />
+                      )}
+                      <span className="hc-upload-tile__badge max-w-[calc(100%-0.75rem)] truncate">
+                        {item.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="hc-form-grid">
+                <label className="hc-field">
+                  <span>Tên màu</span>
+                  <input
+                    className="hc-input"
+                    type="text"
+                    value={newColorName}
+                    onChange={(event) => setNewColorName(event.target.value)}
+                    placeholder="Ví dụ: Navy Blue"
+                    readOnly={!canEditImages}
+                  />
+                  <small>Nhập tên trước khi chọn ảnh màu tương ứng.</small>
+                </label>
+
+                <div className="hc-field">
+                  <span>Ảnh màu</span>
+                  {canEditImages ? (
+                    <label className={`hc-button hc-button--secondary w-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-500 ${newColorName.trim() ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+                      <Plus size={17} aria-hidden="true" />
+                      Chọn ảnh màu
+                      <input
+                        ref={colorInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        disabled={!newColorName.trim()}
+                        onChange={handleColorImageUpload}
+                        aria-label="Chọn ảnh cho màu vừa nhập"
+                      />
+                    </label>
+                  ) : (
+                    <button className="hc-button hc-button--secondary w-full" type="button" disabled>
+                      <Lock size={17} aria-hidden="true" />
+                      Không có quyền chọn ảnh màu
+                    </button>
+                  )}
+                  <small>Chưa áp giới hạn dung lượng/định dạng file.</small>
+                </div>
+              </div>
             </div>
-            <input
-              type="text"
-              placeholder="Kích cỡ tuỳ chỉnh — nhấn Enter để thêm"
-              onKeyDown={addCustomSize}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 w-full"
-            />
-          </div>
-        </section>
-      )}
-
-      {/* ── Section 5: A+ Content ── */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-sm font-bold flex items-center justify-center">
-            {category === 1 ? 5 : 4}
-          </span>
-          A+ Content
-          <span className="text-xs font-normal text-gray-400 ml-1">(tùy chọn, tỷ lệ 970×600)</span>
-        </h2>
-        <p className="text-xs text-gray-400 mb-4">Ảnh nội dung phong phú cho phần mô tả. Tối đa {MAX_APLUS} ảnh.</p>
-
-        <div className="space-y-3">
-          {aPlusImages.map((ap, idx) => (
-            <div key={idx} className="relative group max-w-2xl">
-              <img
-                src={ap.preview}
-                alt={`aplus-${idx}`}
-                className="w-full rounded-lg border border-gray-200"
-                style={{ aspectRatio: '970/600', objectFit: 'cover' }}
-              />
-              <button
-                type="button"
-                onClick={() => removeAPlus(idx)}
-                className="absolute top-2 right-2 bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition-opacity text-red-500"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          ))}
-
-          {aPlusImages.length < MAX_APLUS && (
-            <label className="max-w-2xl flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
-              <Upload size={24} className="text-gray-400 mb-2" />
-              <span className="text-sm text-gray-500">Upload A+ Module (970×600)</span>
-              <input type="file" accept="image/*" multiple className="hidden" onChange={handleAPlusUpload} />
-            </label>
           )}
+
+          <div className="border-t border-[var(--hc-gray-200)] pt-6">
+            <div className="mb-3 flex items-start gap-3">
+              <ImageIcon size={19} className="mt-0.5 text-[var(--hc-role-design)]" aria-hidden="true" />
+              <div>
+                <h3 className="text-sm font-bold text-[var(--hc-navy-900)]">A+ Content</h3>
+                <p className="mt-1 text-xs text-[var(--hc-gray-500)]">
+                  Ảnh nội dung phong phú, khuyến nghị tỷ lệ 970×600. Hạn mức A+ chưa được đặc tả nên chưa áp giới hạn cứng.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {aPlusImages.map((item, index) => (
+                <div className="hc-upload-tile" style={{ aspectRatio: '970 / 600' }} key={item.id}>
+                  <img src={item.preview} alt={`A+ module ${index + 1}: ${item.file.name}`} />
+                  {canEditImages && (
+                    <UploadTileRemoveButton
+                      label={`Xóa A+ module ${index + 1}`}
+                      onClick={() => removeAPlus(item.id)}
+                    />
+                  )}
+                  <span className="hc-upload-tile__badge">A+ {index + 1}</span>
+                </div>
+              ))}
+
+              {canEditImages && (
+                <label
+                  className="hc-upload-tile hc-upload-tile--add focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-500"
+                  style={{ aspectRatio: '970 / 600' }}
+                >
+                  <Upload size={22} aria-hidden="true" />
+                  <span>Thêm A+ module</span>
+                  <input
+                    ref={aPlusInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="sr-only"
+                    onChange={handleAPlusUpload}
+                    aria-label="Chọn ảnh A+ Content"
+                  />
+                </label>
+              )}
+            </div>
+          </div>
         </div>
+
+        <ZoneFooter
+          editable={canEditImages}
+          editableText="Bạn có thể chỉnh sửa ảnh, ảnh màu và A+ Content."
+          lockedText="Chỉ ADMIN hoặc PRODUCT_DESIGN được chỉnh sửa vùng hình ảnh."
+        />
       </section>
 
-      {/* ── Submit ── */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+      <section
+        id="workspace-video"
+        className={`hc-zone hc-zone--marvel ${canEditVideo ? '' : 'hc-zone--locked'}`}
+        aria-labelledby="workspace-video-title"
+      >
+        <ZoneHeader
+          id="workspace-video-title"
+          icon={Video}
+          label="MARVEL LABS"
+          title="Video sản phẩm"
+          description={videoDescription}
+          editable={canEditVideo}
+        />
 
-      {savedPreviewId && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-          <CheckCircle size={16} />
-          Upload thành công! Preview ID: <code className="font-mono">{savedPreviewId}</code>
+        <div className="hc-zone__content">
+          {videoNotice && (
+            <div className="hc-alert hc-alert--info mb-4" role="alert">
+              <AlertCircle size={18} aria-hidden="true" />
+              <span>{videoNotice}</span>
+            </div>
+          )}
+          {video ? (
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-center">
+              <div className="hc-upload-tile" style={{ aspectRatio: '16 / 9' }}>
+                <video src={video.preview} controls preload="metadata" aria-label={`Video ${video.file.name}`} />
+                {canEditVideo && (
+                  <UploadTileRemoveButton label="Xóa video sản phẩm" onClick={removeVideo} />
+                )}
+              </div>
+              <div className="min-w-0">
+                <strong className="block truncate text-sm text-[var(--hc-navy-900)]">{video.file.name}</strong>
+                <span className="mt-1 block text-xs text-[var(--hc-gray-500)]">
+                  {(video.file.size / (1024 * 1024)).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} MB
+                </span>
+                {canEditVideo && (
+                  <button className="hc-button hc-button--danger mt-4" type="button" onClick={removeVideo}>
+                    <Trash2 size={17} aria-hidden="true" />
+                    Xóa video
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : canEditVideo ? (
+            <label className="hc-upload-tile hc-upload-tile--add min-h-32 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-500" style={{ aspectRatio: 'auto' }}>
+              <Upload size={23} aria-hidden="true" />
+              <span>Chọn video sản phẩm</span>
+              <small className="px-4 text-center text-[10px]">Chưa áp validation dung lượng/định dạng vì NFR upload đang chờ chốt.</small>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                className="sr-only"
+                onChange={handleVideoUpload}
+                aria-label="Chọn video sản phẩm"
+              />
+            </label>
+          ) : (
+            <p className="text-xs text-[var(--hc-gray-500)]">
+              Chưa có video được chọn trong form của phiên làm việc này.
+            </p>
+          )}
         </div>
-      )}
 
-      <div className="flex justify-end pb-8">
+        <ZoneFooter
+          editable={canEditVideo}
+          editableText="Bạn có thể thêm, thay thế hoặc xóa video sản phẩm."
+          lockedText="Chỉ ADMIN hoặc MARVEL được chỉnh sửa vùng video."
+        />
+      </section>
+
+      <section
+        id="workspace-text"
+        className={`hc-zone hc-zone--seller ${canEditText ? '' : 'hc-zone--locked'}`}
+        aria-labelledby="workspace-text-title"
+      >
+        <ZoneHeader
+          id="workspace-text-title"
+          icon={Type}
+          label="SELLER"
+          title="Nội dung sản phẩm"
+          description="Tiêu đề, giá, thông tin mô tả, bullet points và kích cỡ."
+          editable={canEditText}
+        />
+
+        <div className="hc-zone__content space-y-7">
+          <div className="hc-form-grid">
+            <label className="hc-field hc-form-grid__full">
+              <span className="flex items-center justify-between gap-3">
+                <span>Tiêu đề sản phẩm <span className="text-[var(--hc-red-700)]">*</span></span>
+                <small className="tabular-nums">{title.length}/200</small>
+              </span>
+              <textarea
+                ref={titleInputRef}
+                className="hc-textarea"
+                value={title}
+                onChange={handleTitleChange}
+                maxLength={200}
+                rows={2}
+                placeholder="Ví dụ: Men's Classic Fit Crewneck T-Shirt, 100% Cotton..."
+                readOnly={!canEditText}
+                aria-invalid={Boolean(titleError)}
+                aria-describedby={titleError ? 'product-title-error' : undefined}
+                required
+              />
+              {titleError ? (
+                <small id="product-title-error" className="!text-[var(--hc-red-700)]" role="alert">
+                  {titleError}
+                </small>
+              ) : (
+                <small>Trường bắt buộc và luôn được gửi bằng key title.</small>
+              )}
+            </label>
+
+            <label className="hc-field">
+              <span>Giá hiển thị ($)</span>
+              <input
+                className="hc-input"
+                type="number"
+                inputMode="decimal"
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
+                step="0.01"
+                min="0"
+                placeholder="19.99"
+                readOnly={!canEditText}
+              />
+            </label>
+
+            <label className="hc-field">
+              <span>Thương hiệu</span>
+              <input
+                className="hc-input"
+                type="text"
+                value={brand}
+                onChange={(event) => setBrand(event.target.value)}
+                placeholder="Ví dụ: Happy Creative"
+                readOnly={!canEditText}
+              />
+            </label>
+
+            {isClothing && (
+              <>
+                <label className="hc-field">
+                  <span>Chất liệu</span>
+                  <input
+                    className="hc-input"
+                    type="text"
+                    value={fabricType}
+                    onChange={(event) => setFabricType(event.target.value)}
+                    placeholder="Ví dụ: 100% Cotton"
+                    readOnly={!canEditText}
+                  />
+                </label>
+
+                <label className="hc-field">
+                  <span>Hướng dẫn bảo quản</span>
+                  <input
+                    className="hc-input"
+                    type="text"
+                    value={careInstructions}
+                    onChange={(event) => setCareInstructions(event.target.value)}
+                    placeholder="Ví dụ: Giặt máy bằng nước lạnh"
+                    readOnly={!canEditText}
+                  />
+                </label>
+              </>
+            )}
+
+            <label className="hc-field hc-form-grid__full">
+              <span>Xuất xứ</span>
+              <input
+                className="hc-input"
+                type="text"
+                value={origin}
+                onChange={(event) => setOrigin(event.target.value)}
+                placeholder="Ví dụ: Việt Nam"
+                readOnly={!canEditText}
+              />
+            </label>
+          </div>
+
+          <div className="border-t border-[var(--hc-gray-200)] pt-6">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-bold text-[var(--hc-navy-900)]">Bullet points</h3>
+              <span className="text-xs text-[var(--hc-gray-500)]">Tối đa 5 mục</span>
+            </div>
+            <div className="space-y-3">
+              {bulletPoints.map((bulletPoint, index) => (
+                <label className="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-2" key={`bullet-${index + 1}`}>
+                  <span className="grid min-h-11 place-items-center rounded-[0.625rem] bg-[var(--hc-green-50)] text-xs font-bold text-[var(--hc-green-700)]">
+                    {index + 1}
+                  </span>
+                  <span className="sr-only">Bullet point {index + 1}</span>
+                  <textarea
+                    className="hc-textarea !min-h-20"
+                    rows={2}
+                    value={bulletPoint}
+                    onChange={(event) => handleBulletPointChange(index, event.target.value)}
+                    placeholder={`Nội dung bullet point ${index + 1}`}
+                    readOnly={!canEditText}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {isClothing && (
+            <div className="border-t border-[var(--hc-gray-200)] pt-6">
+              <div className="mb-3">
+                <h3 className="text-sm font-bold text-[var(--hc-navy-900)]">Kích cỡ</h3>
+                <p className="mt-1 text-xs text-[var(--hc-gray-500)]">
+                  Kích cỡ là dữ liệu text nên thuộc Seller; Product Design chỉ quản lý ảnh màu.
+                </p>
+              </div>
+
+              <div className="hc-chip-list" role="group" aria-label="Chọn kích cỡ có sẵn">
+                {SIZES_PRESETS.map((size) => (
+                  <button
+                    className="hc-chip"
+                    type="button"
+                    key={size}
+                    onClick={() => toggleSize(size)}
+                    aria-pressed={sizes.includes(size)}
+                    disabled={!canEditText}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <label className="hc-field">
+                  <span>Kích cỡ tùy chỉnh</span>
+                  <input
+                    className="hc-input"
+                    type="text"
+                    value={customSize}
+                    onChange={(event) => setCustomSize(event.target.value)}
+                    onKeyDown={handleCustomSizeKeyDown}
+                    placeholder="Ví dụ: 3XL hoặc One Size"
+                    readOnly={!canEditText}
+                  />
+                  <small>Nhấn Enter hoặc dùng nút Thêm; Enter sẽ không gửi form.</small>
+                </label>
+                <button
+                  className="hc-button hc-button--secondary self-start sm:mt-[1.7rem]"
+                  type="button"
+                  onClick={commitCustomSize}
+                  disabled={!canEditText || !customSize.trim()}
+                >
+                  <Plus size={17} aria-hidden="true" />
+                  Thêm
+                </button>
+              </div>
+
+              {sizes.some((size) => !SIZES_PRESETS.includes(size)) && (
+                <div className="hc-chip-list mt-3" aria-label="Kích cỡ tùy chỉnh đã chọn">
+                  {sizes.filter((size) => !SIZES_PRESETS.includes(size)).map((size) => (
+                    <button
+                      className="hc-chip"
+                      type="button"
+                      key={size}
+                      onClick={() => toggleSize(size)}
+                      disabled={!canEditText}
+                      aria-label={`Xóa kích cỡ ${size}`}
+                      title={`Xóa kích cỡ ${size}`}
+                    >
+                      {size}
+                      {canEditText && <Trash2 size={14} aria-hidden="true" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <ZoneFooter
+          editable={canEditText}
+          editableText="Bạn có thể chỉnh sửa text và kích cỡ của listing."
+          lockedText="Chỉ ADMIN hoặc SELLER được chỉnh sửa vùng nội dung."
+        />
+      </section>
+
+      <div className="space-y-3" aria-live="polite">
+        {error && (
+          <div className="hc-alert hc-alert--error" role="alert">
+            <AlertCircle size={19} aria-hidden="true" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {savedPreviewId && (
+          <div className={`hc-alert ${hasUnsavedChanges ? 'hc-alert--info' : 'hc-alert--success'}`} role="status">
+            {hasUnsavedChanges
+              ? <AlertCircle size={19} aria-hidden="true" />
+              : <CheckCircle2 size={19} aria-hidden="true" />}
+            <span className="min-w-0">
+              {hasUnsavedChanges ? 'Bạn có thay đổi mới chưa được lưu. ' : 'Đã lưu bản Preview thành công. '}
+              ID: <code className="break-all font-mono text-xs">{savedPreviewId}</code>
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col-reverse gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs leading-5 text-[var(--hc-gray-500)]">
+          Lưu sẽ tạo một Preview mới từ dữ liệu hiện có trong form và giữ nguyên task hiện tại.
+        </p>
         <button
           type="submit"
-          disabled={submitting}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors disabled:opacity-60"
+          disabled={submitting || !canSave}
+          className="hc-button hc-button--primary w-full shrink-0 sm:w-auto"
         >
-          {submitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-          {submitting ? 'Đang upload...' : 'Lưu & Upload'}
+          {submitting ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
+          {submitting ? 'Đang upload...' : 'Lưu bản Preview'}
         </button>
       </div>
     </form>

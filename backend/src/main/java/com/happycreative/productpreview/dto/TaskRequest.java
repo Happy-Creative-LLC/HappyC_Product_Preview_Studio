@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class TaskRequest {
     private String title;
-    private String platform = "AMAZON";
-    private int category = 1;
+    private String platform;
+    private Integer category;
     private String status;
 }

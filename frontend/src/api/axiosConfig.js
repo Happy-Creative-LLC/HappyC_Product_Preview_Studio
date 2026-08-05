@@ -1,24 +1,33 @@
 import axios from 'axios';
 import { useAppStore } from '../stores/appStore';
 
-// Cấu hình base URL tới backend Spring Boot
+// Mặc định gọi cùng origin để Vite/Nginx proxy request đến backend. Nhờ đó
+// frontend hoạt động với localhost, IP LAN hoặc domain mà không hard-code host.
 const axiosInstance = axios.create({
-  baseURL: `http://${window.location.hostname}:8081`,
+  baseURL: import.meta.env.VITE_API_BASE_URL?.trim() || '',
 });
 
-// Interceptor để tự động đính kèm JWT token vào mọi request
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Lấy state từ Zustand
     const token = useAppStore.getState().token;
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
+  (error) => Promise.reject(error),
+);
+
+// Phiên hết hạn ở API nghiệp vụ phải quay về đăng nhập. Lỗi từ chính API
+// đăng nhập được giữ lại để form hiển thị thông báo tiếng Việt tại chỗ.
+axiosInstance.interceptors.response.use(
+  (response) => response,
   (error) => {
+    const isAuthRequest = error.config?.url?.includes('/api/auth/');
+    if (error.response?.status === 401 && !isAuthRequest) {
+      useAppStore.getState().logout();
+      if (window.location.pathname !== '/') window.location.assign('/');
+    }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

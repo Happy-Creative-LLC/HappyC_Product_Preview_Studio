@@ -28,18 +28,36 @@ export const useAppStore = create(
         return false;
       },
 
+      googleLogin: async (credential) => {
+        const response = await axiosInstance.post('/api/auth/google', { credential });
+
+        if (response.data?.token) {
+          set({
+            user: response.data,
+            role: response.data.role,
+            token: response.data.token,
+          });
+          return true;
+        }
+        return false;
+      },
+
       logout: () => set({ user: null, role: null, token: null, projects: [], tasks: {} }),
 
       fetchProjects: async () => {
         const response = await axiosInstance.get('/api/projects');
-        set({ projects: response.data });
+        const projectData = response.data;
+        set({ projects: projectData });
+        return projectData;
       },
 
       fetchTasks: async (projectId) => {
         const response = await axiosInstance.get(`/api/projects/${projectId}/tasks`);
+        const taskData = response.data;
         set((state) => ({
-          tasks: { ...state.tasks, [projectId]: response.data },
+          tasks: { ...state.tasks, [projectId]: taskData },
         }));
+        return taskData;
       },
 
       fetchTask: async (projectId, taskId) => {
@@ -55,8 +73,41 @@ export const useAppStore = create(
       },
 
       updateTaskStatus: async (taskId, status) => {
-        const response = await axiosInstance.put(`/api/tasks/${taskId}`, { status });
-        return response.data;
+        const cachedTask = Object.values(get().tasks)
+          .flat()
+          .find((task) => task.id === taskId);
+        const currentTask = cachedTask
+          || (await axiosInstance.get(`/api/tasks/${taskId}`)).data;
+        const response = await axiosInstance.put(`/api/tasks/${taskId}`, {
+          title: currentTask.title,
+          platform: currentTask.platform,
+          category: currentTask.category,
+          status,
+        });
+        const updatedTask = response.data;
+        set((state) => {
+          let replaced = false;
+          const updatedTasks = Object.fromEntries(
+            Object.entries(state.tasks).map(([projectId, projectTasks]) => [
+              projectId,
+              projectTasks.map((task) => {
+                if (task.id !== taskId) return task;
+                replaced = true;
+                return updatedTask;
+              }),
+            ])
+          );
+
+          if (!replaced && updatedTask.projectId) {
+            updatedTasks[updatedTask.projectId] = [
+              ...(updatedTasks[updatedTask.projectId] || []),
+              updatedTask,
+            ];
+          }
+
+          return { tasks: updatedTasks };
+        });
+        return updatedTask;
       },
 
       createTask: async (projectId, taskData) => {

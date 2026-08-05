@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import BrandMark from './BrandMark';
 
 const ROLE_LABELS = {
   ADMIN: 'Admin',
@@ -35,9 +36,7 @@ const AppHeader = ({ breadcrumbs = [] }) => {
         {/* Logo + Breadcrumbs */}
         <div className="flex items-center gap-2 min-w-0">
           <Link to="/projects" className="flex-shrink-0">
-            <span className="text-orange-500 font-extrabold text-lg tracking-tight">
-              Happy Creative
-            </span>
+            <BrandMark compact />
           </Link>
 
           {breadcrumbs.length > 0 && (

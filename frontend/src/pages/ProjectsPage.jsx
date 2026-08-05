@@ -1,172 +1,418 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../stores/appStore';
-import { Loader2, ChevronRight, Search } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  Clock3,
+  FolderKanban,
+  ListTodo,
+  Loader2,
+  RefreshCw,
+  UploadCloud,
+} from 'lucide-react';
 import SidebarLayout from '../components/shared/SidebarLayout';
+import { useAppStore } from '../stores/appStore';
+import { isSingleProjectRole } from '../utils/permissions';
 
-const PROJECT_COLORS = [
+const PROJECT_THEMES = [
   {
-    bar:    'linear-gradient(90deg, #1d4ed8, #3b82f6)',
-    iconBg: '#dbeafe', iconColor: '#2563eb',
+    accent: 'border-t-[var(--hc-orange-500)]',
+    symbol: 'bg-[var(--hc-orange-50)] text-[var(--hc-orange-600)]',
   },
   {
-    bar:    'linear-gradient(90deg, #7c3aed, #a78bfa)',
-    iconBg: '#ede9fe', iconColor: '#7c3aed',
+    accent: 'border-t-[var(--hc-purple-500)]',
+    symbol: 'bg-[var(--hc-purple-50)] text-[var(--hc-purple-700)]',
   },
   {
-    bar:    'linear-gradient(90deg, #059669, #34d399)',
-    iconBg: '#d1fae5', iconColor: '#059669',
+    accent: 'border-t-[var(--hc-green-500)]',
+    symbol: 'bg-[var(--hc-green-50)] text-[var(--hc-green-700)]',
   },
   {
-    bar:    'linear-gradient(90deg, #f59e0b, #fbbf24)',
-    iconBg: '#fef3c7', iconColor: '#f59e0b',
+    accent: 'border-t-[var(--hc-blue-500)]',
+    symbol: 'bg-[var(--hc-blue-50)] text-[var(--hc-blue-700)]',
   },
 ];
 
-const FolderIcon = ({ color }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-  </svg>
-);
+const PROJECT_THEME_BY_KEY = {
+  happy: PROJECT_THEMES[0],
+  creative: PROJECT_THEMES[1],
+  hapify84: PROJECT_THEMES[2],
+  global: PROJECT_THEMES[3],
+};
+
+const STATUS_LABELS = {
+  PENDING_UPLOADS: 'Chờ upload',
+  IN_REVIEW: 'Đang review',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Từ chối',
+};
+
+const STATUS_CLASSES = {
+  PENDING_UPLOADS: 'hc-status--pending',
+  IN_REVIEW: 'hc-status--review',
+  APPROVED: 'hc-status--approved',
+  REJECTED: 'hc-status--rejected',
+};
+
+const PLATFORM_CLASSES = {
+  AMAZON: 'hc-platform--amazon',
+  ETSY: 'hc-platform--etsy',
+};
+
+const SUMMARY_ITEMS = [
+  {
+    key: 'total',
+    label: 'Tổng số task',
+    helper: 'Trong các project bạn được truy cập',
+    icon: ListTodo,
+    tone: 'bg-[var(--hc-orange-50)] text-[var(--hc-orange-600)]',
+  },
+  {
+    key: 'pending',
+    label: 'Chờ upload',
+    helper: 'Cần bổ sung nội dung listing',
+    icon: UploadCloud,
+    tone: 'bg-[var(--hc-orange-50)] text-[var(--hc-orange-600)]',
+  },
+  {
+    key: 'review',
+    label: 'Đang review',
+    helper: 'Đang chờ team kiểm tra',
+    icon: Clock3,
+    tone: 'bg-[var(--hc-blue-50)] text-[var(--hc-blue-700)]',
+  },
+  {
+    key: 'approved',
+    label: 'Đã duyệt',
+    helper: 'Listing đã hoàn tất review',
+    icon: BadgeCheck,
+    tone: 'bg-[var(--hc-green-50)] text-[var(--hc-green-700)]',
+  },
+];
+
+const numberFormatter = new Intl.NumberFormat('vi-VN');
+const dateFormatter = new Intl.DateTimeFormat('vi-VN', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
+const getInitials = (name) => {
+  if (!name?.trim()) return '?';
+  const words = name.trim().split(/\s+/);
+  return words.length === 1
+    ? words[0].slice(0, 2).toLocaleUpperCase('vi-VN')
+    : `${words[0][0]}${words.at(-1)[0]}`.toLocaleUpperCase('vi-VN');
+};
+
+const getDisplayName = (user) => {
+  const fullName = user?.fullName?.trim() || user?.username?.trim();
+  return fullName ? fullName.split(/\s+/).at(-1) : 'bạn';
+};
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Chào buổi sáng';
+  if (hour < 18) return 'Chào buổi chiều';
+  return 'Chào buổi tối';
+};
+
+const getProjectSymbol = (project) => {
+  const source = project.key || project.name;
+  return source?.trim().slice(0, 2).toLocaleUpperCase('vi-VN') || 'PR';
+};
+
+const getTaskTime = (task) => {
+  const value = task.updatedAt || task.createdAt;
+  const timestamp = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
-  const { user, projects, fetchProjects } = useAppStore();
+  const { user, projects, tasks, fetchProjects, fetchTasks } = useAppStore();
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState('');
+  const [error, setError] = useState('');
+  const [failedProjectIds, setFailedProjectIds] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (!user) { navigate('/'); return; }
+    if (!user) {
+      navigate('/', { replace: true });
+      return undefined;
+    }
 
-    fetchProjects()
-      .then(() => {
-        if (user.role === 'PRODUCT_DESIGN') {
-          const state = useAppStore.getState();
-          const project = state.projects.find(p => p.key === user.projectKey);
-          if (project) navigate(`/projects/${project.id}/tasks`, { replace: true });
+    let isCurrent = true;
+    let redirecting = false;
+
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError('');
+      setFailedProjectIds([]);
+
+      try {
+        const projectData = await fetchProjects();
+
+        // Seller / Product Design chỉ có đúng 1 project — vào thẳng danh sách task,
+        // không bắt bấm qua bước chọn project.
+        if (isSingleProjectRole(user.role) && projectData.length === 1) {
+          if (isCurrent) {
+            redirecting = true;
+            navigate(`/projects/${projectData[0].id}/tasks`, { replace: true });
+          }
+          return;
         }
-      })
-      .catch(() => setError('Không thể tải danh sách project. Vui lòng thử lại.'))
-      .finally(() => setLoading(false));
-  }, [user]);
+
+        const taskResults = await Promise.allSettled(
+          projectData.map((project) => fetchTasks(project.id))
+        );
+
+        if (!isCurrent) return;
+
+        const failedIds = taskResults.flatMap((result, index) =>
+          result.status === 'rejected' ? [projectData[index].id] : []
+        );
+        setFailedProjectIds(failedIds);
+
+        if (failedIds.length > 0) {
+          setError(
+            `Không thể tải task của ${failedIds.length} project. Các số liệu bên dưới có thể chưa đầy đủ.`
+          );
+        }
+      } catch {
+        if (isCurrent) {
+          setError('Không thể tải danh sách project. Vui lòng kiểm tra kết nối và thử lại.');
+        }
+      } finally {
+        // Giữ spinner khi đang chuyển trang để không loé danh sách project 1 nhịp.
+        if (isCurrent && !redirecting) setLoading(false);
+      }
+    };
+
+    loadDashboard();
+    return () => {
+      isCurrent = false;
+    };
+  }, [fetchProjects, fetchTasks, navigate, reloadKey, user]);
+
+  const allTasks = useMemo(
+    () => projects.flatMap((project) =>
+      (tasks[project.id] || []).map((task) => ({
+        ...task,
+        projectId: task.projectId || project.id,
+        projectName: task.projectName || project.name,
+      }))
+    ),
+    [projects, tasks]
+  );
+
+  const summary = useMemo(() => allTasks.reduce(
+    (counts, task) => {
+      counts.total += 1;
+      if (task.status === 'PENDING_UPLOADS') counts.pending += 1;
+      if (task.status === 'IN_REVIEW') counts.review += 1;
+      if (task.status === 'APPROVED') counts.approved += 1;
+      return counts;
+    },
+    { total: 0, pending: 0, review: 0, approved: 0 }
+  ), [allTasks]);
+
+  const recentTasks = useMemo(
+    () => [...allTasks].sort((a, b) => getTaskTime(b) - getTaskTime(a)).slice(0, 5),
+    [allTasks]
+  );
 
   if (!user) return null;
 
-  if (loading) {
-    return (
-      <SidebarLayout>
-        <div className="flex-1 flex items-center justify-center min-h-screen">
-          <Loader2 size={40} className="animate-spin text-blue-600" />
-        </div>
-      </SidebarLayout>
-    );
-  }
+  const todayLabel = new Intl.DateTimeFormat('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  }).format(new Date()).toLocaleUpperCase('vi-VN');
 
   return (
     <SidebarLayout>
-      {/* Top bar */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Projects</h1>
-        <p className="text-[13px] text-slate-400 mt-1">
-          {projects.length} project{projects.length !== 1 ? 's' : ''} · Chọn để xem danh sách task
-        </p>
-      </div>
-
-      {/* Content */}
-      <div className="px-8 py-7">
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-[13px]">
-            {error}
+      <section className="hc-page" aria-labelledby="projects-title">
+        <header className="hc-page-heading">
+          <div>
+            <span className="hc-eyebrow">{todayLabel}</span>
+            <h1 id="projects-title">{getGreeting()}, {getDisplayName(user)}.</h1>
+            <p>Đây là tình hình listing của các project bạn được truy cập hôm nay.</p>
           </div>
-        )}
+        </header>
 
-        {projects.length === 0 && !error && (
-          <div className="text-center text-slate-500 py-16 bg-white rounded-2xl border border-slate-200 text-[14px]">
-            Bạn không có quyền truy cập project nào.
+        {loading ? (
+          <div className="hc-loading-page" role="status" aria-live="polite">
+            <Loader2 className="animate-spin" size={30} aria-hidden="true" />
+            <span>Đang tổng hợp dữ liệu project và task…</span>
           </div>
-        )}
+        ) : (
+          <>
+            {error && (
+              <div className="hc-alert hc-alert--error mb-5" role="alert">
+                <AlertTriangle size={18} aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <strong className="block">Dữ liệu chưa tải đầy đủ</strong>
+                  <span>{error}</span>
+                </div>
+                <button
+                  type="button"
+                  className="hc-button hc-button--secondary min-h-11 shrink-0"
+                  onClick={() => setReloadKey((value) => value + 1)}
+                >
+                  <RefreshCw size={15} aria-hidden="true" />
+                  Thử lại
+                </button>
+              </div>
+            )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          {projects.map((project, idx) => {
-            const palette = PROJECT_COLORS[idx % PROJECT_COLORS.length];
-            return (
-              <div
-                key={project.id}
-                onClick={() => navigate(`/projects/${project.id}/tasks`)}
-                className="relative bg-white rounded-2xl border border-slate-200 p-6 cursor-pointer overflow-hidden transition-all duration-200 hover:-translate-y-0.5 group"
-                style={{ '--shadow-color': 'rgba(37,99,235,0.12)' }}
-                onMouseOver={e => {
-                  e.currentTarget.style.borderColor = '#2563eb';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.12)';
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                {/* Accent bar */}
-                <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: palette.bar }} />
+            {projects.length === 0 ? (
+              <div className="hc-card hc-empty-state">
+                <FolderKanban size={38} aria-hidden="true" />
+                <strong>Chưa có project để hiển thị</strong>
+                <p>Bạn chưa được phân vào project nào hoặc project hiện không hoạt động.</p>
+              </div>
+            ) : (
+              <>
+                <section
+                  className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4"
+                  aria-label="Tổng quan task"
+                >
+                  {SUMMARY_ITEMS.map(({ key, label, helper, icon: Icon, tone }) => (
+                    <article key={key} className="hc-card flex min-h-28 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5">
+                      <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${tone}`}>
+                        <Icon size={20} aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <span className="block text-xs font-semibold text-[var(--hc-gray-500)]">{label}</span>
+                        <strong className="mt-0.5 block text-2xl font-bold tabular-nums tracking-tight text-[var(--hc-navy-900)]">
+                          {numberFormatter.format(summary[key])}
+                        </strong>
+                        <span className="mt-0.5 hidden text-[0.6875rem] text-[var(--hc-gray-500)] sm:block">{helper}</span>
+                      </div>
+                    </article>
+                  ))}
+                </section>
 
-                <div className="flex items-start justify-between mt-1">
-                  <div className="flex gap-4 items-start">
-                    {/* Icon */}
-                    <div className="w-13 h-13 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: palette.iconBg, width: 52, height: 52 }}>
-                      <FolderIcon color={palette.iconColor} />
-                    </div>
-                    <div>
-                      <h3 className="text-[17px] font-bold text-slate-900">{project.name}</h3>
-                      <p className="text-[13px] text-slate-400 mt-0.5 line-clamp-1">
-                        {project.description || `Team ${project.key} · Amazon & Etsy`}
+                <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+                  <section className="hc-card p-4 sm:p-6" aria-labelledby="project-list-title">
+                    <div className="mb-5">
+                      <h2 id="project-list-title" className="m-0 text-lg font-bold tracking-tight text-[var(--hc-navy-900)]">
+                        Projects
+                      </h2>
+                      <p className="mt-1 text-xs text-[var(--hc-gray-500)]">
+                        Chọn project để xem task và tiến độ listing.
                       </p>
                     </div>
-                  </div>
-                  <ChevronRight size={20} className="text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-1" />
-                </div>
 
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {project.pendingTaskCount > 0 && (
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700">
-                      {project.pendingTaskCount} chờ upload
-                    </span>
-                  )}
-                  {project.inReviewCount > 0 && (
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700">
-                      {project.inReviewCount} đang review
-                    </span>
-                  )}
-                  {project.approvedCount > 0 && (
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-green-100 text-green-700">
-                      {project.approvedCount} đã duyệt
-                    </span>
-                  )}
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500">
-                    {project.taskCount ?? '—'} tasks
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {projects.map((project, index) => {
+                        const theme = PROJECT_THEME_BY_KEY[project.key] || PROJECT_THEMES[index % PROJECT_THEMES.length];
+                        const projectTasks = tasks[project.id] || [];
+                        const taskDataFailed = failedProjectIds.includes(project.id);
+                        const pendingCount = taskDataFailed
+                          ? Number(project.pendingTaskCount || 0)
+                          : projectTasks.filter((task) => task.status === 'PENDING_UPLOADS').length;
+                        const reviewCount = projectTasks.filter((task) => task.status === 'IN_REVIEW').length;
 
-          {/* Amazon Search shortcut */}
-          {(user.role === 'SELLER' || user.role === 'ADMIN' || user.role === 'MARVEL') && (
-            <div
-              onClick={() => navigate('/search')}
-              className="xl:col-span-2 bg-white rounded-2xl border border-dashed border-slate-300 p-5 cursor-pointer flex items-center gap-4 transition-all hover:border-blue-500 hover:bg-slate-50"
-            >
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#dbeafe' }}>
-                <Search size={20} color="#2563eb" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-[15px] font-bold text-slate-900">Amazon Search Preview</h3>
-                <p className="text-[13px] text-slate-400 mt-0.5">Tìm kiếm và import sản phẩm từ Amazon</p>
-              </div>
-              <ChevronRight size={18} className="text-slate-300" />
-            </div>
-          )}
-        </div>
-      </div>
+                        return (
+                          <button
+                            key={project.id}
+                            type="button"
+                            className={`hc-card group min-h-52 border-t-4 p-5 text-left transition duration-150 hover:-translate-y-0.5 hover:shadow-[var(--hc-shadow-sm)] ${theme.accent}`}
+                            onClick={() => navigate(`/projects/${project.id}/tasks`)}
+                            aria-label={`Mở danh sách task của ${project.name}`}
+                          >
+                            <span className="flex items-start justify-between gap-3">
+                              <span className={`grid size-11 shrink-0 place-items-center rounded-xl text-sm font-bold ${theme.symbol}`}>
+                                {getProjectSymbol(project)}
+                              </span>
+                              <span className={`hc-status ${project.active ? 'hc-status--approved' : 'hc-status--rejected'}`}>
+                                {project.active ? 'Đang hoạt động' : 'Tạm dừng'}
+                              </span>
+                            </span>
+
+                            <strong className="mt-5 block text-base font-bold tracking-tight text-[var(--hc-navy-900)] group-hover:text-[var(--hc-blue-700)]">
+                              {project.name}
+                            </strong>
+                            <span className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-[var(--hc-gray-500)]">
+                              {project.description || 'Project chưa có mô tả.'}
+                            </span>
+
+                            <span className="mt-5 flex items-center gap-2 border-t border-[var(--hc-gray-200)] pt-4 text-[0.6875rem] text-[var(--hc-gray-500)]">
+                              <span>{taskDataFailed ? 'Chưa tải đủ task' : `${numberFormatter.format(projectTasks.length)} task`}</span>
+                              <span aria-hidden="true">·</span>
+                              <span>{numberFormatter.format(pendingCount)} chờ upload</span>
+                              {!taskDataFailed && (
+                                <>
+                                  <span aria-hidden="true">·</span>
+                                  <span>{numberFormatter.format(reviewCount)} đang review</span>
+                                </>
+                              )}
+                              <ArrowRight className="ml-auto shrink-0 transition-transform group-hover:translate-x-0.5" size={16} aria-hidden="true" />
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  <aside className="hc-card p-4 sm:p-5" aria-labelledby="recent-tasks-title">
+                    <div className="mb-3">
+                      <h2 id="recent-tasks-title" className="m-0 text-base font-bold tracking-tight text-[var(--hc-navy-900)]">
+                        Task cập nhật gần đây
+                      </h2>
+                      <p className="mt-1 text-xs text-[var(--hc-gray-500)]">Dựa trên thời gian cập nhật từ hệ thống.</p>
+                    </div>
+
+                    {recentTasks.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-[var(--hc-gray-500)]">
+                        Chưa có task nào trong các project này.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-[var(--hc-gray-200)]">
+                        {recentTasks.map((task) => (
+                          <button
+                            key={task.id}
+                            type="button"
+                            className="group flex min-h-20 w-full items-start gap-3 py-3 text-left"
+                            onClick={() => navigate(`/projects/${task.projectId}/tasks/${task.id}`)}
+                            aria-label={`Mở task ${task.title}`}
+                          >
+                            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--hc-green-50)] text-[0.6875rem] font-bold text-[var(--hc-green-700)]">
+                              {getInitials(task.createdByName)}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <strong className="block truncate text-xs text-[var(--hc-navy-900)] group-hover:text-[var(--hc-blue-700)]">
+                                {task.title}
+                              </strong>
+                              <span className="mt-1 block truncate text-[0.6875rem] text-[var(--hc-gray-500)]">
+                                {task.projectName}
+                              </span>
+                              <span className="mt-2 flex flex-wrap items-center gap-1.5">
+                                <span className={`hc-platform ${PLATFORM_CLASSES[task.platform] || ''}`}>
+                                  {task.platform || '—'}
+                                </span>
+                                <span className={`hc-status ${STATUS_CLASSES[task.status] || ''}`}>
+                                  {STATUS_LABELS[task.status] || task.status}
+                                </span>
+                              </span>
+                              <span className="mt-2 block text-[0.625rem] text-[var(--hc-gray-400)]">
+                                {getTaskTime(task) ? dateFormatter.format(getTaskTime(task)) : 'Chưa có ngày cập nhật'}
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </aside>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </section>
     </SidebarLayout>
   );
 };

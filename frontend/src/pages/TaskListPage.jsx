@@ -1,322 +1,658 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAppStore } from '../stores/appStore';
-import { Plus, ChevronRight, Loader2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  ChevronRight,
+  Image,
+  ListTodo,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Search,
+  X,
+} from 'lucide-react';
 import SidebarLayout from '../components/shared/SidebarLayout';
-
-const STATUS_DOT = {
-  PENDING_UPLOADS: '#eab308',
-  IN_REVIEW:       '#3b82f6',
-  APPROVED:        '#22c55e',
-  REJECTED:        '#ef4444',
-};
-
-const STATUS_BADGE = {
-  PENDING_UPLOADS: 'bg-amber-100 text-amber-700',
-  IN_REVIEW:       'bg-blue-100 text-blue-700',
-  APPROVED:        'bg-green-100 text-green-700',
-  REJECTED:        'bg-red-100 text-red-600',
-};
+import { useAppStore } from '../stores/appStore';
+import { canCreateTask, isSingleProjectRole } from '../utils/permissions';
 
 const STATUS_LABELS = {
   PENDING_UPLOADS: 'Chờ upload',
-  IN_REVIEW:       'Đang review',
-  APPROVED:        'Đã duyệt',
-  REJECTED:        'Từ chối',
+  IN_REVIEW: 'Đang review',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Từ chối',
+};
+
+const STATUS_CLASSES = {
+  PENDING_UPLOADS: 'hc-status--pending',
+  IN_REVIEW: 'hc-status--review',
+  APPROVED: 'hc-status--approved',
+  REJECTED: 'hc-status--rejected',
+};
+
+const PLATFORM_CLASSES = {
+  AMAZON: 'hc-platform--amazon',
+  ETSY: 'hc-platform--etsy',
 };
 
 const CATEGORY_LABELS = {
-  1: 'Clothing',
-  2: 'H&K Vertical',
-  3: 'H&K Horizontal',
-};
-
-const PLATFORM_BADGE = {
-  AMAZON: 'bg-orange-50 text-orange-600 border border-orange-200',
-  ETSY:   'bg-rose-50 text-rose-600 border border-rose-200',
+  1: 'Case 1 · Clothing',
+  2: 'Case 2 · H&K ảnh dọc',
+  3: 'Case 3 · H&K ảnh ngang',
 };
 
 const FILTER_TABS = [
-  { key: null,              label: 'Tất cả' },
-  { key: 'PENDING_UPLOADS', label: 'Chờ upload' },
-  { key: 'IN_REVIEW',       label: 'Đang review' },
-  { key: 'APPROVED',        label: 'Đã duyệt' },
-  { key: 'REJECTED',        label: 'Từ chối' },
+  { key: 'ALL', label: 'Tất cả' },
+  { key: 'PENDING_UPLOADS', label: STATUS_LABELS.PENDING_UPLOADS },
+  { key: 'IN_REVIEW', label: STATUS_LABELS.IN_REVIEW },
+  { key: 'APPROVED', label: STATUS_LABELS.APPROVED },
+  { key: 'REJECTED', label: STATUS_LABELS.REJECTED },
 ];
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const TASK_ICON_TONES = [
+  'bg-[var(--hc-orange-50)] text-[var(--hc-orange-600)]',
+  'bg-[var(--hc-blue-50)] text-[var(--hc-blue-700)]',
+  'bg-[var(--hc-red-50)] text-[var(--hc-red-700)]',
+  'bg-[var(--hc-purple-50)] text-[var(--hc-purple-700)]',
+];
+
+const VALID_STATUSES = new Set(Object.keys(STATUS_LABELS));
+const numberFormatter = new Intl.NumberFormat('vi-VN');
+const dateFormatter = new Intl.DateTimeFormat('vi-VN', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
+const formatDate = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date);
+};
+
+const getInitials = (name) => {
+  if (!name?.trim()) return '?';
+  const words = name.trim().split(/\s+/);
+  return words.length === 1
+    ? words[0].slice(0, 2).toLocaleUpperCase('vi-VN')
+    : `${words[0][0]}${words.at(-1)[0]}`.toLocaleUpperCase('vi-VN');
+};
+
+const getCategoryLabel = (task) => {
+  if (task.platform === 'ETSY') return 'Etsy listing';
+  return CATEGORY_LABELS[task.category] || `Case ${task.category}`;
+};
+
+const getUpdatedTime = (task) => {
+  const value = task.updatedAt || task.createdAt;
+  const timestamp = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
 };
 
 const TaskListPage = () => {
   const { projectId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const { user, projects, tasks, fetchTasks, createTask } = useAppStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    user,
+    projects,
+    tasks,
+    fetchProjects,
+    fetchTasks,
+    createTask,
+  } = useAppStore();
 
-  const [activeFilter, setActiveFilter] = useState(null);
-  const [isModalOpen, setIsModalOpen]   = useState(false);
-  const [newTitle, setNewTitle]         = useState('');
-  const [newPlatform, setNewPlatform]   = useState('AMAZON');
-  const [newCategory, setNewCategory]   = useState(1);
-  const [loading, setLoading]           = useState(true);
-  const [submitting, setSubmitting]     = useState(false);
-  const [error, setError]               = useState('');
+  const dialogRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [projectWarning, setProjectWarning] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [newTitle, setNewTitle] = useState('');
+  const [newPlatform, setNewPlatform] = useState('AMAZON');
+  const [newCategory, setNewCategory] = useState(1);
+
+  const canCreate = canCreateTask(user?.role);
+  const requestedStatus = searchParams.get('status');
+  const activeStatus = requestedStatus && VALID_STATUSES.has(requestedStatus)
+    ? requestedStatus
+    : 'ALL';
+  const searchQuery = searchParams.get('q') || '';
+  const createRequested = searchParams.get('create') === '1';
 
   useEffect(() => {
-    if (!user) { navigate('/'); return; }
-    fetchTasks(projectId)
-      .catch(() => setError('Không thể tải danh sách task.'))
-      .finally(() => setLoading(false));
-  }, [projectId, user]);
+    if (!user) {
+      navigate('/', { replace: true });
+      return undefined;
+    }
 
-  const project = projects.find(p => p.id === projectId);
-  const allTasks = tasks[projectId] || [];
+    let isCurrent = true;
 
-  const statusCounts = allTasks.reduce((acc, t) => {
-    acc[t.status] = (acc[t.status] || 0) + 1;
-    return acc;
-  }, {});
+    const loadTasks = async () => {
+      setLoading(true);
+      setLoadError('');
+      setProjectWarning('');
 
-  const filtered = activeFilter ? allTasks.filter(t => t.status === activeFilter) : allTasks;
+      const [taskResult, projectResult] = await Promise.allSettled([
+        fetchTasks(projectId),
+        fetchProjects(),
+      ]);
 
-  const handleCreateTask = async (e) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
+      if (!isCurrent) return;
+
+      if (taskResult.status === 'rejected') {
+        setLoadError('Không thể tải danh sách task. Vui lòng kiểm tra kết nối và thử lại.');
+      }
+      if (projectResult.status === 'rejected') {
+        setProjectWarning('Không thể tải thông tin project. Danh sách task vẫn được hiển thị nếu đã tải thành công.');
+      }
+      setLoading(false);
+    };
+
+    loadTasks();
+    return () => {
+      isCurrent = false;
+    };
+  }, [fetchProjects, fetchTasks, navigate, projectId, reloadKey, user]);
+
+  useEffect(() => {
+    if (createRequested && !canCreate) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('create');
+      setSearchParams(next, { replace: true });
+      return;
+    }
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (createRequested && canCreate && !dialog.open) {
+      dialog.showModal();
+    } else if ((!createRequested || !canCreate) && dialog.open) {
+      dialog.close();
+    }
+
+  }, [canCreate, createRequested, searchParams, setSearchParams]);
+
+  const projectTasks = useMemo(() => tasks[projectId] || [], [projectId, tasks]);
+  const project = projects.find((item) => item.id === projectId);
+  const projectName = project?.name || projectTasks[0]?.projectName || 'Project';
+
+  const sortedTasks = useMemo(
+    () => [...projectTasks].sort((a, b) => getUpdatedTime(b) - getUpdatedTime(a)),
+    [projectTasks]
+  );
+
+  const statusCounts = useMemo(() => sortedTasks.reduce(
+    (counts, task) => {
+      counts.ALL += 1;
+      if (Object.hasOwn(counts, task.status)) counts[task.status] += 1;
+      return counts;
+    },
+    {
+      ALL: 0,
+      PENDING_UPLOADS: 0,
+      IN_REVIEW: 0,
+      APPROVED: 0,
+      REJECTED: 0,
+    }
+  ), [sortedTasks]);
+
+  const filteredTasks = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase('vi-VN');
+    return sortedTasks.filter((task) => {
+      const matchesStatus = activeStatus === 'ALL' || task.status === activeStatus;
+      const matchesQuery = !normalizedQuery
+        || task.title?.toLocaleLowerCase('vi-VN').includes(normalizedQuery);
+      return matchesStatus && matchesQuery;
+    });
+  }, [activeStatus, searchQuery, sortedTasks]);
+
+  const updateQuery = (updates) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === undefined || value === '' || value === 'ALL') {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    });
+    setSearchParams(next, { replace: true });
+  };
+
+  const openCreateDialog = () => updateQuery({ create: '1' });
+
+  const handleDialogClose = () => {
+    setFormError('');
+    if (searchParams.has('create')) updateQuery({ create: null });
+  };
+
+  const handleCreateTask = async (event) => {
+    event.preventDefault();
+    const title = newTitle.trim();
+
+    if (!title) {
+      setFormError('Vui lòng nhập tên task.');
+      return;
+    }
+
     setSubmitting(true);
+    setFormError('');
+
     try {
-      await createTask(projectId, { title: newTitle, platform: newPlatform, category: newCategory });
+      await createTask(projectId, {
+        title,
+        platform: newPlatform,
+        category: newPlatform === 'AMAZON' ? newCategory : 1,
+      });
       setNewTitle('');
+      setNewPlatform('AMAZON');
       setNewCategory(1);
-      setIsModalOpen(false);
+      dialogRef.current?.close();
     } catch {
-      setError('Tạo task thất bại. Vui lòng thử lại.');
+      setFormError('Không thể tạo task. Vui lòng kiểm tra thông tin và thử lại.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const canCreate = user?.role === 'SELLER' || user?.role === 'ADMIN' || user?.role === 'MARVEL';
+  const openTask = (taskId) => {
+    navigate(`/projects/${projectId}/tasks/${taskId}${location.search}`);
+  };
 
   if (!user) return null;
 
   return (
     <SidebarLayout>
-      {/* Top bar */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between">
-        <div>
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-[12px] text-slate-400 mb-1">
-            <span
-              className="hover:text-blue-600 cursor-pointer transition-colors"
-              onClick={() => navigate('/projects')}
-            >
-              Projects
-            </span>
-            <ChevronRight size={12} />
-            <span className="text-slate-600 font-medium">{project?.name || 'Tasks'}</span>
-          </div>
-          <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight">Tasks</h1>
-          <p className="text-[13px] text-slate-400 mt-0.5">
-            {allTasks.length} task trong {project?.name || 'project này'}
-          </p>
-        </div>
-        {canCreate && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 text-white text-[13px] font-bold px-5 py-2.5 rounded-xl transition-colors"
-            style={{ background: '#1d4ed8', boxShadow: '0 2px 8px rgba(29,78,216,0.3)' }}
-            onMouseOver={e => e.currentTarget.style.background = '#1e40af'}
-            onMouseOut={e => e.currentTarget.style.background = '#1d4ed8'}
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            Tạo Task
-          </button>
-        )}
-      </div>
-
-      <div className="px-8 py-6">
-        {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-[13px]">
-            {error}
-          </div>
-        )}
-
-        {/* Filter pills */}
-        <div className="flex gap-2 mb-5 flex-wrap">
-          {FILTER_TABS.map(tab => {
-            const count = tab.key ? (statusCounts[tab.key] || 0) : allTasks.length;
-            const isActive = activeFilter === tab.key;
-            return (
+      <section className="hc-page" aria-labelledby="tasks-title">
+        <header className="hc-page-heading">
+          <div>
+            {!isSingleProjectRole(user?.role) && (
               <button
-                key={tab.key ?? 'all'}
-                onClick={() => setActiveFilter(tab.key)}
-                className={`text-[12px] font-semibold px-3.5 py-1.5 rounded-lg border transition-all ${
-                  isActive
-                    ? 'bg-blue-700 text-white border-blue-700'
-                    : 'bg-white text-slate-500 border-slate-200 hover:border-blue-500 hover:text-blue-600'
-                }`}
+                type="button"
+                className="mb-2 inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-[var(--hc-gray-500)] transition-colors hover:text-[var(--hc-orange-600)]"
+                onClick={() => navigate('/projects')}
               >
-                {tab.label} ({count})
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Task list */}
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 size={32} className="animate-spin text-blue-600" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-            <p className="text-slate-500 text-[14px]">
-              {activeFilter ? 'Không có task nào ở trạng thái này.' : 'Chưa có task nào.'}
-            </p>
-            {canCreate && !activeFilter && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="mt-3 text-blue-600 hover:underline text-[13px] font-semibold"
-              >
-                Tạo task đầu tiên
+                <ArrowLeft size={15} aria-hidden="true" />
+                Projects
               </button>
             )}
+            <span className="hc-eyebrow block">{projectName}</span>
+            <h1 id="tasks-title">Tasks</h1>
+            <p>Quản lý listing đang chuẩn bị cho Amazon và Etsy.</p>
+          </div>
+
+          {canCreate && (
+            <button type="button" className="hc-button hc-button--primary" onClick={openCreateDialog}>
+              <Plus size={17} aria-hidden="true" />
+              Tạo task mới
+            </button>
+          )}
+        </header>
+
+        {loading ? (
+          <div className="hc-loading-page" role="status" aria-live="polite">
+            <Loader2 className="animate-spin" size={30} aria-hidden="true" />
+            <span>Đang tải danh sách task…</span>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {filtered.map(task => (
-              <div
-                key={task.id}
-                onClick={() => navigate(`/projects/${projectId}/tasks/${task.id}`)}
-                className="bg-white rounded-2xl border border-slate-200 px-5 py-4 flex items-center gap-4 cursor-pointer transition-all group"
-                onMouseOver={e => {
-                  e.currentTarget.style.borderColor = '#2563eb';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.08)';
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                {/* Status dot */}
-                <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: STATUS_DOT[task.status] || '#94a3b8' }}
-                />
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-bold text-slate-900 group-hover:text-blue-700 transition-colors truncate">
-                    {task.title}
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${PLATFORM_BADGE[task.platform] || 'bg-gray-100 text-gray-600'}`}>
-                      {task.platform || 'AMAZON'}
-                    </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
-                      {CATEGORY_LABELS[task.category] || `Case ${task.category}`}
-                    </span>
-                    {task.createdByName && (
-                      <span className="text-[10px] text-slate-400">
-                        bởi {task.createdByName} · {formatDate(task.createdAt)}
-                      </span>
-                    )}
-                  </div>
+          <>
+            {(loadError || projectWarning) && (
+              <div className={`hc-alert mb-5 ${loadError ? 'hc-alert--error' : 'hc-alert--info'}`} role={loadError ? 'alert' : 'status'}>
+                <AlertTriangle size={18} aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <strong className="block">{loadError ? 'Không tải được task' : 'Thiếu thông tin project'}</strong>
+                  <span>{loadError || projectWarning}</span>
                 </div>
-
-                {/* Status badge */}
-                <span className={`text-[11px] font-bold px-3 py-1.5 rounded-lg flex-shrink-0 ${STATUS_BADGE[task.status] || 'bg-slate-100 text-slate-500'}`}>
-                  {STATUS_LABELS[task.status] || task.status}
-                </span>
-
-                <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Create Task Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div
-            className="bg-white rounded-2xl w-full max-w-md"
-            style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15)', padding: 32 }}
-          >
-            <div className="flex items-start justify-between mb-1">
-              <h2 className="text-[20px] font-extrabold text-slate-900">Tạo Task Mới</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 transition-colors rounded-lg">
-                <X size={18} />
-              </button>
-            </div>
-            <p className="text-[13px] text-slate-400 mb-6">Điền thông tin để bắt đầu preview sản phẩm</p>
-
-            <form onSubmit={handleCreateTask} className="space-y-4">
-              <div>
-                <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Tên Task</label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)}
-                  placeholder="VD: Summer T-Shirt Preview"
-                  className="w-full px-3.5 py-2.5 text-[13px] border border-slate-200 rounded-xl outline-none bg-slate-50 text-slate-900 transition-all"
-                  onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.background = 'white'; }}
-                  onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.background = '#f8fafc'; }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Nền tảng</label>
-                  <select
-                    value={newPlatform}
-                    onChange={e => setNewPlatform(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-[13px] border border-slate-200 rounded-xl outline-none bg-slate-50 text-slate-900"
-                  >
-                    <option value="AMAZON">Amazon</option>
-                    <option value="ETSY">Etsy</option>
-                  </select>
-                </div>
-                {newPlatform === 'AMAZON' && (
-                  <div>
-                    <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Category</label>
-                    <select
-                      value={newCategory}
-                      onChange={e => setNewCategory(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 text-[13px] border border-slate-200 rounded-xl outline-none bg-slate-50 text-slate-900"
-                    >
-                      <option value={1}>Clothing &amp; Jewelry</option>
-                      <option value={2}>H&amp;K — Vertical</option>
-                      <option value={3}>H&amp;K — Horizontal</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2.5 text-[13px] font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                  className="hc-button hc-button--secondary min-h-11 shrink-0"
+                  onClick={() => setReloadKey((value) => value + 1)}
+                >
+                  <RefreshCw size={15} aria-hidden="true" />
+                  Thử lại
+                </button>
+              </div>
+            )}
+
+            <section
+              className="hc-card mb-5 grid grid-cols-5 overflow-x-auto"
+              aria-label="Tổng quan trạng thái task"
+            >
+              {FILTER_TABS.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex min-w-[6.5rem] flex-col gap-0.5 border-r border-[var(--hc-gray-200)] px-4 py-4 last:border-r-0 sm:flex-row sm:items-baseline sm:gap-2 sm:px-5"
+                >
+                  <strong className="text-xl font-bold tabular-nums tracking-tight text-[var(--hc-navy-900)]">
+                    {numberFormatter.format(statusCounts[item.key])}
+                  </strong>
+                  <span className="whitespace-nowrap text-[0.6875rem] text-[var(--hc-gray-500)]">{item.label}</span>
+                </div>
+              ))}
+            </section>
+
+            <section className="hc-card overflow-hidden" aria-labelledby="task-table-title">
+              <h2 id="task-table-title" className="sr-only">Danh sách task</h2>
+
+              <div className="flex flex-col gap-3 border-b border-[var(--hc-gray-200)] p-4 lg:flex-row lg:items-center lg:justify-between">
+                <label className="relative block w-full lg:max-w-sm">
+                  <span className="sr-only">Tìm theo tên task</span>
+                  <Search
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--hc-gray-400)]"
+                    size={17}
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => updateQuery({ q: event.target.value })}
+                    className="hc-input pl-10 text-base md:text-sm"
+                    placeholder="Tìm theo tên task…"
+                    autoComplete="off"
+                  />
+                </label>
+
+                <div
+                  className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-[var(--hc-gray-100)] p-1"
+                  role="group"
+                  aria-label="Lọc task theo trạng thái"
+                >
+                  {FILTER_TABS.map((item) => {
+                    const isActive = activeStatus === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        className={`min-h-11 shrink-0 rounded-lg px-3 text-xs font-semibold transition-colors ${
+                          isActive
+                            ? 'bg-white text-[var(--hc-navy-900)] shadow-[var(--hc-shadow-xs)]'
+                            : 'text-[var(--hc-gray-500)] hover:text-[var(--hc-navy-900)]'
+                        }`}
+                        onClick={() => updateQuery({ status: item.key })}
+                        aria-pressed={isActive}
+                      >
+                        {item.label} ({numberFormatter.format(statusCounts[item.key])})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {filteredTasks.length === 0 ? (
+                <div className="hc-empty-state">
+                  {projectTasks.length === 0 && !searchQuery && activeStatus === 'ALL'
+                    ? <ListTodo size={38} aria-hidden="true" />
+                    : <Search size={38} aria-hidden="true" />}
+                  <strong>
+                    {projectTasks.length === 0 && !searchQuery && activeStatus === 'ALL'
+                      ? 'Chưa có task nào'
+                      : 'Không tìm thấy task'}
+                  </strong>
+                  <p>
+                    {projectTasks.length === 0 && !searchQuery && activeStatus === 'ALL'
+                      ? 'Task mới của project sẽ xuất hiện tại đây.'
+                      : 'Thử từ khóa khác hoặc xóa bộ lọc trạng thái.'}
+                  </p>
+                  {projectTasks.length === 0 && !searchQuery && activeStatus === 'ALL' && canCreate ? (
+                    <button type="button" className="hc-button hc-button--primary mt-5" onClick={openCreateDialog}>
+                      <Plus size={16} aria-hidden="true" />
+                      Tạo task đầu tiên
+                    </button>
+                  ) : (searchQuery || activeStatus !== 'ALL') ? (
+                    <button
+                      type="button"
+                      className="hc-button hc-button--secondary mt-5"
+                      onClick={() => updateQuery({ q: null, status: null })}
+                    >
+                      Xóa bộ lọc
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <>
+                  <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full border-collapse text-left text-xs text-[var(--hc-gray-600)]">
+                      <caption className="sr-only">
+                        Danh sách task của {projectName}, gồm {filteredTasks.length} kết quả
+                      </caption>
+                      <thead>
+                        <tr className="bg-[var(--hc-gray-25)] text-[0.625rem] uppercase tracking-wider text-[var(--hc-gray-500)]">
+                          <th scope="col" className="px-4 py-3 font-bold">Task</th>
+                          <th scope="col" className="px-4 py-3 font-bold">Nền tảng</th>
+                          <th scope="col" className="px-4 py-3 font-bold">Case / Category</th>
+                          <th scope="col" className="px-4 py-3 font-bold">Người tạo</th>
+                          <th scope="col" className="px-4 py-3 font-bold">Cập nhật</th>
+                          <th scope="col" className="px-4 py-3 font-bold">Trạng thái</th>
+                          <th scope="col" className="w-14 px-2 py-3"><span className="sr-only">Mở task</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTasks.map((task, index) => (
+                          <tr key={task.id} className="border-t border-[var(--hc-gray-200)] transition-colors hover:bg-[var(--hc-orange-50)]">
+                            <td className="px-4 py-3.5">
+                              <button
+                                type="button"
+                                className="group flex min-h-11 items-center gap-3 text-left"
+                                onClick={() => openTask(task.id)}
+                              >
+                                <span className={`grid size-10 shrink-0 place-items-center rounded-lg ${TASK_ICON_TONES[index % TASK_ICON_TONES.length]}`}>
+                                  <Image size={18} aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0">
+                                  <strong className="block max-w-[17rem] truncate text-xs text-[var(--hc-navy-900)] group-hover:text-[var(--hc-blue-700)]">
+                                    {task.title}
+                                  </strong>
+                                  <span className="mt-0.5 block text-[0.625rem] text-[var(--hc-gray-400)]">
+                                    Tạo ngày {formatDate(task.createdAt)}
+                                  </span>
+                                </span>
+                              </button>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className={`hc-platform ${PLATFORM_CLASSES[task.platform] || ''}`}>
+                                {task.platform || '—'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">{getCategoryLabel(task)}</td>
+                            <td className="px-4 py-3.5">
+                              <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                                <span className="grid size-7 place-items-center rounded-full bg-[var(--hc-green-50)] text-[0.625rem] font-bold text-[var(--hc-green-700)]">
+                                  {getInitials(task.createdByName)}
+                                </span>
+                                {task.createdByName || 'Chưa có tên'}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-3.5">{formatDate(task.updatedAt || task.createdAt)}</td>
+                            <td className="px-4 py-3.5">
+                              <span className={`hc-status ${STATUS_CLASSES[task.status] || ''}`}>
+                                {STATUS_LABELS[task.status] || task.status}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3.5">
+                              <button
+                                type="button"
+                                className="hc-icon-button"
+                                onClick={() => openTask(task.id)}
+                                aria-label={`Mở task ${task.title}`}
+                              >
+                                <ChevronRight size={17} aria-hidden="true" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="divide-y divide-[var(--hc-gray-200)] md:hidden">
+                    {filteredTasks.map((task, index) => (
+                      <button
+                        key={task.id}
+                        type="button"
+                        className="group block min-h-40 w-full p-4 text-left transition-colors hover:bg-[var(--hc-orange-50)]"
+                        onClick={() => openTask(task.id)}
+                        aria-label={`Mở task ${task.title}`}
+                      >
+                        <span className="flex items-start gap-3">
+                          <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${TASK_ICON_TONES[index % TASK_ICON_TONES.length]}`}>
+                            <Image size={19} aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <strong className="block truncate text-sm text-[var(--hc-navy-900)] group-hover:text-[var(--hc-blue-700)]">
+                              {task.title}
+                            </strong>
+                            <span className="mt-1 block text-xs text-[var(--hc-gray-500)]">{getCategoryLabel(task)}</span>
+                          </span>
+                          <ChevronRight className="mt-1 shrink-0 text-[var(--hc-gray-400)]" size={18} aria-hidden="true" />
+                        </span>
+
+                        <span className="mt-4 flex flex-wrap items-center gap-2">
+                          <span className={`hc-platform ${PLATFORM_CLASSES[task.platform] || ''}`}>
+                            {task.platform || '—'}
+                          </span>
+                          <span className={`hc-status ${STATUS_CLASSES[task.status] || ''}`}>
+                            {STATUS_LABELS[task.status] || task.status}
+                          </span>
+                        </span>
+
+                        <span className="mt-4 flex items-center justify-between gap-3 text-xs text-[var(--hc-gray-500)]">
+                          <span className="inline-flex min-w-0 items-center gap-2">
+                            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--hc-green-50)] text-[0.625rem] font-bold text-[var(--hc-green-700)]">
+                              {getInitials(task.createdByName)}
+                            </span>
+                            <span className="truncate">{task.createdByName || 'Chưa có tên'}</span>
+                          </span>
+                          <span className="shrink-0">{formatDate(task.updatedAt || task.createdAt)}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <footer className="flex min-h-14 items-center border-t border-[var(--hc-gray-200)] px-4 text-xs text-[var(--hc-gray-500)]">
+                    Hiển thị {numberFormatter.format(filteredTasks.length)} trong {numberFormatter.format(projectTasks.length)} task
+                  </footer>
+                </>
+              )}
+            </section>
+          </>
+        )}
+      </section>
+
+      {canCreate && (
+        <dialog
+          ref={dialogRef}
+          className="hc-dialog"
+          aria-labelledby="create-task-title"
+          onClose={handleDialogClose}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) event.currentTarget.close();
+          }}
+        >
+          <div className="hc-dialog__inner">
+            <button
+              type="button"
+              className="hc-icon-button hc-dialog__close"
+              onClick={() => dialogRef.current?.close()}
+              aria-label="Đóng hộp thoại tạo task"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+
+            <span className="hc-eyebrow">Task mới</span>
+            <h2 id="create-task-title">Bắt đầu một listing</h2>
+            <p className="hc-dialog__intro">
+              Chọn đúng nền tảng và case để team có cùng bối cảnh từ đầu.
+            </p>
+
+            <form className="hc-dialog__form" onSubmit={handleCreateTask} noValidate>
+              <label className="hc-field" htmlFor="task-title">
+                <span>Tên task</span>
+                <input
+                  id="task-title"
+                  type="text"
+                  className="hc-input text-base md:text-sm"
+                  value={newTitle}
+                  onChange={(event) => {
+                    setNewTitle(event.target.value);
+                    if (formError) setFormError('');
+                  }}
+                  placeholder="Ví dụ: Summer Family Shirt"
+                  maxLength={200}
+                  autoFocus
+                  aria-invalid={Boolean(formError)}
+                  aria-describedby={formError ? 'task-form-error' : undefined}
+                />
+              </label>
+
+              <label className="hc-field" htmlFor="task-platform">
+                <span>Nền tảng</span>
+                <select
+                  id="task-platform"
+                  className="hc-select text-base md:text-sm"
+                  value={newPlatform}
+                  onChange={(event) => setNewPlatform(event.target.value)}
+                >
+                  <option value="AMAZON">Amazon</option>
+                  <option value="ETSY">Etsy</option>
+                </select>
+              </label>
+
+              {newPlatform === 'AMAZON' && (
+                <label className="hc-field" htmlFor="task-category">
+                  <span>Category / Layout</span>
+                  <select
+                    id="task-category"
+                    className="hc-select text-base md:text-sm"
+                    value={newCategory}
+                    onChange={(event) => setNewCategory(Number(event.target.value))}
+                  >
+                    <option value={1}>Case 1 — Clothing, Shoes &amp; Jewelry</option>
+                    <option value={2}>Case 2 — Home &amp; Kitchen (ảnh dọc)</option>
+                    <option value={3}>Case 3 — Home &amp; Kitchen (ảnh ngang)</option>
+                  </select>
+                </label>
+              )}
+
+              {formError && (
+                <div id="task-form-error" className="hc-alert hc-alert--error" role="alert">
+                  <AlertTriangle size={17} aria-hidden="true" />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <div className="hc-dialog__actions">
+                <button
+                  type="button"
+                  className="hc-button hc-button--secondary"
+                  onClick={() => dialogRef.current?.close()}
+                  disabled={submitting}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2.5 text-[13px] font-bold text-white rounded-xl disabled:opacity-60 flex items-center gap-2 transition-colors"
-                  style={{ background: '#1d4ed8', boxShadow: '0 2px 8px rgba(29,78,216,0.3)' }}
-                  onMouseOver={e => e.currentTarget.style.background = '#1e40af'}
-                  onMouseOut={e => e.currentTarget.style.background = '#1d4ed8'}
+                  className="hc-button hc-button--primary"
+                  disabled={submitting || !newTitle.trim()}
                 >
-                  {submitting && <Loader2 size={14} className="animate-spin" />}
-                  Tạo Task
+                  {submitting
+                    ? <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+                    : <Plus size={16} aria-hidden="true" />}
+                  {submitting ? 'Đang tạo…' : 'Tạo task'}
+                  {!submitting && <ArrowRight size={15} aria-hidden="true" />}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </dialog>
       )}
     </SidebarLayout>
   );
