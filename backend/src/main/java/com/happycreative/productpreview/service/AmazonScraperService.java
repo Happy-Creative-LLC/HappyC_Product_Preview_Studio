@@ -14,11 +14,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.HtmlUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.LocalDateTime;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,10 +38,17 @@ public class AmazonScraperService {
     private final SearchCacheRepository searchCacheRepository;
     private final ObjectMapper objectMapper;
 
-    // Cache valid for 10 days
-    private static final int CACHE_VALIDITY_DAYS = 10;
+    // Dữ liệu Amazon được làm mới định kỳ bởi job nền Chủ nhật
+    // (SearchCacheRefreshService), không phải theo từng lượt người dùng search.
+    // Giá trị này chỉ dùng để cảnh báo trong log khi dữ liệu quá cũ — KHÔNG dùng
+    // để chặn việc trả cache, vì yêu cầu là không bao giờ làm gián đoạn công việc.
+    @Value("${app.search-cache.max-age-days:15}")
+    private int maxAgeDays;
 
-    @Value("${rapidapi.amazon.host:amazon-data-scraper-api3.p.rapidapi.com}")
+    // Không đặt default trỏ tới một host cụ thể — host/key phải được cấu hình
+    // tường minh theo đúng sản phẩm RapidAPI đang subscribe, tránh âm thầm gọi
+    // nhầm sang một host không còn hợp lệ.
+    @Value("${rapidapi.amazon.host:}")
     private String rapidapiHost;
 
     @Value("${rapidapi.amazon.key:}")
@@ -42,132 +56,180 @@ public class AmazonScraperService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    /**
+     * Trả kết quả search cho người dùng.
+     *
+     * <p><b>Luôn ưu tiên cache, kể cả cache đã cũ.</b> Dữ liệu Amazon được làm mới
+     * theo lịch nền (Chủ nhật) chứ không theo từng lượt search, nên Seller không bao
+     * giờ phải đợi RapidAPI 2-3 giây giữa lúc đang làm việc. Chỉ gọi API đồng bộ khi
+     * thật sự chưa có gì trong cache (từ khoá mới) hoặc khi người dùng chủ động bấm
+     * "Cập nhật từ Amazon" ({@code forceRefresh}).</p>
+     */
     public List<AmazonSearchResultDto> searchAmazon(String keyword, boolean forceRefresh) {
         String normalizedKeyword = keyword.trim().toLowerCase();
-
-        // 1. Check Cache
         Optional<SearchCache> cacheOpt = searchCacheRepository.findByKeywordIgnoreCase(normalizedKeyword);
+
         if (!forceRefresh && cacheOpt.isPresent()) {
-            SearchCache cache = cacheOpt.get();
-            if (cache.getLastUpdated() != null && cache.getLastUpdated().plusDays(CACHE_VALIDITY_DAYS).isAfter(LocalDateTime.now())) {
+            List<AmazonSearchResultDto> cached = readCache(cacheOpt.get());
+            if (cached != null) {
+                warnIfStale(cacheOpt.get());
                 log.info("Returning cached results for keyword: {}", normalizedKeyword);
-                try {
-                    return objectMapper.readValue(cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>(){});
-                } catch (Exception e) {
-                    log.error("Failed to parse cached JSON", e);
-                }
-            } else {
-                log.info("Cache expired (older than 10 days) for keyword: {}, fetching from API...", normalizedKeyword);
+                return cached;
             }
+            log.warn("Cache của '{}' không đọc được, buộc phải gọi API để phục hồi.", normalizedKeyword);
         }
 
-        // 2. Scrape Amazon using RapidAPI
         List<AmazonSearchResultDto> results = scrapeAmazonWithRapidApi(normalizedKeyword);
+        saveCache(normalizedKeyword, results, cacheOpt);
+        return results;
+    }
 
-        // 3. Update Cache
-        if (!results.isEmpty()) {
-            try {
-                String json = objectMapper.writeValueAsString(results);
-                SearchCache cache = cacheOpt.orElse(new SearchCache());
-                cache.setKeyword(normalizedKeyword);
-                cache.setResultsJson(json);
-                cache.setLastUpdated(LocalDateTime.now());
-                searchCacheRepository.save(cache);
-                log.info("Cache updated for keyword: {}", normalizedKeyword);
-            } catch (Exception e) {
-                log.error("Failed to save results to cache", e);
+    /** Thời điểm dữ liệu của một từ khoá được lấy về lần gần nhất (null nếu chưa có). */
+    public Optional<Instant> findLastUpdated(String keyword) {
+        return searchCacheRepository.findByKeywordIgnoreCase(keyword.trim().toLowerCase())
+                .map(SearchCache::getLastUpdated);
+    }
+
+    /**
+     * Làm mới một từ khoá — dùng bởi job nền. Trả về true nếu lấy được dữ liệu mới.
+     * Nuốt lỗi có chủ đích: một từ khoá hỏng không được làm dừng cả mẻ làm mới,
+     * và cache cũ vẫn được giữ nguyên để người dùng tiếp tục làm việc bình thường.
+     */
+    public boolean refreshKeyword(String keyword) {
+        String normalizedKeyword = keyword.trim().toLowerCase();
+        try {
+            List<AmazonSearchResultDto> results = scrapeAmazonWithRapidApi(normalizedKeyword);
+            saveCache(normalizedKeyword, results,
+                    searchCacheRepository.findByKeywordIgnoreCase(normalizedKeyword));
+            return !results.isEmpty();
+        } catch (RuntimeException e) {
+            log.error("Không làm mới được từ khoá '{}': {}", normalizedKeyword, e.getMessage());
+            return false;
+        }
+    }
+
+    private List<AmazonSearchResultDto> readCache(SearchCache cache) {
+        try {
+            return objectMapper.readValue(
+                    cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>() {});
+        } catch (Exception e) {
+            log.error("Failed to parse cached JSON", e);
+            return null;
+        }
+    }
+
+    private void warnIfStale(SearchCache cache) {
+        Instant lastUpdated = cache.getLastUpdated();
+        if (lastUpdated == null) return;
+        Duration age = Duration.between(lastUpdated, Instant.now());
+        if (age.toDays() > maxAgeDays) {
+            log.warn("Dữ liệu '{}' đã {} ngày tuổi (quá mốc {} ngày) — kiểm tra job làm mới Chủ nhật.",
+                    cache.getKeyword(), age.toDays(), maxAgeDays);
+        }
+    }
+
+    private void saveCache(String keyword,
+                           List<AmazonSearchResultDto> results,
+                           Optional<SearchCache> existing) {
+        // Không bao giờ ghi đè cache đang tốt bằng danh sách rỗng.
+        if (results.isEmpty()) return;
+        try {
+            SearchCache cache = existing.orElseGet(SearchCache::new);
+            cache.setKeyword(keyword);
+            cache.setResultsJson(objectMapper.writeValueAsString(results));
+            cache.setLastUpdated(Instant.now());
+            searchCacheRepository.save(cache);
+            log.info("Cache updated for keyword: {}", keyword);
+        } catch (Exception e) {
+            log.error("Failed to save results to cache", e);
+        }
+    }
+
+    /**
+     * Gọi "Real-Time Amazon Data" (letscrape, RapidAPI) — GET /search?query=&country=&page=.
+     * Đã verify bằng curl thật trước khi viết parser này (không suy đoán field từ tài liệu vendor khác).
+     *
+     * <p>Không bao giờ fallback về dữ liệu giả: nếu chưa cấu hình host/key hoặc lời gọi
+     * thất bại, ném {@link ResponseStatusException} để Seller thấy lỗi rõ ràng thay vì
+     * nhầm sản phẩm mẫu với đối thủ thật (TechBrief mục III yêu cầu dữ liệu thời gian thực).</p>
+     */
+    private List<AmazonSearchResultDto> scrapeAmazonWithRapidApi(String keyword) {
+        if (rapidapiKey == null || rapidapiKey.isBlank() || rapidapiHost == null || rapidapiHost.isBlank()) {
+            log.error("RapidAPI host/key chưa được cấu hình — không thể lấy dữ liệu Amazon thật.");
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Chưa cấu hình RapidAPI cho Search Preview. Liên hệ Admin để thiết lập.");
+        }
+
+        List<AmazonSearchResultDto> results = new ArrayList<>();
+        try {
+            URI uri = UriComponentsBuilder.fromUriString("https://" + rapidapiHost + "/search")
+                    .queryParam("query", keyword)
+                    .queryParam("country", "US")
+                    .queryParam("page", 1)
+                    .build()
+                    .encode(StandardCharsets.UTF_8)
+                    .toUri();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("x-rapidapi-host", rapidapiHost);
+            headers.set("x-rapidapi-key", rapidapiKey);
+
+            log.info("Sending request to RapidAPI for keyword: {}", keyword);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    uri, HttpMethod.GET, new HttpEntity<>(headers), String.class);
+
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Không lấy được dữ liệu thật từ Amazon. Vui lòng thử lại sau.");
             }
+
+            JsonNode products = objectMapper.readTree(response.getBody()).path("data").path("products");
+            if (products.isArray()) {
+                for (JsonNode item : products) {
+                    if (results.size() >= 12) break;
+
+                    String title = HtmlUtils.htmlUnescape(item.path("product_title").asText(""));
+                    String image = textOrNull(item, "product_photo");
+                    if (title.isEmpty() || image == null) continue;
+
+                    results.add(AmazonSearchResultDto.builder()
+                            .id(item.path("asin").asText("amz-" + results.size()))
+                            .title(title)
+                            .image(image)
+                            .price(parsePrice(textOrNull(item, "product_price")))
+                            .originalPrice(parsePrice(textOrNull(item, "product_original_price")))
+                            .rating(textOrNull(item, "product_star_rating"))
+                            .reviews(String.valueOf(item.path("product_num_ratings").asInt(0)))
+                            // Endpoint này không trả cờ quảng cáo — để false thay vì suy đoán.
+                            .isSponsored(false)
+                            .badge(item.path("is_amazon_choice").asBoolean(false) ? "Amazon's Choice" : null)
+                            .salesVolume(textOrNull(item, "sales_volume"))
+                            .build());
+                }
+            }
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error calling RapidAPI for keyword: " + keyword, e);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Không lấy được dữ liệu thật từ Amazon. Vui lòng thử lại sau.");
         }
 
         return results;
     }
 
-    private List<AmazonSearchResultDto> scrapeAmazonWithRapidApi(String keyword) {
-        List<AmazonSearchResultDto> results = new ArrayList<>();
-        
-        if (rapidapiKey == null || rapidapiKey.isEmpty()) {
-            log.error("RapidAPI key is missing! Cannot fetch real data.");
-        } else {
-            try {
-                String url = "https://" + rapidapiHost + "/queries";
+    private String textOrNull(JsonNode item, String field) {
+        JsonNode value = item.path(field);
+        return (value.isMissingNode() || value.isNull()) ? null : value.asText();
+    }
 
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("x-rapidapi-host", rapidapiHost);
-                headers.set("x-rapidapi-key", rapidapiKey);
-                headers.set("Content-Type", "application/json");
-
-                String payload = String.format("{\"source\":\"amazon_search\",\"query\":\"%s\",\"geo_location\":\"90210\",\"parse\":true}", keyword.replace("\"", "\\\""));
-
-                HttpEntity<String> request = new HttpEntity<>(payload, headers);
-
-                log.info("Sending request to RapidAPI for keyword: {}", keyword);
-                ResponseEntity<String> response = restTemplate.exchange(
-                        url,
-                        HttpMethod.POST,
-                        request,
-                        String.class
-                );
-
-                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    JsonNode root = objectMapper.readTree(response.getBody());
-                    JsonNode resultsArray = root.path("results").get(0).path("content").path("results").path("organic");
-
-                    if (resultsArray.isArray()) {
-                        for (int i = 0; i < resultsArray.size(); i++) {
-                            if (results.size() >= 12) break;
-
-                            JsonNode item = resultsArray.get(i);
-                            
-                            String title = item.path("title").asText("");
-                            String image = item.path("url_image").asText("");
-                            Double price = item.path("price").asDouble(0.0);
-                            String rating = item.path("rating").asText("");
-                            String reviews = item.path("reviews_count").asText("");
-                            boolean isSponsored = item.path("is_sponsored").asBoolean(false);
-                            String badge = item.path("is_amazons_choice").asBoolean(false) ? "Amazon's Choice" : null;
-                            String brand = item.path("brand").asText("");
-                            String salesVolume = item.path("sales_volume").asText("");
-                            Double originalPrice = item.path("price_strikethrough").asDouble(0.0);
-
-                            if (!title.isEmpty() && !image.isEmpty()) {
-                                results.add(AmazonSearchResultDto.builder()
-                                        .id("amz-" + i)
-                                        .title(title)
-                                        .image(image)
-                                        .price(price)
-                                        .rating(rating)
-                                        .reviews(reviews)
-                                        .isSponsored(isSponsored)
-                                        .badge(badge)
-                                        .brand(brand)
-                                        .salesVolume(salesVolume)
-                                        .originalPrice(originalPrice)
-                                        .build());
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error calling RapidAPI for keyword: " + keyword, e);
-            }
+    private Double parsePrice(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Double.parseDouble(raw.replaceAll("[^0-9.]", ""));
+        } catch (NumberFormatException e) {
+            return null;
         }
-
-        if (results.isEmpty()) {
-            log.warn("Scraping returned no results, falling back to mock data.");
-            for (int i = 0; i < 5; i++) {
-                results.add(AmazonSearchResultDto.builder()
-                        .id("mock-" + i)
-                        .title("Mock Amazon Product for " + keyword + " " + i)
-                        .image("https://via.placeholder.com/150")
-                        .price(19.99 + i)
-                        .rating("4." + i)
-                        .reviews("10" + i)
-                        .isSponsored(i == 0)
-                        .build());
-            }
-        }
-
-        return results;
     }
 
     public ObjectNode scrapeProductByAsin(String asinOrUrl) {
