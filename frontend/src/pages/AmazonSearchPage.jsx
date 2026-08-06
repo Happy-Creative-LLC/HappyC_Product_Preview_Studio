@@ -131,7 +131,11 @@ const AmazonSearchPage = () => {
         } else if (requestError.response.status === 403) {
           setError('Chỉ Seller và Admin được dùng Search Preview.');
         } else {
-          setError('Không lấy được dữ liệu từ Amazon. Vui lòng thử lại.');
+          // Backend trả message tiếng Việt cụ thể (VD: chưa cấu hình RapidAPI,
+          // không lấy được dữ liệu thật) qua GlobalExceptionHandler — ưu tiên nó
+          // thay vì luôn hiện một câu chung chung.
+          setError(requestError.response?.data?.message
+            || 'Không lấy được dữ liệu từ Amazon. Vui lòng thử lại.');
         }
       })
       .finally(() => { if (active) setLoading(false); });
