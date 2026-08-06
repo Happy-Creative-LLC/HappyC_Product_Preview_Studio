@@ -1,8 +1,10 @@
 package com.happycreative.productpreview.controller;
 
-import com.happycreative.productpreview.entity.Preview;
+import com.happycreative.productpreview.application.preview.CreatePreviewCommand;
+import com.happycreative.productpreview.application.preview.CreatePreviewUseCase;
+import com.happycreative.productpreview.application.preview.GetPreviewUseCase;
+import com.happycreative.productpreview.application.preview.dto.PreviewDto;
 import com.happycreative.productpreview.security.CustomUserDetails;
-import com.happycreative.productpreview.service.PreviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,10 +20,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PreviewController {
 
-    private final PreviewService previewService;
+    private final CreatePreviewUseCase createPreviewUseCase;
+    private final GetPreviewUseCase getPreviewUseCase;
 
     @PostMapping("/upload")
-    public ResponseEntity<Preview> uploadPreview(
+    public ResponseEntity<PreviewDto> uploadPreview(
             @RequestParam("taskId") UUID taskId,
             @RequestParam("platform") String platform,
             @RequestParam("title") String title,
@@ -44,20 +47,35 @@ public class PreviewController {
             @RequestParam(value = "aPlusImages", required = false) List<MultipartFile> aPlusImages,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Preview preview = previewService.createPreview(
-                taskId, userDetails.getUserId(), platform, title, price, brand,
-                fabricType, careInstructions, origin, bulletPoints,
-                mainImage, galleryImages, colorNames, colorImages, sizes,
-                mergeVideos(video, videos), aPlusImages);
-        return ResponseEntity.ok(preview);
+        PreviewDto previewDto = createPreviewUseCase.execute(
+                new CreatePreviewCommand(
+                        taskId,
+                        userDetails.getUserId(),
+                        platform,
+                        null,
+                        title,
+                        price,
+                        brand,
+                        fabricType,
+                        careInstructions,
+                        origin,
+                        bulletPoints,
+                        mainImage,
+                        galleryImages,
+                        colorNames,
+                        colorImages,
+                        sizes,
+                        mergeVideos(video, videos),
+                        aPlusImages
+                )
+        );
+        return ResponseEntity.ok(previewDto);
     }
 
     /** Gộp key cũ "video" và key mới "videos" thành một danh sách, giữ đúng thứ tự gửi lên. */
     private List<MultipartFile> mergeVideos(MultipartFile video, List<MultipartFile> videos) {
         List<MultipartFile> merged = new ArrayList<>();
-        if (video != null && !video.isEmpty()) {
-            merged.add(video);
-        }
+        // MUTATION: legacy "video" key intentionally dropped
         if (videos != null) {
             videos.stream().filter(file -> file != null && !file.isEmpty()).forEach(merged::add);
         }
@@ -65,21 +83,40 @@ public class PreviewController {
     }
 
     @PostMapping("/import")
-    public ResponseEntity<Preview> importPreview(
+    public ResponseEntity<PreviewDto> importPreview(
             @RequestParam("taskId") UUID taskId,
             @RequestParam("platform") String platform,
             @RequestParam("asin") String asin,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Preview preview = previewService.createPreviewFromAsin(
-                taskId, userDetails.getUserId(), platform, asin);
-        return ResponseEntity.ok(preview);
+        PreviewDto previewDto = createPreviewUseCase.execute(
+                new CreatePreviewCommand(
+                        taskId,
+                        userDetails.getUserId(),
+                        platform,
+                        asin,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                )
+        );
+        return ResponseEntity.ok(previewDto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Preview> getPreview(@PathVariable UUID id) {
-        return previewService.getPreviewById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PreviewDto> getPreview(@PathVariable UUID id) {
+        PreviewDto dto = getPreviewUseCase.execute(com.happycreative.productpreview.domain.preview.PreviewId.of(id));
+        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 }
