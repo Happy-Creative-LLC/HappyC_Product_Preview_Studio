@@ -17,6 +17,7 @@ public class AdminUserResponse {
     private String projectKey;
     private String authProvider;
     private String status;
+    private LocalDateTime lastLoginAt;
     private LocalDateTime createdAt;
 
     public static AdminUserResponse from(User user) {
@@ -30,6 +31,7 @@ public class AdminUserResponse {
         dto.setProjectKey(user.getProjectKey());
         dto.setAuthProvider(user.getAuthProvider().name());
         dto.setStatus(user.getStatus().name());
+        dto.setLastLoginAt(user.getLastLoginAt());
         dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }

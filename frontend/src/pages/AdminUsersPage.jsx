@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  Clock,
   Loader2,
   Lock,
   Mail,
@@ -48,6 +49,21 @@ const ROLE_TABS = [
 const PROJECT_ROLE_CHOICES = ['SELLER', 'PRODUCT_DESIGN'];
 
 const getInitial = (name, email) => (name?.trim()?.[0] || email?.trim()?.[0] || '?').toUpperCase();
+
+// Backend trả LocalDateTime không kèm offset (VD "2026-08-06T08:19:33"), trình duyệt
+// sẽ hiểu là giờ máy — đúng với môi trường nội bộ cùng múi giờ.
+const formatLastLogin = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const isProjectRole = (role) => role === 'SELLER' || role === 'PRODUCT_DESIGN';
 
@@ -270,13 +286,15 @@ const AdminUsersPage = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[46rem] border-collapse text-sm">
+                  {/* 6 cột nên nới min-width, wrapper overflow-x-auto lo phần cuộn ngang */}
+                  <table className="w-full min-w-[58rem] border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-[var(--hc-gray-200)] text-left text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--hc-gray-500)]">
-                        <th className="px-5 py-3">Gmail</th>
                         <th className="px-5 py-3">Tên nhân sự</th>
+                        <th className="px-5 py-3">Gmail</th>
                         <th className="px-5 py-3">Role</th>
                         <th className="px-5 py-3">Trạng thái</th>
+                        <th className="px-5 py-3">Lần cuối login</th>
                         <th className="px-5 py-3 text-right">Thao tác</th>
                       </tr>
                     </thead>
@@ -288,12 +306,6 @@ const AdminUsersPage = () => {
 
                         return (
                           <tr key={item.id} className="border-b border-[var(--hc-gray-100)] last:border-0">
-                            <td className="px-5 py-3.5">
-                              <span className="flex items-center gap-2 font-mono text-xs text-[var(--hc-gray-600)]">
-                                <Mail size={14} className="shrink-0 text-[var(--hc-gray-400)]" aria-hidden="true" />
-                                {item.email}
-                              </span>
-                            </td>
                             <td className="px-5 py-3.5">
                               <span className="flex items-center gap-2">
                                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--hc-orange-50)] text-[0.6875rem] font-bold text-[var(--hc-orange-600)]">
@@ -308,12 +320,28 @@ const AdminUsersPage = () => {
                               </span>
                             </td>
                             <td className="px-5 py-3.5">
+                              <span className="flex items-center gap-2 font-mono text-xs text-[var(--hc-gray-600)]">
+                                <Mail size={14} className="shrink-0 text-[var(--hc-gray-400)]" aria-hidden="true" />
+                                {item.email}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3.5">
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ${ROLE_CLASSES[item.role] || 'bg-[var(--hc-gray-100)]'}`}>
                                 {roleMeta?.short || item.role}
                               </span>
                             </td>
                             <td className="px-5 py-3.5">
                               <span className={`hc-status ${statusMeta.className}`}>{statusMeta.label}</span>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              {item.lastLoginAt ? (
+                                <span className="flex items-center gap-2 text-xs text-[var(--hc-gray-600)]">
+                                  <Clock size={14} className="shrink-0 text-[var(--hc-gray-400)]" aria-hidden="true" />
+                                  <span className="tabular-nums">{formatLastLogin(item.lastLoginAt)}</span>
+                                </span>
+                              ) : (
+                                <span className="text-xs text-[var(--hc-gray-400)]">Chưa đăng nhập</span>
+                              )}
                             </td>
                             <td className="px-5 py-3.5">
                               <span className="flex justify-end gap-2">
