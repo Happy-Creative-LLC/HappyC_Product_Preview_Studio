@@ -84,6 +84,8 @@ public class GoogleAuthService {
         }
 
         user.setGoogleSub(identity.subject());
+        // Gộp luôn mốc đăng nhập vào lần save này thay vì ghi thêm một lần nữa.
+        user.setLastLoginAt(java.time.LocalDateTime.now());
         if (!StringUtils.hasText(user.getFullName()) && StringUtils.hasText(identity.fullName())) {
             user.setFullName(identity.fullName());
         }

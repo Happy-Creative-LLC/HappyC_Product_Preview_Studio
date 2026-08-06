@@ -6,6 +6,7 @@ import com.happycreative.productpreview.dto.GoogleAuthRequest;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import com.happycreative.productpreview.security.JwtTokenProvider;
 import com.happycreative.productpreview.service.GoogleAuthService;
+import com.happycreative.productpreview.service.UserLoginService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final GoogleAuthService googleAuthService;
+    private final UserLoginService userLoginService;
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody AuthRequest loginRequest) {
@@ -39,6 +41,7 @@ public class AuthController {
             String jwt = jwtTokenProvider.generateToken(authentication);
 
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            userLoginService.recordLogin(userDetails.getUserId());
 
             return ResponseEntity.ok(new AuthResponse(
                     jwt,

@@ -51,6 +51,9 @@ public class User {
     @Column(nullable = false)
     private UserStatus status = UserStatus.ACTIVE;
 
+    // NULL = chưa đăng nhập lần nào kể từ khi được tạo.
+    private LocalDateTime lastLoginAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
