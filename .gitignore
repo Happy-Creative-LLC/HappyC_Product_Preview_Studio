@@ -5,6 +5,11 @@
 # GitHub Actions / CI config (local)
 .github/
 
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
 # Custom tool folders
 .sixth/
 

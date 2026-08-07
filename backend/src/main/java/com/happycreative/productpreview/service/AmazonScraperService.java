@@ -16,18 +16,25 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.HtmlUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Slf4j
@@ -54,7 +61,38 @@ public class AmazonScraperService {
     @Value("${rapidapi.amazon.key:}")
     private String rapidapiKey;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = createRestTemplate();
+
+    // Trên Windows, JVM không tin các chứng chỉ gốc do Windows quản lý nên gọi
+    // RapidAPI qua HTTPS có thể fail handshake. Nạp thêm kho "Windows-ROOT" để
+    // dùng đúng bộ chứng chỉ của máy; hệ điều hành khác giữ nguyên mặc định.
+    private static RestTemplate createRestTemplate() {
+        String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (!osName.startsWith("windows")) {
+            return new RestTemplate();
+        }
+
+        try {
+            KeyStore windowsRoot = KeyStore.getInstance("Windows-ROOT");
+            windowsRoot.load(null, null);
+
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm()
+            );
+            trustManagerFactory.init(windowsRoot);
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
+
+            HttpClient httpClient = HttpClient.newBuilder()
+                    .sslContext(sslContext)
+                    .build();
+            return new RestTemplate(new JdkClientHttpRequestFactory(httpClient));
+        } catch (Exception exception) {
+            log.warn("Could not load Windows certificate store; using the JVM default trust store.", exception);
+            return new RestTemplate();
+        }
+    }
 
     /**
      * Trả kết quả search cho người dùng.

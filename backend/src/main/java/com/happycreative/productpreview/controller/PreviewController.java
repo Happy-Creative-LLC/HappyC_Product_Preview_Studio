@@ -75,7 +75,9 @@ public class PreviewController {
     /** Gộp key cũ "video" và key mới "videos" thành một danh sách, giữ đúng thứ tự gửi lên. */
     private List<MultipartFile> mergeVideos(MultipartFile video, List<MultipartFile> videos) {
         List<MultipartFile> merged = new ArrayList<>();
-        // MUTATION: legacy "video" key intentionally dropped
+        if (video != null && !video.isEmpty()) {
+            merged.add(video);
+        }
         if (videos != null) {
             videos.stream().filter(file -> file != null && !file.isEmpty()).forEach(merged::add);
         }

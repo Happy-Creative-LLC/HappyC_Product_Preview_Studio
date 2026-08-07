@@ -52,6 +52,10 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
         UUID taskId = command.taskId;
         PreviewPlatform platform = PreviewPlatform.fromString(command.platform);
 
+        // MUTATION: save happens before validation (bug: premature side effect)
+        Preview preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
+        previewRepository.save(preview);
+
         if (!userRepository.existsById(userId)) {
             throw new IllegalArgumentException("User not found: " + userId);
         }
@@ -59,8 +63,6 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
             throw new IllegalArgumentException("Task not found: " + taskId);
         }
 
-        Preview preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
-        previewRepository.save(preview);
         return mapper.toDto(preview);
     }
 

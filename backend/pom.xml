@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<aws.java.sdk.version>2.50.3</aws.java.sdk.version>
 	</properties>
 	<dependencyManagement>
@@ -155,6 +156,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.14.0</version>
+				<configuration>
+					<release>${java.version}</release>
+				</configuration>
 				<executions>
 					<execution>
 						<id>default-compile</id>
