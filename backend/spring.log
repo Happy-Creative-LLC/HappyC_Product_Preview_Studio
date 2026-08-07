@@ -1,0 +1,3676 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< com.happycreative:productpreview >------------------
+[INFO] Building productpreview 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:4.0.6:run (default-cli) > test-compile @ productpreview >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ productpreview ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ productpreview ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ productpreview ---
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ productpreview ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:4.0.6:run (default-cli) < test-compile @ productpreview <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:4.0.6:run (default-cli) @ productpreview ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.6)
+
+2026-07-01T11:15:12.398+07:00  INFO 26904 --- [           main] c.h.p.ProductpreviewApplication          : Starting ProductpreviewApplication using Java 21.0.11 with PID 26904 (D:\amazon_product_preview\backend\target\classes started by Admin in D:\amazon_product_preview\backend)
+2026-07-01T11:15:12.401+07:00  INFO 26904 --- [           main] c.h.p.ProductpreviewApplication          : No active profile set, falling back to 1 default profile: "default"
+2026-07-01T11:15:12.940+07:00  INFO 26904 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-07-01T11:15:12.997+07:00  INFO 26904 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 44 ms. Found 6 JPA repository interfaces.
+2026-07-01T11:15:13.394+07:00  INFO 26904 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8081 (http)
+2026-07-01T11:15:13.404+07:00  INFO 26904 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-01T11:15:13.404+07:00  INFO 26904 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-07-01T11:15:13.446+07:00  INFO 26904 --- [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1000 ms
+2026-07-01T11:15:13.549+07:00  INFO 26904 --- [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-07-01T11:15:13.589+07:00  INFO 26904 --- [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.12.Final
+2026-07-01T11:15:14.002+07:00  INFO 26904 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-07-01T11:15:14.028+07:00  INFO 26904 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-07-01T11:15:14.175+07:00  INFO 26904 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@19e801b5
+2026-07-01T11:15:14.176+07:00  INFO 26904 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-07-01T11:15:14.203+07:00  WARN 26904 --- [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-07-01T11:15:14.221+07:00  INFO 26904 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:postgresql://localhost:5432/productpreview]
+	Database driver: PostgreSQL JDBC Driver
+	Database dialect: PostgreSQLDialect
+	Database version: 15.18
+	Default catalog/schema: productpreview/public
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-07-01T11:15:15.161+07:00  INFO 26904 --- [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-07-01T11:15:15.236+07:00  INFO 26904 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-07-01T11:15:15.282+07:00  INFO 26904 --- [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-07-01T11:15:15.515+07:00  INFO 26904 --- [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-07-01T11:15:15.608+07:00  WARN 26904 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-07-01T11:15:15.980+07:00  INFO 26904 --- [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8081 (http) with context path '/'
+2026-07-01T11:15:15.987+07:00  INFO 26904 --- [           main] c.h.p.ProductpreviewApplication          : Started ProductpreviewApplication in 4.025 seconds (process running for 4.321)
+2026-07-01T11:15:40.265+07:00  INFO 26904 --- [nio-8081-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-07-01T11:15:40.265+07:00  INFO 26904 --- [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-07-01T11:15:40.266+07:00  INFO 26904 --- [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    insert 
+    into
+        tasks
+        (category, created_at, created_by, platform, project_id, status, title, updated_at, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    insert 
+    into
+        tasks
+        (category, created_at, created_by, platform, project_id, status, title, updated_at, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        t1_0.id,
+        t1_0.category,
+        t1_0.created_at,
+        t1_0.created_by,
+        t1_0.platform,
+        t1_0.project_id,
+        t1_0.status,
+        t1_0.title,
+        t1_0.updated_at 
+    from
+        tasks t1_0 
+    where
+        t1_0.project_id=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.id=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?
+Hibernate: 
+    select
+        u1_0.id,
+        u1_0.auth_provider,
+        u1_0.avatar_url,
+        u1_0.created_at,
+        u1_0.email,
+        u1_0.full_name,
+        u1_0.google_sub,
+        u1_0.password_hash,
+        u1_0.project_key,
+        u1_0.role,
+        u1_0.status,
+        u1_0.updated_at,
+        u1_0.username 
+    from
+        users u1_0 
+    where
+        u1_0.username=?
+Hibernate: 
+    select
+        p1_0.id,
+        p1_0.created_at,
+        p1_0.description,
+        p1_0.is_active,
+        p1_0.key,
+        p1_0.name 
+    from
+        projects p1_0 
+    where
+        p1_0.key=?

@@ -35,6 +35,11 @@ app:
   base-url: ${APP_BASE_URL:}
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
+  search-cache:
+    # Amazon Search luôn phục vụ từ cache ngay lập tức (không chờ RapidAPI theo lượt
+    # search); SearchCacheRefreshService làm mới nền vào Chủ nhật cho từ khoá đã quá
+    # số ngày này, để không gián đoạn công việc của Seller.
+    max-age-days: ${SEARCH_CACHE_MAX_AGE_DAYS:15}
   storage:
     # db    = lưu media vào Postgres (bảng stored_files) — mặc định giai đoạn test,
     #         data demo đi theo volume Docker / pg_dump thay vì backend/uploads/
@@ -53,7 +58,10 @@ app:
 
 
 
+# "Real-Time Amazon Data" (letscrape, RapidAPI) — verify bằng curl trước khi đổi
+# sang sản phẩm khác, response schema khác nhà cung cấp không tương thích nhau.
+# Không đặt default: thiếu cấu hình phải fail rõ ràng thay vì âm thầm gọi nhầm host.
 rapidapi:
   amazon:
-    host: ${RAPIDAPI_AMAZON_HOST:real-time-amazon-data.p.rapidapi.com}
+    host: ${RAPIDAPI_AMAZON_HOST:}
     key: ${RAPIDAPI_AMAZON_KEY:}
