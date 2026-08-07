@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
   servlet:
     multipart:
       max-file-size: 100MB
@@ -53,5 +55,5 @@ app:
 
 rapidapi:
   amazon:
-    host: amazon-data-scraper-api3.p.rapidapi.com
-    key: b2fbdbcca0msh330c13aadb58eafp1cc2eajsn935b7bec1096
+    host: ${RAPIDAPI_AMAZON_HOST:real-time-amazon-data.p.rapidapi.com}
+    key: ${RAPIDAPI_AMAZON_KEY:}

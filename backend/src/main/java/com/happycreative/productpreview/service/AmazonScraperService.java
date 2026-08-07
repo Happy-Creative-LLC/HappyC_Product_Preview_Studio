@@ -14,13 +14,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.net.http.HttpClient;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Slf4j
@@ -31,16 +42,44 @@ public class AmazonScraperService {
     private final SearchCacheRepository searchCacheRepository;
     private final ObjectMapper objectMapper;
 
-    // Cache valid for 10 days
-    private static final int CACHE_VALIDITY_DAYS = 10;
+    // SRS 3.8 / NFR: cache kết quả tìm kiếm Amazon tối đa 24 giờ.
+    private static final int CACHE_VALIDITY_HOURS = 24;
 
-    @Value("${rapidapi.amazon.host:amazon-data-scraper-api3.p.rapidapi.com}")
+    @Value("${rapidapi.amazon.host:real-time-amazon-data.p.rapidapi.com}")
     private String rapidapiHost;
 
     @Value("${rapidapi.amazon.key:}")
     private String rapidapiKey;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = createRestTemplate();
+
+    private static RestTemplate createRestTemplate() {
+        String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (!osName.startsWith("windows")) {
+            return new RestTemplate();
+        }
+
+        try {
+            KeyStore windowsRoot = KeyStore.getInstance("Windows-ROOT");
+            windowsRoot.load(null, null);
+
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm()
+            );
+            trustManagerFactory.init(windowsRoot);
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
+
+            HttpClient httpClient = HttpClient.newBuilder()
+                    .sslContext(sslContext)
+                    .build();
+            return new RestTemplate(new JdkClientHttpRequestFactory(httpClient));
+        } catch (Exception exception) {
+            log.warn("Could not load Windows certificate store; using the JVM default trust store.", exception);
+            return new RestTemplate();
+        }
+    }
 
     public List<AmazonSearchResultDto> searchAmazon(String keyword, boolean forceRefresh) {
         String normalizedKeyword = keyword.trim().toLowerCase();
@@ -49,15 +88,24 @@ public class AmazonScraperService {
         Optional<SearchCache> cacheOpt = searchCacheRepository.findByKeywordIgnoreCase(normalizedKeyword);
         if (!forceRefresh && cacheOpt.isPresent()) {
             SearchCache cache = cacheOpt.get();
-            if (cache.getLastUpdated() != null && cache.getLastUpdated().plusDays(CACHE_VALIDITY_DAYS).isAfter(LocalDateTime.now())) {
+            if (cache.getLastUpdated() != null && cache.getLastUpdated().plusHours(CACHE_VALIDITY_HOURS).isAfter(LocalDateTime.now())) {
                 log.info("Returning cached results for keyword: {}", normalizedKeyword);
                 try {
-                    return objectMapper.readValue(cache.getResultsJson(), new TypeReference<List<AmazonSearchResultDto>>(){});
+                    List<AmazonSearchResultDto> cachedResults = objectMapper.readValue(
+                            cache.getResultsJson(),
+                            new TypeReference<List<AmazonSearchResultDto>>() {}
+                    );
+                    boolean containsLegacyMock = cachedResults.stream()
+                            .anyMatch(item -> item.getId() != null && item.getId().startsWith("mock-"));
+                    if (!containsLegacyMock) {
+                        return cachedResults;
+                    }
+                    log.warn("Ignoring legacy mock cache for keyword: {}", normalizedKeyword);
                 } catch (Exception e) {
                     log.error("Failed to parse cached JSON", e);
                 }
             } else {
-                log.info("Cache expired (older than 10 days) for keyword: {}, fetching from API...", normalizedKeyword);
+                log.info("Cache expired (older than 24 hours) for keyword: {}, fetching from API...", normalizedKeyword);
             }
         }
 
@@ -84,90 +132,106 @@ public class AmazonScraperService {
 
     private List<AmazonSearchResultDto> scrapeAmazonWithRapidApi(String keyword) {
         List<AmazonSearchResultDto> results = new ArrayList<>();
-        
-        if (rapidapiKey == null || rapidapiKey.isEmpty()) {
-            log.error("RapidAPI key is missing! Cannot fetch real data.");
-        } else {
-            try {
-                String url = "https://" + rapidapiHost + "/queries";
 
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("x-rapidapi-host", rapidapiHost);
-                headers.set("x-rapidapi-key", rapidapiKey);
-                headers.set("Content-Type", "application/json");
-
-                String payload = String.format("{\"source\":\"amazon_search\",\"query\":\"%s\",\"geo_location\":\"90210\",\"parse\":true}", keyword.replace("\"", "\\\""));
-
-                HttpEntity<String> request = new HttpEntity<>(payload, headers);
-
-                log.info("Sending request to RapidAPI for keyword: {}", keyword);
-                ResponseEntity<String> response = restTemplate.exchange(
-                        url,
-                        HttpMethod.POST,
-                        request,
-                        String.class
-                );
-
-                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    JsonNode root = objectMapper.readTree(response.getBody());
-                    JsonNode resultsArray = root.path("results").get(0).path("content").path("results").path("organic");
-
-                    if (resultsArray.isArray()) {
-                        for (int i = 0; i < resultsArray.size(); i++) {
-                            if (results.size() >= 12) break;
-
-                            JsonNode item = resultsArray.get(i);
-                            
-                            String title = item.path("title").asText("");
-                            String image = item.path("url_image").asText("");
-                            Double price = item.path("price").asDouble(0.0);
-                            String rating = item.path("rating").asText("");
-                            String reviews = item.path("reviews_count").asText("");
-                            boolean isSponsored = item.path("is_sponsored").asBoolean(false);
-                            String badge = item.path("is_amazons_choice").asBoolean(false) ? "Amazon's Choice" : null;
-                            String brand = item.path("brand").asText("");
-                            String salesVolume = item.path("sales_volume").asText("");
-                            Double originalPrice = item.path("price_strikethrough").asDouble(0.0);
-
-                            if (!title.isEmpty() && !image.isEmpty()) {
-                                results.add(AmazonSearchResultDto.builder()
-                                        .id("amz-" + i)
-                                        .title(title)
-                                        .image(image)
-                                        .price(price)
-                                        .rating(rating)
-                                        .reviews(reviews)
-                                        .isSponsored(isSponsored)
-                                        .badge(badge)
-                                        .brand(brand)
-                                        .salesVolume(salesVolume)
-                                        .originalPrice(originalPrice)
-                                        .build());
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error calling RapidAPI for keyword: " + keyword, e);
-            }
+        if (!StringUtils.hasText(rapidapiKey)) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Dịch vụ tìm kiếm Amazon chưa được cấu hình."
+            );
         }
 
-        if (results.isEmpty()) {
-            log.warn("Scraping returned no results, falling back to mock data.");
-            for (int i = 0; i < 5; i++) {
-                results.add(AmazonSearchResultDto.builder()
-                        .id("mock-" + i)
-                        .title("Mock Amazon Product for " + keyword + " " + i)
-                        .image("https://via.placeholder.com/150")
-                        .price(19.99 + i)
-                        .rating("4." + i)
-                        .reviews("10" + i)
-                        .isSponsored(i == 0)
-                        .build());
+        try {
+            String url = UriComponentsBuilder
+                    .fromUriString("https://" + rapidapiHost + "/search")
+                    .queryParam("query", keyword)
+                    .queryParam("page", 1)
+                    .queryParam("country", "US")
+                    .queryParam("sort_by", "RELEVANCE")
+                    .queryParam("product_condition", "ALL")
+                    .queryParam("is_prime", false)
+                    .queryParam("deals_and_discounts", "NONE")
+                    .build()
+                    .encode()
+                    .toUriString();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("x-rapidapi-host", rapidapiHost);
+            headers.set("x-rapidapi-key", rapidapiKey);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            log.info("Sending request to RapidAPI for keyword: {}", keyword);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    String.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Không lấy được dữ liệu từ Amazon.");
             }
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode resultsArray = root.path("data").path("products");
+
+            if (resultsArray.isArray()) {
+                for (int i = 0; i < resultsArray.size(); i++) {
+                    if (results.size() >= 12) break;
+
+                    JsonNode item = resultsArray.get(i);
+                    String title = item.path("product_title").asText("");
+                    String image = item.path("product_photo").asText("");
+
+                    if (title.isBlank() || image.isBlank()) continue;
+
+                    String asin = item.path("asin").asText("");
+                    String badge = item.path("product_badge").asText("");
+                    if (badge.isBlank() && item.path("is_amazon_choice").asBoolean(false)) {
+                        badge = "Amazon's Choice";
+                    } else if (badge.isBlank() && item.path("is_best_seller").asBoolean(false)) {
+                        badge = "Best Seller";
+                    }
+
+                    results.add(AmazonSearchResultDto.builder()
+                            .id(asin.isBlank() ? "amz-" + i : "amz-" + asin)
+                            .title(title)
+                            .image(image)
+                            .price(readNullablePrice(item.path("product_price")))
+                            .rating(item.path("product_star_rating").asText(""))
+                            .reviews(item.path("product_num_ratings").asText(""))
+                            .isSponsored(item.path("is_sponsored").asBoolean(false))
+                            .badge(badge.isBlank() ? null : badge)
+                            .brand(item.path("brand").asText(""))
+                            .salesVolume(item.path("sales_volume").asText(""))
+                            .originalPrice(readNullablePrice(item.path("product_original_price")))
+                            .build());
+                }
+            }
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            log.error("Error calling RapidAPI for keyword: {}", keyword, exception);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Không lấy được dữ liệu từ Amazon.",
+                    exception
+            );
         }
 
         return results;
+    }
+
+    private Double readNullablePrice(JsonNode value) {
+        if (value == null || value.isNull() || value.isMissingNode()) return null;
+        if (value.isNumber()) return value.doubleValue();
+
+        String normalized = value.asText("").replaceAll("[^0-9.]", "");
+        if (normalized.isBlank()) return null;
+        try {
+            return Double.valueOf(normalized);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     public ObjectNode scrapeProductByAsin(String asinOrUrl) {
@@ -182,61 +246,66 @@ public class AmazonScraperService {
         }
         
         try {
-            String url = "https://" + rapidapiHost + "/queries";
+            String url = UriComponentsBuilder
+                    .fromUriString("https://" + rapidapiHost + "/product-details")
+                    .queryParam("asin", asin)
+                    .queryParam("country", "US")
+                    .build()
+                    .encode()
+                    .toUriString();
             HttpHeaders headers = new HttpHeaders();
             headers.set("x-rapidapi-host", rapidapiHost);
             headers.set("x-rapidapi-key", rapidapiKey);
-            headers.set("Content-Type", "application/json");
-
-            String payload = String.format("{\"source\":\"amazon_product\",\"query\":\"%s\",\"geo_location\":\"90210\",\"parse\":true}", asin.replace("\"", "\\\""));
-            HttpEntity<String> request = new HttpEntity<>(payload, headers);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
 
             log.info("Sending request to RapidAPI for ASIN: {}", asin);
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
-                    HttpMethod.POST,
+                    HttpMethod.GET,
                     request,
                     String.class
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode result = root.path("results").get(0).path("content");
+                JsonNode result = root.path("data");
 
                 ObjectNode productData = objectMapper.createObjectNode();
-                productData.put("title", result.path("title").asText("Mock Product Title"));
-                productData.put("price", result.path("pricing").path("price").asDouble(29.99));
-                productData.put("brand", result.path("brand").asText("Mock Brand"));
-                productData.put("origin", "Imported");
-                productData.put("careInstructions", "Machine Wash");
-                productData.put("fabricType", "Mixed");
+                productData.put("title", result.path("product_title").asText(""));
+                Double price = readNullablePrice(result.path("product_price"));
+                if (price == null) {
+                    productData.putNull("price");
+                } else {
+                    productData.put("price", price);
+                }
+                productData.put("brand", result.path("product_byline").asText(""));
+                productData.put("origin", "");
+                productData.put("careInstructions", "");
+                productData.put("fabricType", "");
 
                 ArrayNode bulletPoints = productData.putArray("bulletPoints");
-                JsonNode featureBullets = result.path("feature_bullets");
+                JsonNode featureBullets = result.path("about_product");
                 if (featureBullets.isArray() && featureBullets.size() > 0) {
                     for (JsonNode bp : featureBullets) {
                         bulletPoints.add(bp.asText());
                     }
-                } else {
-                    bulletPoints.add("Premium quality material");
-                    bulletPoints.add("Comfortable fit for everyday use");
-                    bulletPoints.add("Durable and long-lasting design");
                 }
 
                 ArrayNode imagesArray = productData.putArray("images");
-                JsonNode images = result.path("images");
+                JsonNode images = result.path("product_photos");
                 if (images.isArray() && images.size() > 0) {
                     for (JsonNode img : images) {
-                        imagesArray.add(img.path("link").asText());
+                        String imageUrl = img.isTextual()
+                                ? img.asText("")
+                                : img.path("url").asText(img.path("link").asText(""));
+                        if (!imageUrl.isBlank()) {
+                            imagesArray.add(imageUrl);
+                        }
                     }
                 } else {
-                    String mainImg = result.path("images").asText("");
-                    if (mainImg.isEmpty()) mainImg = result.path("main_image").asText("");
+                    String mainImg = result.path("product_photo").asText("");
                     if (!mainImg.isEmpty()) {
                         imagesArray.add(mainImg);
-                    } else {
-                        imagesArray.add("https://m.media-amazon.com/images/I/71zKuqJOKxL._AC_UY1000_.jpg");
-                        imagesArray.add("https://m.media-amazon.com/images/I/81f-H1gBhtL._AC_UY1000_.jpg");
                     }
                 }
 

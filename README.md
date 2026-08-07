@@ -120,6 +120,20 @@ Mỗi case hỗ trợ tối đa **7 ảnh** hoặc **6 ảnh + 1 video**.
 | GET | `/api/admin/users` | Danh sách nhân sự (Admin only) |
 | PUT | `/api/admin/users/{id}` | Cập nhật role / projectKey / status |
 
+### Cấu hình Amazon Search
+
+Backend chỉ trả dữ liệu thật từ RapidAPI và cache theo keyword tối đa 24 giờ. Trước khi chạy backend, cấu hình:
+
+```powershell
+$env:RAPIDAPI_AMAZON_KEY='your-key'
+# Tuỳ chọn khi đổi nhà cung cấp/host:
+$env:RAPIDAPI_AMAZON_HOST='real-time-amazon-data.p.rapidapi.com'
+```
+
+Hoặc copy `.env.example` thành `.env` tại thư mục gốc rồi điền `RAPIDAPI_AMAZON_KEY`. Backend tự đọc file này khi chạy từ thư mục gốc hoặc `backend/`; `.env` đã được Git bỏ qua để tránh lộ secret.
+
+Nếu thiếu key, API trả lỗi `503` bằng tiếng Việt; hệ thống không tự chèn dữ liệu mock vào trang so sánh.
+
 ---
 
 ## Database Schema (tóm tắt)

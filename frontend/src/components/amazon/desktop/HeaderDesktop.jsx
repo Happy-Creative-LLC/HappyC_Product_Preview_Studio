@@ -1,5 +1,4 @@
-import React from 'react';
-import { Search, ShoppingCart, MapPin, Menu, ChevronDown } from 'lucide-react';
+import { Search, ShoppingCart, MapPin, Menu, ChevronDown, Globe2, Loader2 } from 'lucide-react';
 import AmazonLogo from '../AmazonLogo';
 
 /* ── Sub-nav items in exact real-Amazon order ── */
@@ -31,8 +30,23 @@ const FASHION_CATS = [
   'New Arrivals', 'Amazon Brands', 'Amazon Luxury',
 ];
 
-const HeaderDesktop = ({ caseType = 1 }) => {
+const HeaderDesktop = ({
+  caseType = 1,
+  searchValue,
+  onSearchChange,
+  onSearchSubmit,
+  searchLoading = false,
+  searchPlaceholder = 'Search Amazon',
+}) => {
   const showFashionBar = Number(caseType) === 1;
+  const controlledSearchProps = onSearchChange
+    ? { value: searchValue ?? '', onChange: onSearchChange }
+    : {};
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    onSearchSubmit?.();
+  };
 
   return (
     <header className="w-full sticky top-0 z-30 shadow-md">
@@ -52,10 +66,15 @@ const HeaderDesktop = ({ caseType = 1 }) => {
         </div>
 
         {/* Search */}
-        <div className="flex-1 flex items-center bg-white rounded h-[38px] mx-2 overflow-hidden">
+        <form
+          onSubmit={handleSearchSubmit}
+          className="mx-2 flex h-[42px] flex-1 items-center overflow-hidden rounded bg-white focus-within:ring-2 focus-within:ring-[#ff9900] focus-within:ring-offset-2 focus-within:ring-offset-[#131921]"
+          role="search"
+        >
           <select
             className="h-full bg-[#F3F3F3] border-r border-[#CDCDCD] text-[#111] text-xs px-2 outline-none cursor-pointer"
             style={{ minWidth: 52, maxWidth: 56 }}
+            aria-label="Danh mục Amazon"
           >
             <option>All</option>
             <option>Clothing</option>
@@ -63,17 +82,26 @@ const HeaderDesktop = ({ caseType = 1 }) => {
           </select>
           <input
             type="text"
-            placeholder="Search Amazon"
-            className="flex-1 h-full px-3 text-[#111] text-sm outline-none min-w-0"
+            placeholder={searchPlaceholder}
+            aria-label="Từ khoá tìm kiếm Amazon"
+            className="h-full min-w-0 flex-1 px-3 text-base text-[#111] outline-none"
+            {...controlledSearchProps}
           />
-          <button className="h-full w-[46px] flex items-center justify-center bg-[#FF9900] hover:bg-[#E47911] transition-colors flex-shrink-0">
-            <Search size={20} className="text-[#111]" />
+          <button
+            type="submit"
+            disabled={searchLoading}
+            className="flex h-full w-12 flex-shrink-0 items-center justify-center bg-[#FF9900] transition-colors hover:bg-[#E47911] disabled:cursor-wait disabled:bg-[#f3a847]"
+            aria-label={searchLoading ? 'Đang tìm kiếm Amazon' : 'Tìm kiếm Amazon'}
+          >
+            {searchLoading
+              ? <Loader2 size={20} className="animate-spin text-[#111]" aria-hidden="true" />
+              : <Search size={20} className="text-[#111]" aria-hidden="true" />}
           </button>
-        </div>
+        </form>
 
         {/* Language */}
         <div className="hidden xl:flex items-center gap-0.5 border border-transparent hover:border-white rounded-sm px-1.5 py-1 cursor-pointer flex-shrink-0 select-none">
-          <span className="text-[12px]">🇺🇸</span>
+          <Globe2 size={15} aria-hidden="true" />
           <span className="font-bold text-[13px] ml-0.5">EN</span>
           <ChevronDown size={11} className="text-[#CCCCCC]" />
         </div>

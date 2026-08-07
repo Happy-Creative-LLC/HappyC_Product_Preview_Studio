@@ -21,7 +21,7 @@ public class Project {
     private UUID id;
 
     // happy | creative | hapify84 | global
-    @Column(name = "key", nullable = false, unique = true)
+    @Column(name = "project_key", nullable = false, unique = true)
     private String key;
 
     @Column(nullable = false)

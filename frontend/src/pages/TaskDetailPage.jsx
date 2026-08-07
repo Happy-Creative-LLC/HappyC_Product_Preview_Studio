@@ -19,7 +19,7 @@ import {
 import { useAppStore } from '../stores/appStore';
 import SidebarLayout from '../components/shared/SidebarLayout';
 import AmazonUploadForm from '../components/upload/AmazonUploadForm';
-import { canSubmitTaskReview, isSingleProjectRole } from '../utils/permissions';
+import { canSubmitTaskReview, canUseAmazonSearch, isSingleProjectRole } from '../utils/permissions';
 
 const STATUS_CONFIG = {
   PENDING_UPLOADS: {
@@ -153,6 +153,15 @@ const TaskDetailPage = () => {
 
   const previewUrl = savedPreviewId
     ? `${task?.platform === 'ETSY' ? '/etsy' : '/amazon'}?${new URLSearchParams({
+      taskId,
+      projectId,
+      previewId: savedPreviewId,
+    }).toString()}`
+    : null;
+  const searchPreviewUrl = savedPreviewId
+    && task?.platform === 'AMAZON'
+    && canUseAmazonSearch(user?.role)
+    ? `/search?${new URLSearchParams({
       taskId,
       projectId,
       previewId: savedPreviewId,
@@ -312,7 +321,13 @@ const TaskDetailPage = () => {
           </div>
 
           <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+              {searchPreviewUrl && (
+                <Link className="hc-button hc-button--secondary" to={searchPreviewUrl}>
+                  <Search size={17} aria-hidden="true" />
+                  So sánh Search
+                </Link>
+              )}
               {previewUrl ? (
                 <Link className="hc-button hc-button--secondary" to={previewUrl}>
                   <Eye size={17} aria-hidden="true" />

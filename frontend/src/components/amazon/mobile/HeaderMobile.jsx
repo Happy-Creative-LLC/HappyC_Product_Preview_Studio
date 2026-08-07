@@ -1,10 +1,24 @@
-import React from 'react';
-import { Search, ShoppingCart, MapPin, Menu, ChevronDown, ChevronRight, User } from 'lucide-react';
+import { Search, ShoppingCart, MapPin, Menu, ChevronDown, ChevronRight, User, Loader2 } from 'lucide-react';
 import AmazonLogo from '../AmazonLogo';
 
 // Mobile header — stacked like the real Amazon app:
 // [menu · logo · sign in · cart] / [full-width search] / [deliver-to].
-const HeaderMobile = () => {
+const HeaderMobile = ({
+  searchValue,
+  onSearchChange,
+  onSearchSubmit,
+  searchLoading = false,
+  searchPlaceholder = 'Search Amazon',
+}) => {
+  const controlledSearchProps = onSearchChange
+    ? { value: searchValue ?? '', onChange: onSearchChange }
+    : {};
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    onSearchSubmit?.();
+  };
+
   return (
     <header className="w-full shadow-md bg-[#131921] text-white">
       {/* Row 1: menu · logo · sign in · cart */}
@@ -15,12 +29,12 @@ const HeaderMobile = () => {
         >
           <Menu size={26} />
         </button>
-        <AmazonLogo className="h-[26px] w-auto" />
+        <AmazonLogo className="h-[26px] w-[92px] object-contain" />
 
         <div className="ml-auto flex items-center gap-1">
           <button className="flex items-center h-11 px-1.5 rounded active:bg-white/10" aria-label="Sign in">
-            <span className="text-[13px]">Sign in</span>
-            <ChevronRight size={13} className="mx-0.5 text-[#CCCCCC]" />
+            <span className="hidden text-[13px] min-[430px]:inline">Sign in</span>
+            <ChevronRight size={13} className="mx-0.5 hidden text-[#CCCCCC] min-[430px]:block" />
             <User size={20} />
           </button>
           <button className="relative w-11 h-11 flex items-center justify-center rounded active:bg-white/10" aria-label="Cart, 0 items">
@@ -32,19 +46,29 @@ const HeaderMobile = () => {
 
       {/* Row 2: full-width search */}
       <div className="px-3 pb-2">
-        <div className="flex items-center bg-white rounded-md h-10 overflow-hidden">
+        <form
+          onSubmit={handleSearchSubmit}
+          className="flex h-11 items-center overflow-hidden rounded-md bg-white focus-within:ring-2 focus-within:ring-[#ff9900]"
+          role="search"
+        >
           <input
             type="text"
-            placeholder="Search Amazon"
-            className="flex-1 h-full px-3 text-[#111] text-[15px] outline-none min-w-0"
+            placeholder={searchPlaceholder}
+            aria-label="Từ khoá tìm kiếm Amazon"
+            className="h-full min-w-0 flex-1 px-3 text-base text-[#111] outline-none"
+            {...controlledSearchProps}
           />
           <button
-            className="w-12 h-full flex items-center justify-center bg-[#FEBD69] active:bg-[#F3A847]"
-            aria-label="Search"
+            type="submit"
+            disabled={searchLoading}
+            className="flex h-full w-12 items-center justify-center bg-[#FEBD69] active:bg-[#F3A847] disabled:cursor-wait disabled:opacity-70"
+            aria-label={searchLoading ? 'Đang tìm kiếm Amazon' : 'Tìm kiếm Amazon'}
           >
-            <Search size={22} className="text-[#111]" />
+            {searchLoading
+              ? <Loader2 size={21} className="animate-spin text-[#111]" aria-hidden="true" />
+              : <Search size={22} className="text-[#111]" aria-hidden="true" />}
           </button>
-        </div>
+        </form>
       </div>
 
       {/* Row 3: deliver-to */}
