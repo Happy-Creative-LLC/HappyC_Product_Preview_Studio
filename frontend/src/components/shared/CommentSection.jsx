@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Send, X, CheckCircle, Loader2, MessageCircle, Image as ImageIcon, Video, FileText, PanelsTopLeft, LayoutList } from 'lucide-react';
 import axiosInstance from '../../api/axiosConfig';
 import { useAppStore } from '../../stores/appStore';
@@ -50,32 +50,37 @@ const formatDate = (dateStr) => {
 const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
   const { user } = useAppStore();
   const [activeComponent, setActiveComponent] = useState(defaultComponent);
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Kết quả tải gắn với khoá (preview + tab) đã tải; khác khoá hiện tại nghĩa là đang tải.
+  const [fetched, setFetched] = useState({ key: null, comments: [], error: '' });
+  const [actionError, setActionError] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newComponent, setNewComponent] = useState(defaultComponent || 'GENERAL');
   const [submitting, setSubmitting] = useState(false);
+  const [prevDefaultComponent, setPrevDefaultComponent] = useState(defaultComponent);
   const listRef = useRef(null);
+
+  const fetchKey = previewId ? `${previewId}|${activeComponent ?? ''}` : null;
+  const loading = fetchKey !== null && fetched.key !== fetchKey;
+  const comments = fetched.comments;
+  const error = fetched.error || actionError;
 
   const canResolve = user?.role === 'ADMIN' || user?.role === 'SELLER';
 
-  const fetchComments = async () => {
-    if (!previewId) return;
-    setLoading(true);
-    setError('');
-    try {
-      const params = activeComponent ? `?component=${activeComponent}` : '';
-      const res = await axiosInstance.get(`/api/previews/${previewId}/comments${params}`);
-      setComments(res.data || []);
-    } catch {
-      setError('Không thể tải comments. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchComments(); }, [previewId, activeComponent]);
+  useEffect(() => {
+    if (!fetchKey) return undefined;
+    let cancelled = false;
+    const params = activeComponent ? `?component=${activeComponent}` : '';
+    axiosInstance.get(`/api/previews/${previewId}/comments${params}`)
+      .then((res) => {
+        if (!cancelled) setFetched({ key: fetchKey, comments: res.data || [], error: '' });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFetched({ key: fetchKey, comments: [], error: 'Không thể tải comments. Vui lòng thử lại.' });
+        }
+      });
+    return () => { cancelled = true; };
+  }, [fetchKey, previewId, activeComponent]);
 
   useEffect(() => {
     if (listRef.current) {
@@ -83,11 +88,13 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
     }
   }, [comments]);
 
-  // Sync tab switch to defaultComponent from parent
-  useEffect(() => {
+  // Đồng bộ tab với defaultComponent từ parent: điều chỉnh state ngay trong lúc render
+  // (không dùng effect) khi prop đổi.
+  if (defaultComponent !== prevDefaultComponent) {
+    setPrevDefaultComponent(defaultComponent);
     setActiveComponent(defaultComponent);
     setNewComponent(defaultComponent || 'GENERAL');
-  }, [defaultComponent]);
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -98,10 +105,10 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
         content: newContent.trim(),
         targetComponent: newComponent,
       });
-      setComments(prev => [...prev, res.data]);
+      setFetched(prev => ({ ...prev, comments: [...prev.comments, res.data] }));
       setNewContent('');
     } catch {
-      setError('Gửi comment thất bại. Vui lòng thử lại.');
+      setActionError('Gửi comment thất bại. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
@@ -110,9 +117,9 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
   const handleResolve = async (commentId) => {
     try {
       const res = await axiosInstance.put(`/api/comments/${commentId}/resolve`);
-      setComments(prev => prev.map(c => c.id === commentId ? res.data : c));
+      setFetched(prev => ({ ...prev, comments: prev.comments.map(c => c.id === commentId ? res.data : c) }));
     } catch {
-      setError('Không thể resolve comment.');
+      setActionError('Không thể resolve comment.');
     }
   };
 
@@ -150,7 +157,7 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
         {COMPONENT_TABS.map(tab => (
           <button
             key={tab.key ?? 'all'}
-            onClick={() => setActiveComponent(tab.key)}
+            onClick={() => { setActiveComponent(tab.key); setActionError(''); }}
             className={`flex min-h-11 flex-shrink-0 items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap
               ${activeComponent === tab.key
                 ? 'border-blue-600 text-blue-600'

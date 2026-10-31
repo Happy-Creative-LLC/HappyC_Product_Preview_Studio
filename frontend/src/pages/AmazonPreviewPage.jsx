@@ -149,7 +149,7 @@ const AmazonPreviewPage = () => {
     axiosInstance.get(`/api/previews/${previewId}`)
       .then(res => {
         if (res.data?.productData) {
-          try { setPreviewData(JSON.parse(res.data.productData)); } catch {}
+          try { setPreviewData(JSON.parse(res.data.productData)); } catch { /* productData không phải JSON hợp lệ: giữ dữ liệu mặc định */ }
         }
       })
       .catch(() => {})

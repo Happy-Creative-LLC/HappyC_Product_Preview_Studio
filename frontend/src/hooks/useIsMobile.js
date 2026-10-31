@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 // useIsMobile — true when viewport is below the given breakpoint (default 768px).
 // Uses matchMedia so it updates live on resize / orientation change.
@@ -6,17 +6,15 @@ import { useState, useEffect } from 'react';
 export default function useIsMobile(breakpoint = 768) {
   const query = `(max-width: ${breakpoint - 1}px)`;
 
-  const [isMobile, setIsMobile] = useState(
-    () => (typeof window !== 'undefined' ? window.matchMedia(query).matches : false)
-  );
-
-  useEffect(() => {
+  const subscribe = useCallback((onChange) => {
     const mql = window.matchMedia(query);
-    const onChange = (e) => setIsMobile(e.matches);
-    setIsMobile(mql.matches);
     mql.addEventListener('change', onChange);
     return () => mql.removeEventListener('change', onChange);
   }, [query]);
 
-  return isMobile;
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false
+  );
 }

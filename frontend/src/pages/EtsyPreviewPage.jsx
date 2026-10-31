@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axiosInstance from '../api/axiosConfig';
 import { useProductStore } from '../stores/productStore';
@@ -39,7 +39,7 @@ const EtsyPreviewPage = () => {
     axiosInstance.get(`/api/previews/${previewId}`)
       .then((res) => {
         if (res.data?.productData) {
-          try { setPreviewData(JSON.parse(res.data.productData)); } catch {}
+          try { setPreviewData(JSON.parse(res.data.productData)); } catch { /* productData không phải JSON hợp lệ: giữ dữ liệu mặc định */ }
         }
       })
       .catch(() => {})
