@@ -1,0 +1,9 @@
+# Profile dev (SPRING_PROFILES_ACTIVE=dev): nạp thêm seed user dev từ db/seed-dev.
+spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed-dev
+
+app:
+  dev-seed:
+    # Bắt buộc khi chạy profile dev; không có giá trị mặc định.
+    password: ${DEV_SEED_PASSWORD:}
