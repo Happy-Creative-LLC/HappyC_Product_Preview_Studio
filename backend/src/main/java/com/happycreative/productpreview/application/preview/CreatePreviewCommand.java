@@ -49,4 +49,39 @@ public class CreatePreviewCommand {
         this.videos = videos;
         this.aPlusImages = aPlusImages;
     }
+
+    /**
+     * Request có ghi vùng Text không. Tiêu đề không tính: form luôn gửi kèm tiêu đề của task
+     * dù người lưu chỉ sửa ảnh hoặc video. Import từ ASIN ghi cả text lẫn ảnh.
+     */
+    public boolean touchesText() {
+        return hasText(asin)
+                || price != null
+                || hasText(brand) || hasText(fabricType) || hasText(careInstructions) || hasText(origin)
+                || hasAnyText(bulletPoints) || hasAnyText(sizes);
+    }
+
+    /** Request có ghi vùng Ảnh không (ảnh chính, gallery, swatch màu và tên màu đi kèm, A+). */
+    public boolean touchesImages() {
+        return hasText(asin)
+                || hasAnyFile(java.util.Collections.singletonList(mainImage))
+                || hasAnyFile(galleryImages) || hasAnyFile(colorImages) || hasAnyFile(aPlusImages)
+                || hasAnyText(colorNames);
+    }
+
+    public boolean touchesVideo() {
+        return hasAnyFile(videos);
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private static boolean hasAnyText(List<String> values) {
+        return values != null && values.stream().anyMatch(CreatePreviewCommand::hasText);
+    }
+
+    private static boolean hasAnyFile(List<MultipartFile> files) {
+        return files != null && files.stream().anyMatch(file -> file != null && !file.isEmpty());
+    }
 }

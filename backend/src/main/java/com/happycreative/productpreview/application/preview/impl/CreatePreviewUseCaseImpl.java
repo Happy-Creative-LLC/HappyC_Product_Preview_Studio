@@ -10,15 +10,22 @@ import com.happycreative.productpreview.domain.preview.Preview;
 import com.happycreative.productpreview.domain.preview.PreviewPlatform;
 import com.happycreative.productpreview.domain.preview.PreviewRepository;
 import com.happycreative.productpreview.domain.preview.ProductData;
+import com.happycreative.productpreview.entity.Task;
+import com.happycreative.productpreview.entity.User;
 import com.happycreative.productpreview.infrastructure.preview.PreviewMapper;
 import com.happycreative.productpreview.repository.TaskRepository;
 import com.happycreative.productpreview.repository.UserRepository;
+import com.happycreative.productpreview.security.CustomUserDetails;
+import com.happycreative.productpreview.service.AccessControlService;
+import com.happycreative.productpreview.service.AccessControlService.ContentZone;
 import com.happycreative.productpreview.service.AmazonScraperService;
 import com.happycreative.productpreview.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,6 +41,7 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
     private final AmazonScraperService amazonScraperService;
     private final PreviewMapper mapper;
     private final ObjectMapper objectMapper;
+    private final AccessControlService accessControlService;
 
     @Override
     @Transactional
@@ -41,18 +49,25 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
         UUID userId = command.userId;
         UUID taskId = command.taskId;
         // Kiểm tra trước khi lưu file hoặc preview để không để lại dữ liệu mồ côi.
-        if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("User not found: " + userId);
-        }
-        if (!taskRepository.existsById(taskId)) {
-            throw new IllegalArgumentException("Task not found: " + taskId);
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        // Task không tồn tại và task thuộc project khác cùng trả 404.
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy task."));
+        CustomUserDetails actor = new CustomUserDetails(user);
+        accessControlService.requireTaskVisible(actor, task);
+        requireZoneAccess(actor, command);
+
+        // Tiêu đề luôn đi kèm request; người không có vùng Text chỉ được giữ tiêu đề của task.
+        String title = accessControlService.canEditZone(actor, ContentZone.TEXT)
+                ? command.title
+                : task.getTitle();
 
         ProductData productData;
         if (command.asin != null && !command.asin.isBlank()) {
             productData = buildProductDataFromAsin(command.asin);
         } else {
-            productData = buildProductData(command.title, command.price, command.brand, command.fabricType,
+            productData = buildProductData(title, command.price, command.brand, command.fabricType,
                     command.careInstructions, command.origin, command.bulletPoints,
                     command.mainImage, command.galleryImages, command.colorNames, command.colorImages,
                     command.sizes, command.videos, command.aPlusImages);
@@ -64,6 +79,18 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
         previewRepository.save(preview);
 
         return mapper.toDto(preview);
+    }
+
+    private void requireZoneAccess(CustomUserDetails actor, CreatePreviewCommand command) {
+        if (command.touchesText()) {
+            accessControlService.requireZoneEditAccess(actor, ContentZone.TEXT);
+        }
+        if (command.touchesImages()) {
+            accessControlService.requireZoneEditAccess(actor, ContentZone.IMAGE);
+        }
+        if (command.touchesVideo()) {
+            accessControlService.requireZoneEditAccess(actor, ContentZone.VIDEO);
+        }
     }
 
     private ProductData buildProductDataFromAsin(String asin) {
