@@ -19,7 +19,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  secret: ${JWT_SECRET:verySecretKeyForProductPreview1234567890qwertyuiopasdfghjklZXCVBNM123}
+  # Không có giá trị mặc định: thiếu JWT_SECRET thì JwtTokenProvider từ chối khởi động.
+  secret: ${JWT_SECRET:}
   expiration: 86400000 # 24 hours
 
 cloudinary:

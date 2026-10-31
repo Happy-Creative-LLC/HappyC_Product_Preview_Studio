@@ -13,3 +13,7 @@ spring:
   sql:
     init:
       mode: never
+
+jwt:
+  # Giá trị giả chỉ dùng cho test (HS512 cần tối thiểu 64 byte).
+  secret: test-only-jwt-secret-not-for-real-use-0123456789-abcdefghijklmnopqrstuvwxyz
