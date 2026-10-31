@@ -13,8 +13,12 @@
 # Custom tool folders
 .sixth/
 
-# AI context files
-claude.md
+# Log chạy local và dữ liệu thử API
+*.log
+local-backend*.log
+backend/rapidapi_*.json
+
+# AI context files (CLAUDE.md được commit: quy ước dự án cho cả team)
 .claude/
 .agents/
 AGENTS.md
