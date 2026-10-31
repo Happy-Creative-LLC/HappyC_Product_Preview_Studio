@@ -18,8 +18,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Preview {
 
+    // Id do domain gán (Preview.create dùng UUID.randomUUID()). Không dùng @GeneratedValue: với id đã
+    // gán sẵn, save() chạy merge và Hibernate ném StaleObjectStateException cho entity chưa có trong DB.
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     // nullable trong giai đoạn chuyển tiếp — Sprint 1 sẽ bắt buộc
