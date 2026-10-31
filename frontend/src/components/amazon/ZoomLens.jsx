@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import amazonCase2Tokens from './amazonCase2Tokens';
 
 const { lensWidth, lensHeight, panelWidth, panelHeight, panelGap, magnification } =

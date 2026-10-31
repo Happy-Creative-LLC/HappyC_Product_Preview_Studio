@@ -11,8 +11,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      # Schema do Flyway tạo khi backend khởi động (backend/src/main/resources/db/migration).
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: unless-stopped
 
 volumes:

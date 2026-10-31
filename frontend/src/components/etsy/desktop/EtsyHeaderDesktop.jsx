@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, ShoppingCart, Menu, Gift, ChevronDown } from 'lucide-react';
 
 const SUB_NAV = [

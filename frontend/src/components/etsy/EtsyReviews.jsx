@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import Stars from '../shared/Stars';
 

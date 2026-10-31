@@ -1,4 +1,3 @@
-import React from 'react';
 import { Star } from 'lucide-react';
 
 // Build a product grid card list by cycling the available gallery images.

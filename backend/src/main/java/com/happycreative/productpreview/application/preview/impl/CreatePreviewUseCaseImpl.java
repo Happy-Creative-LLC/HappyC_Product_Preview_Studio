@@ -38,6 +38,16 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
     @Override
     @Transactional
     public PreviewDto execute(CreatePreviewCommand command) {
+        UUID userId = command.userId;
+        UUID taskId = command.taskId;
+        // Kiểm tra trước khi lưu file hoặc preview để không để lại dữ liệu mồ côi.
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+        if (!taskRepository.existsById(taskId)) {
+            throw new IllegalArgumentException("Task not found: " + taskId);
+        }
+
         ProductData productData;
         if (command.asin != null && !command.asin.isBlank()) {
             productData = buildProductDataFromAsin(command.asin);
@@ -48,20 +58,10 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
                     command.sizes, command.videos, command.aPlusImages);
         }
 
-        UUID userId = command.userId;
-        UUID taskId = command.taskId;
         PreviewPlatform platform = PreviewPlatform.fromString(command.platform);
 
-        // MUTATION: save happens before validation (bug: premature side effect)
         Preview preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
         previewRepository.save(preview);
-
-        if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("User not found: " + userId);
-        }
-        if (!taskRepository.existsById(taskId)) {
-            throw new IllegalArgumentException("Task not found: " + taskId);
-        }
 
         return mapper.toDto(preview);
     }

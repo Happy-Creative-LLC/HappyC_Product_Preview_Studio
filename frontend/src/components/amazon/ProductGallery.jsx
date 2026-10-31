@@ -1,4 +1,3 @@
-import React from 'react';
 import useIsMobile from '../../hooks/useIsMobile';
 import MobileGallery from './mobile/MobileGallery';
 import ClothingGallery from './cases/ClothingGallery';

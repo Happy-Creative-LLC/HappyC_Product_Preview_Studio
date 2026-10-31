@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronUp } from 'lucide-react';
 
 // In-page section tabs (real Amazon app pattern): hidden at the very top, then

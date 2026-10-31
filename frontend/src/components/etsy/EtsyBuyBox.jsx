@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Star, ChevronDown, ChevronUp, Heart, Truck, RotateCcw, MapPin,
   ShieldCheck, Package, Leaf,

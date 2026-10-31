@@ -1,4 +1,3 @@
-import React from 'react';
 import { Zap, Star, MessageCircle } from 'lucide-react';
 import Stars from '../shared/Stars';
 

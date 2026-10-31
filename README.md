@@ -1,191 +1,161 @@
 # HappyC Product Preview Studio
 
-Internal tool cho **Happy Creative** — xem trước giao diện listing sản phẩm trên Amazon và Etsy trước khi publish chính thức.
+Internal tool của **Happy Creative**: xem trước listing sản phẩm trên Amazon và Etsy (giả lập giao diện thật, desktop và mobile) trước khi publish, để các vai trò cùng review và chỉnh nội dung (title, ảnh, video, bullet points, giá...).
+
+Thiết kế UI/UX mới đang được triển khai theo [docs/ui-plan.md](docs/ui-plan.md). Quy ước làm việc với repo nằm ở [CLAUDE.md](CLAUDE.md).
 
 ---
 
-## Mục tiêu
-
-Trước khi đăng sản phẩm lên Amazon / Etsy, các project muốn xem thử listing trông như thế nào trên trang thật (preview giả lập giao diện), từ đó review và chỉnh sửa nội dung (title, ảnh, bullet points, giá...) mà không cần publish thử.
-
----
-
-## Tech Stack
+## Tech stack
 
 | Layer | Công nghệ |
 |-------|-----------|
-| Frontend | React 19, Vite, TailwindCSS 3, Zustand, React Router v7, Axios |
-| Backend | Spring Boot 4 (Java 21), Spring Security, JWT |
-| Database | PostgreSQL 15 |
-| File storage | Provider abstraction, sẵn sàng sử dụng Cloudflare R2 |
-| External API | RapidAPI (scrape Amazon search results) |
-| Container | Docker + Docker Compose |
+| Frontend | React 19, Vite, TailwindCSS 3, Zustand, React Router 7, Axios |
+| Backend | Spring Boot 4.0.6, Java 21, Spring Security + JWT (jjwt), Spring Data JPA |
+| Database | PostgreSQL 15, schema quản lý bằng Flyway |
+| File storage | `db` (mặc định, lưu vào Postgres), `r2` (Cloudflare R2), `local` (đĩa) |
+| External API | RapidAPI "Real-Time Amazon Data" cho Amazon Search Preview |
+| Container | Docker Compose (chỉ chạy Postgres khi dev) |
 
 ---
 
-## Cấu trúc dự án
+## Chạy local
+
+Yêu cầu: Java 21, Node.js, Docker.
+
+```powershell
+# 1. Database (PostgreSQL 15, cổng 5432, user dev / pass dev123, DB productpreview)
+docker compose up -d
+
+# 2. Cấu hình: copy .env.example thành .env rồi điền JWT_SECRET (bắt buộc, tối thiểu 64 ký tự).
+#    Thiếu JWT_SECRET thì backend không khởi động.
+copy .env.example .env
+
+# 3. Backend, cổng 8081. Flyway tự tạo schema khi khởi động.
+cd backend
+.\mvnw.cmd spring-boot:run
+
+# 4. Frontend, cổng 5173 (proxy /api và /uploads sang backend)
+cd frontend
+npm install
+npm run dev
+```
+
+Kiểm tra:
+
+```powershell
+cd backend;  .\mvnw.cmd test        # test backend (H2, không cần Postgres)
+cd frontend; npm run lint; npm run build
+```
+
+Biến môi trường (xem [.env.example](.env.example)): `JWT_SECRET`, `DB_USER`, `DB_PASS`, `SPRING_DATASOURCE_URL`, `RAPIDAPI_AMAZON_KEY`, `RAPIDAPI_AMAZON_HOST`, `GOOGLE_CLIENT_ID`, `STORAGE_PROVIDER` và các biến `R2_*`. `.env` đã được Git bỏ qua.
+
+### Database và migration
+
+- Schema nằm ở `backend/src/main/resources/db/migration` (`V1__baseline_schema.sql`, ...). Hibernate chỉ `validate`, không tự sửa schema.
+- Không sửa migration đã chạy; mọi thay đổi schema là một file `V<n>__<mô_tả>.sql` mới.
+- DB dev có sẵn từ trước được Flyway baseline ở V1 (`baseline-on-migrate`). DB trống chạy V1.
+- Reset DB dev: `docker compose down -v && docker compose up -d`.
+- Hiện chưa có migration seed, nên DB trống chưa có project và user. Xem mục câu hỏi trong [docs/ui-plan.md](docs/ui-plan.md).
+
+---
+
+## Cấu trúc repo
 
 ```
-amazon_product_preview/
-├── frontend/          # React + Vite
+├── frontend/                 # React + Vite
 │   └── src/
-│       ├── api/           # Axios instance + JWT interceptor
-│       ├── stores/        # Zustand stores (app state, product state)
-│       ├── pages/         # LoginPage, ProjectsPage, TaskListPage, TaskDetailPage,
-│       │                  # AmazonPreviewPage, AmazonSearchPage, EtsyPreviewPage
-│       └── components/
-│           ├── amazon/    # Header, ProductGallery, ProductInfo, BuyBox, 3 Cases
-│           ├── etsy/      # EtsyHeader, EtsyGallery, EtsyInfo, EtsyShopInfo
-│           ├── upload/    # AmazonUploadForm
-│           ├── layout/    # Layout wrappers
-│           └── shared/    # ControlPanel, CommentSection, EditableZone
-├── backend/           # Spring Boot
-│   └── src/main/java/com/happycreative/productpreview/
-│       ├── controller/    # Auth, Preview, Amazon, Comment, Project*, Task*
-│       ├── service/       # PreviewService, AmazonScraperService, FileStorageService
-│       ├── entity/        # User, Project, Task, Preview, Comment, SearchCache
-│       ├── repository/    # JPA repositories
-│       ├── security/      # JWT, CustomUserDetails
-│       ├── config/        # CORS, SecurityConfig, StorageProperties, R2StorageConfig
-│       └── dto/           # AuthRequest, AuthResponse
-├── database/
-│   ├── init.sql           # Schema đầy đủ + seed data (chạy 1 lần trên DB trống)
-│   └── ERD.md             # Sơ đồ quan hệ (Mermaid)
-└── docker-compose.yml     # PostgreSQL container
+│       ├── api/              # Axios instance + JWT interceptor
+│       ├── stores/           # Zustand: appStore (session, project, task), productStore (scaffold preview)
+│       ├── pages/            # Login, Projects, TaskList, TaskDetail, AmazonPreview, AmazonSearch,
+│       │                     # EtsyPreview, AdminUsers
+│       ├── components/       # amazon/, etsy/, upload/, shared/ (EditableZone, CommentSection, SidebarLayout...)
+│       ├── hooks/, utils/    # useIsMobile, permissions
+│       └── styles/           # hc-app.css
+├── backend/
+│   └── src/main/
+│       ├── java/com/happycreative/productpreview/
+│       │   ├── controller/   # Auth, Project, Task, Preview, Comment, Amazon, AdminUser, StoredFile
+│       │   ├── service/      # Task, Project, Comment, AdminUser, GoogleAuth, AmazonScraper, file storage...
+│       │   ├── application/, domain/, infrastructure/   # Preview theo kiến trúc hexagonal
+│       │   ├── entity/, repository/, dto/, security/, config/, exception/
+│       └── resources/
+│           ├── application.yml
+│           └── db/migration/ # Flyway
+├── docs/                     # ui-plan.md và tài liệu thiết kế
+├── docker-compose.yml        # PostgreSQL cho dev
+└── .env.example
 ```
 
 ---
 
-## Hệ thống phân quyền
+## Phân quyền
 
-| Role | Quyền |
-|------|-------|
-| `Admin` | Toàn quyền, xem tất cả project |
-| `Marvel` | Xem tất cả project, có thể edit |
-| `Seller` | Chỉ xem project của mình, có thể tạo task |
-| `Product Design` | Chỉ xem project của mình, không tạo task |
+Role trả về từ backend viết hoa: `ADMIN`, `MARVEL`, `SELLER`, `PRODUCT_DESIGN`.
 
-Mỗi `Seller` và `Product Design` gắn với một `projectKey` cụ thể: `happy`, `creative`, `hapify84`, hoặc `global`.
+| Role | Project | Task | Vùng chỉnh sửa trên Preview |
+|------|---------|------|------------------------------|
+| `ADMIN` | Xem tất cả | Tạo, sửa | Tất cả |
+| `MARVEL` | Xem tất cả | Chỉ xem | Video (vùng tím) |
+| `SELLER` | Chỉ project của mình | Tạo, sửa trong project của mình | Text (vùng xanh lá) |
+| `PRODUCT_DESIGN` | Chỉ project của mình | Chỉ xem | Ảnh và A+ (vùng đỏ) |
 
-### Phân quyền chỉnh sửa theo màu viền trên Preview UI
-
-| Màu | Nhóm | Quyền |
-|-----|------|-------|
-| Đỏ | Product Design | Upload / chỉnh sửa / xoá **ảnh** |
-| Tím | Marvel | Upload / chỉnh sửa / xoá **video** |
-| Xanh lá | Seller | Upload / chỉnh sửa / xoá **text** |
-
-Tất cả role đều có thể **comment** vào bất kỳ thành phần nào.
+`SELLER` và `PRODUCT_DESIGN` gắn với một `projectKey` (`happy`, `creative`, `hapify84`, `global`). Mọi role đều comment được. Amazon Search Preview chỉ dành cho `ADMIN` và `SELLER`.
 
 ---
 
-## Luồng hoạt động chính
+## Luồng chính
 
 ```
-Login → Chọn Project → Danh sách Task → Task Detail
-  → Chọn Platform (Amazon / Etsy) + Category + Layout Case
-  → Upload ảnh / video / nội dung
-  → Nhấn "Preview Product"
-  → Xem giả lập trang Amazon hoặc Etsy (Desktop + Mobile)
-  → (Tuỳ chọn) Xem "Search Preview" — giả lập trang tìm kiếm Amazon
+Đăng nhập (Google hoặc tài khoản nội bộ) → Chọn project → Danh sách task → Chi tiết task
+  → Tải ảnh/video/nội dung → Xem Preview (Amazon hoặc Etsy, desktop + mobile)
+  → Comment, gửi review → (Tuỳ chọn) Amazon Search Preview
 ```
 
----
-
-## Amazon Preview — 3 Layout Cases
-
-| Case | Danh mục | Gallery | Zoom |
-|------|----------|---------|------|
-| Case 1 | Clothing | Thumbnail dọc | Không |
-| Case 2 | Home & Kitchen | Thumbnail dọc | Có (hover) |
-| Case 3 | Home & Kitchen | Thumbnail ngang | Có (hover) |
-
-Mỗi case hỗ trợ tối đa **7 ảnh** hoặc **6 ảnh + 1 video**.
+Amazon có 3 layout theo `category` của task: Case 1 Clothing (thumbnail dọc, không zoom), Case 2 Home & Kitchen (thumbnail dọc + zoom), Case 3 Home & Kitchen (thumbnail ngang + zoom). Etsy: tối đa 20 ảnh và 1 video.
 
 ---
 
-## API chính
+## API
 
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
-| POST | `/api/auth/login` | Đăng nhập, nhận JWT |
-| POST | `/api/auth/google` | Xác minh Google ID token, đối chiếu email được Admin cấp phép và nhận JWT |
+| POST | `/api/auth/login` | Đăng nhập tài khoản nội bộ, nhận JWT |
+| POST | `/api/auth/google` | Xác minh Google ID token, đối chiếu email Admin đã cấp phép, nhận JWT |
 | GET | `/api/projects` | Danh sách project theo role |
-| GET | `/api/projects/{id}/tasks` | Danh sách task |
-| POST | `/api/projects/{id}/tasks` | Tạo task mới |
-| POST | `/api/previews/upload` | Tạo preview từ file upload |
+| GET / POST | `/api/projects/{id}/tasks` | Danh sách task / tạo task |
+| GET / PUT | `/api/tasks/{id}` | Xem / cập nhật task |
+| POST | `/api/previews/upload` | Tạo preview từ file upload (multipart, kèm `taskId`) |
 | POST | `/api/previews/import` | Tạo preview từ ASIN Amazon |
-| GET | `/api/previews/{id}` | Lấy preview theo ID |
-| GET | `/api/amazon/search?keyword=` | Tìm kiếm Amazon thật (có cache) |
-| GET | `/api/admin/users` | Danh sách nhân sự (Admin only) |
-| PUT | `/api/admin/users/{id}` | Cập nhật role / projectKey / status |
+| GET | `/api/previews/{id}` | Lấy preview |
+| GET / POST | `/api/previews/{id}/comments` | Danh sách / thêm comment |
+| PUT | `/api/comments/{id}/resolve` | Đánh dấu comment đã xử lý |
+| GET | `/api/amazon/search?keyword=` | Tìm Amazon thật (cache, làm mới nền Chủ nhật) |
+| GET / POST / PUT | `/api/admin/users`, `/api/admin/users/{id}` | Quản lý nhân sự (Admin) |
+| GET | `/uploads/**` | Phục vụ file media đã lưu |
 
-### Cấu hình Amazon Search
+### Amazon Search
 
-Backend chỉ trả dữ liệu thật từ RapidAPI và cache theo keyword tối đa 24 giờ. Trước khi chạy backend, cấu hình:
-
-```powershell
-$env:RAPIDAPI_AMAZON_KEY='your-key'
-# Tuỳ chọn khi đổi nhà cung cấp/host:
-$env:RAPIDAPI_AMAZON_HOST='real-time-amazon-data.p.rapidapi.com'
-```
-
-Hoặc copy `.env.example` thành `.env` tại thư mục gốc rồi điền `RAPIDAPI_AMAZON_KEY`. Backend tự đọc file này khi chạy từ thư mục gốc hoặc `backend/`; `.env` đã được Git bỏ qua để tránh lộ secret.
-
-Nếu thiếu key, API trả lỗi `503` bằng tiếng Việt; hệ thống không tự chèn dữ liệu mock vào trang so sánh.
+Backend chỉ trả dữ liệu thật từ RapidAPI. Kết quả luôn được phục vụ từ cache; job nền làm mới từ khoá cũ vào Chủ nhật (`SEARCH_CACHE_MAX_AGE_DAYS`, mặc định 15 ngày). Từ khoá chưa có cache hoặc bấm "Cập nhật từ Amazon" mới gọi RapidAPI. Thiếu `RAPIDAPI_AMAZON_KEY` thì API trả `503` bằng tiếng Việt; hệ thống không bao giờ chèn dữ liệu giả.
 
 ---
 
-## Database Schema (tóm tắt)
+## Deploy (Hostinger VPS)
 
-| Bảng | Mô tả |
-|------|-------|
-| `users` | Nhân sự — role, projectKey, phương thức xác thực và trạng thái truy cập |
-| `projects` | 4 project: happy, creative, hapify84, global |
-| `tasks` | Task trong project — platform (AMAZON/ETSY), category, layout_case |
-| `previews` | Dữ liệu preview — product_data (JSONB): title, price, images, bulletPoints... |
-| `comments` | Bình luận gắn với từng thành phần trong preview |
-| `search_cache` | Cache kết quả scrape Amazon theo keyword |
+Docker Compose (backend + PostgreSQL) + Nginx (serve bản build React và reverse proxy `/api`, `/uploads`).
 
-Chi tiết xem tại [database/init.sql](database/init.sql) và [database/ERD.md](database/ERD.md).
-
----
-
-## Roadmap
-
-| Phase | Nội dung | Tuần |
-|-------|----------|------|
-| Phase 1 | Backend integration — Project/Task API, Auth JWT, Upload kết nối DB | 1–2 |
-| Phase 1B | Google OAuth + Admin quản lý nhân sự | 2–3 |
-| Phase 2 | Amazon 3 Cases hoàn chỉnh, Etsy 20 ảnh + video, Permission zones UI, Comment | 3–7 |
-| Phase 3 | Mobile responsive — Carousel, pinch-to-zoom, bottom tab bar, step wizard upload | 8–11 |
-| Phase 4 | Docker production, config môi trường, backup PostgreSQL | 12 |
-| Phase 5 | Deploy Hostinger VPS, DNS + SSL (Certbot), UAT toàn hệ thống | 13 |
-
----
-
-## Deploy (Production — Hostinger VPS)
-
-**Stack:** Docker + Docker Compose (backend + PostgreSQL) + Nginx (serve React build + reverse proxy).
-
-```nginx
-location /          → /var/www/frontend/dist  (React static)
-location /api/      → http://backend:8081       (Spring Boot service)
-```
-
-**Checklist trước go-live:**
-- [ ] Tất cả API đã kết nối, không còn mock data
-- [ ] JWT secret >= 256 bit, không hardcode trong code
-- [ ] CORS chỉ cho phép domain production
-- [ ] HTTPS toàn bộ (HTTP redirect → HTTPS)
-- [ ] PostgreSQL backup tự động (cron + pg_dump)
-- [ ] RapidAPI key trong biến môi trường
-- [ ] R2 dùng token giới hạn đúng bucket và custom domain production (khi bật `STORAGE_PROVIDER=r2`)
-- [ ] Tất cả trang responsive >= 375px (iPhone SE)
-- [ ] Test từng role trên mobile + desktop
+Checklist trước go-live:
+- [ ] `JWT_SECRET` thật, tối thiểu 64 ký tự, chỉ đặt qua biến môi trường
+- [ ] CORS chỉ cho phép domain production (`app.cors.allowed-origin-patterns`)
+- [ ] HTTPS toàn bộ, HTTP redirect sang HTTPS
+- [ ] PostgreSQL backup tự động (cron + `pg_dump`)
+- [ ] `RAPIDAPI_AMAZON_KEY` và các secret khác trong biến môi trường
+- [ ] R2 dùng token giới hạn đúng bucket và custom domain production khi bật `STORAGE_PROVIDER=r2`
+- [ ] Đổi hoặc vô hiệu hoá mọi tài khoản seed trước khi mở cho người dùng
+- [ ] Trang responsive từ 375px, test từng role trên desktop và mobile
 
 ---
 
 ## Liên hệ
 
-**Happy Creative Technical** — happyc.technical@gmail.com
+**Happy Creative Technical**: happyc.technical@gmail.com

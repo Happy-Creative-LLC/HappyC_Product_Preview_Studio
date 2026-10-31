@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, ShoppingCart, Menu, Heart } from 'lucide-react';
 
 // Mobile Etsy header — 2 rows like the real Etsy app:

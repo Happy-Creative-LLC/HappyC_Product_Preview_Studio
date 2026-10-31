@@ -9,17 +9,25 @@ spring:
     url: jdbc:postgresql://localhost:5432/productpreview
     username: ${DB_USER:dev}
     password: ${DB_PASS:dev123}
+  flyway:
+    # Schema do Flyway quản lý (db/migration). DB dev đã có sẵn dữ liệu được baseline ở V1,
+    # nên V1 chỉ chạy trên DB trống; các migration sau V1 luôn được áp dụng.
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      # Hibernate chỉ kiểm tra entity khớp schema, không tự sửa schema nữa.
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  secret: ${JWT_SECRET:verySecretKeyForProductPreview1234567890qwertyuiopasdfghjklZXCVBNM123}
+  # Không có giá trị mặc định: thiếu JWT_SECRET thì JwtTokenProvider từ chối khởi động.
+  secret: ${JWT_SECRET:}
   expiration: 86400000 # 24 hours
 
 cloudinary:

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Camera, AtSign, Globe } from 'lucide-react';
 
 const COLUMNS = [
