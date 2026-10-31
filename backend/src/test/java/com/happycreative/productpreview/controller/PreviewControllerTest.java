@@ -7,6 +7,9 @@ import com.happycreative.productpreview.application.preview.dto.PreviewDto;
 import com.happycreative.productpreview.domain.preview.PreviewId;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import com.happycreative.productpreview.security.JwtAuthenticationFilter;
+import com.happycreative.productpreview.service.PreviewAccessService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -75,6 +81,9 @@ class PreviewControllerTest {
 
     @MockitoBean
     private GetPreviewUseCase getPreviewUseCase;
+
+    @MockitoBean
+    private PreviewAccessService previewAccessService;
 
     private UUID authenticatedUserId;
 
@@ -207,6 +216,18 @@ class PreviewControllerTest {
         mockMvc.perform(get("/api/previews/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    @Test
+    void getPreview_ofAnotherProject_returns404WithoutLoadingThePreview() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy preview."))
+                .when(previewAccessService).requireReadablePreview(any(), eq(id));
+
+        mockMvc.perform(get("/api/previews/{id}", id))
+                .andExpect(status().isNotFound());
+
+        verify(getPreviewUseCase, never()).execute(any());
     }
 
     @Test

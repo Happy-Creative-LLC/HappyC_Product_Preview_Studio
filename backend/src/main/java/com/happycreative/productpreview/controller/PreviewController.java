@@ -5,6 +5,7 @@ import com.happycreative.productpreview.application.preview.CreatePreviewUseCase
 import com.happycreative.productpreview.application.preview.GetPreviewUseCase;
 import com.happycreative.productpreview.application.preview.dto.PreviewDto;
 import com.happycreative.productpreview.security.CustomUserDetails;
+import com.happycreative.productpreview.service.PreviewAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +23,7 @@ public class PreviewController {
 
     private final CreatePreviewUseCase createPreviewUseCase;
     private final GetPreviewUseCase getPreviewUseCase;
+    private final PreviewAccessService previewAccessService;
 
     @PostMapping("/upload")
     public ResponseEntity<PreviewDto> uploadPreview(
@@ -117,7 +119,11 @@ public class PreviewController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PreviewDto> getPreview(@PathVariable UUID id) {
+    public ResponseEntity<PreviewDto> getPreview(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        previewAccessService.requireReadablePreview(userDetails, id);
         PreviewDto dto = getPreviewUseCase.execute(com.happycreative.productpreview.domain.preview.PreviewId.of(id));
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
