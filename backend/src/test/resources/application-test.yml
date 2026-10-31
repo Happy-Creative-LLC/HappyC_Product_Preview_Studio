@@ -4,6 +4,9 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+  flyway:
+    # Migration viết cho PostgreSQL (jsonb, ...) nên H2 dựng schema từ entity.
+    enabled: false
   jpa:
     hibernate:
       ddl-auto: create-drop
