@@ -53,31 +53,27 @@ class AmazonScraperServiceTest {
         assertEquals("amz-B012345678", results.getFirst().getId());
     }
 
+    // Từ commit 58af41e cache luôn được phục vụ tức thì, kể cả khi đã cũ; job nền Chủ nhật
+    // mới làm mới. Không gọi RapidAPI đồng bộ cho từ khoá đã có cache.
     @Test
-    void bypassesCacheAfter24Hours() throws Exception {
+    void servesStaleCacheInsteadOfCallingRapidApi() throws Exception {
         SearchCache cache = cache(List.of(AmazonSearchResultDto.builder()
                 .id("amz-B012345678")
-                .title("Expired product")
+                .title("Old but real product")
                 .image("https://example.com/product.jpg")
-                .build()), Instant.now().minus(Duration.ofHours(25)));
+                .build()), Instant.now().minus(Duration.ofDays(30)));
         when(searchCacheRepository.findByKeywordIgnoreCase("shirt")).thenReturn(Optional.of(cache));
 
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> service.searchAmazon("shirt", false)
-        );
+        List<AmazonSearchResultDto> results = service.searchAmazon("shirt", false);
 
-        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, exception.getStatusCode());
+        assertEquals(1, results.size());
+        assertEquals("amz-B012345678", results.getFirst().getId());
     }
 
+    // Không bao giờ sinh dữ liệu giả: chưa có cache và chưa cấu hình RapidAPI thì báo 503.
     @Test
-    void neverReturnsLegacyMockCache() throws Exception {
-        SearchCache cache = cache(List.of(AmazonSearchResultDto.builder()
-                .id("mock-0")
-                .title("Mock Amazon Product")
-                .image("https://example.com/mock.jpg")
-                .build()), Instant.now().minus(Duration.ofHours(1)));
-        when(searchCacheRepository.findByKeywordIgnoreCase("shirt")).thenReturn(Optional.of(cache));
+    void throwsServiceUnavailableWhenNoCacheAndRapidApiNotConfigured() {
+        when(searchCacheRepository.findByKeywordIgnoreCase("shirt")).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
