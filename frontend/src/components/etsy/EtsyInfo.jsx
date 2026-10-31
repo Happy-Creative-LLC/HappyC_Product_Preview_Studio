@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Star, Truck, RotateCcw, ChevronDown, ChevronUp, Heart, ShieldCheck } from 'lucide-react';
 import Stars from '../shared/Stars';
 

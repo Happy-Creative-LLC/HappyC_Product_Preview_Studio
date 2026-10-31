@@ -1,4 +1,3 @@
-import React from 'react';
 import useIsMobile from '../../hooks/useIsMobile';
 import HeaderDesktop from './desktop/HeaderDesktop';
 import HeaderMobile from './mobile/HeaderMobile';

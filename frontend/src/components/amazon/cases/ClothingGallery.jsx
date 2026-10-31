@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Play, Share2 } from 'lucide-react';
 import EditableZone from '../../shared/EditableZone';
 import UploadPlaceholder from '../UploadPlaceholder';

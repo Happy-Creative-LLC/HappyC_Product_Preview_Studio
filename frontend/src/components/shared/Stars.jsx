@@ -1,4 +1,3 @@
-import React from 'react';
 
 const Stars = ({ value = 0, size = 14, color = '#de7921' }) => {
   const pct = (Number(value) / 5) * 100;

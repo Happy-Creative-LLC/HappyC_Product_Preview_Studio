@@ -1,4 +1,3 @@
-import React from 'react';
 import { MapPin } from 'lucide-react';
 
 // Right-hand purchase column — matches the real Amazon "Customize now" flow

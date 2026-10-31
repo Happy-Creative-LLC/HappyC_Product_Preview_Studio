@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import EditableZone from '../../shared/EditableZone';
 import UploadPlaceholder from '../UploadPlaceholder';
 import ZoomLens from '../ZoomLens';

@@ -1,4 +1,3 @@
-import React from 'react';
 import EditableZone from '../shared/EditableZone';
 import UploadPlaceholder from './UploadPlaceholder';
 

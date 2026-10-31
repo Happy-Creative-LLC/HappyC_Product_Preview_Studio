@@ -1,4 +1,3 @@
-import React from 'react';
 import { ImagePlus, Video, Type } from 'lucide-react';
 
 // Gray dashed "upload slot" frame, colored by zone group. Always fills its

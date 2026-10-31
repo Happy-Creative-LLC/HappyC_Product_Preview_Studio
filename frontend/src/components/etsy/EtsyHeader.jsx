@@ -1,4 +1,3 @@
-import React from 'react';
 import useIsMobile from '../../hooks/useIsMobile';
 import EtsyHeaderDesktop from './desktop/EtsyHeaderDesktop';
 import EtsyHeaderMobile from './mobile/EtsyHeaderMobile';

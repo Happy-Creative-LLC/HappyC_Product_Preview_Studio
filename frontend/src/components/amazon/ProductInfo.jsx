@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import ProductTitleBlock from './ProductTitleBlock';
 import UploadPlaceholder from './UploadPlaceholder';

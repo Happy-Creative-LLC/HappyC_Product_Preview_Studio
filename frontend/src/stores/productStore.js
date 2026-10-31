@@ -1,19 +1,9 @@
 import { create } from 'zustand';
 
-/* Known-good image URLs (all load reliably in dev) */
-const IMG = {
-  a: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=800&q=80',
-  b: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=800&q=80',
-  c: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80',
-  d: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-  e: 'https://images.unsplash.com/photo-1489987707023-afc624154e85?auto=format&fit=crop&w=800&q=80',
-};
-
 // Initial demo data — a "ready to upload" scaffold. Text fields are populated
 // so copy/pricing render, but MEDIA (images/videos/A+/swatch images) is left
 // EMPTY on purpose: the frame shows upload placeholders until real content is
 // uploaded, and swaps to the real media without any layout shift.
-// (IMG kept below only for quickly restoring a filled demo state if needed.)
 const initialData = {
   images: [],
   videos: [],

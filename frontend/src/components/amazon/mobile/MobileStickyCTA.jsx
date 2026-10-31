@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 // Sticky bottom action bar (real Amazon app pattern): slides up once the user
 // scrolls past the in-flow buy box, keeping the primary CTA always reachable.
