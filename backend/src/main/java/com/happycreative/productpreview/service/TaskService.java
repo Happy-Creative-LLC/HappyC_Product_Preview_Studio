@@ -76,6 +76,14 @@ public class TaskService {
         accessControlService.requireTaskUpdateAccess(userDetails, task);
         validateRequest(request);
 
+        // Kiểm trạng thái trước khi sửa bất kỳ trường nào để request bị từ chối không đổi gì.
+        TaskStatus newStatus = request.getStatus() == null
+                ? null
+                : parseEnum(request.getStatus(), TaskStatus.class, "trạng thái");
+        if (newStatus != null) {
+            accessControlService.requireStatusChange(userDetails, task.getStatus(), newStatus);
+        }
+
         if (request.getTitle() != null) {
             task.setTitle(requireTitle(request.getTitle()));
         }
@@ -85,8 +93,8 @@ public class TaskService {
         if (request.getCategory() != null) {
             task.setCategory(requireValidCategory(request.getCategory()));
         }
-        if (request.getStatus() != null) {
-            task.setStatus(parseEnum(request.getStatus(), TaskStatus.class, "trạng thái"));
+        if (newStatus != null) {
+            task.setStatus(newStatus);
         }
 
         return TaskResponse.from(taskRepository.save(task));

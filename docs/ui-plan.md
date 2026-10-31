@@ -6,7 +6,7 @@ Quy ước đọc: **Màn N** là số màn trong thiết kế (1 Danh sách tas
 
 ## 1. Nguồn thiết kế
 
-- Brief của người giao việc: 15 file `.dc.html` trong `docs/design/uiux-v1/`. **Thực tế trong repo/máy:** chỉ có một file gộp `docs/uiux-v1/Preview Studio UI UX.html` (8,7 MB, chưa commit) chứa đủ 15 trang (Main + 14 màn). Đã giải nén và đọc cả 15 trang từ file này; nội dung đủ để lập kế hoạch. Cần xác nhận: commit nguyên file gộp, hay đưa 15 file vào `docs/design/uiux-v1/` (câu hỏi Q4).
+- Nguồn thiết kế: 15 file `.dc.html` trong `docs/design/uiux-v1/` (`00-main` là tổng quan, luồng, quy ước và danh sách màn; `01` đến `14` mỗi file một màn), đã commit ở PR 1 (Q4). Các file được giải nén từ bản gộp `docs/uiux-v1/Preview Studio UI UX.html` mà người giao việc đưa; bản gộp đó không commit.
 - Thiết kế mô tả luồng 7 bước: import từ Sheet, bổ sung theo vùng (Product Design ảnh, Marvel video, Seller text), Listing Guard tự kiểm tra khi lưu, xử lý cảnh báo (sửa hoặc bỏ qua kèm lý do), gửi duyệt, duyệt (Đã duyệt hoặc Cần sửa), upload lên sàn ngoài hệ thống.
 - Quy ước trạng thái trong thiết kế: task `Chờ nội dung / Đang duyệt / Đã duyệt / Cần sửa` tương ứng enum hiện có `PENDING_UPLOADS / IN_REVIEW / APPROVED / REJECTED` (chỉ đổi nhãn tiếng Việt). Rủi ro trademark `Cao / Trung bình / Thấp·thông tin / Không xác định` (Không xác định không bao giờ hiển thị như "an toàn"). Quy tắc sàn `Lỗi / Cảnh báo / Thông tin` lấy từ `ERROR / WARNING / INFO` của `/api/v1/checks`. Mỗi trạng thái có chữ và biểu tượng, không chỉ màu.
 
@@ -51,7 +51,7 @@ Quy ước đọc: **Màn N** là số màn trong thiết kế (1 Danh sách tas
 |---|---|---|---|
 | 1 Danh sách task | `TaskListPage`: lọc trạng thái, tìm theo tên, tạo task; API trả `pendingTaskCount` ở project | Cột Nội dung (Ảnh x, Video x, Text x), Trademark, Quy tắc sàn, SKU; lọc theo kết quả kiểm tra và sàn; ô thống kê theo trạng thái; banner "N task rủi ro cao chưa xử lý"; nút Import từ Sheet; phân trang. Cần API trả tổng hợp media và kết quả kiểm tra mới nhất | P6 (cột LG cần P3) |
 | 2 Import từ Sheet | Không có | Toàn bộ: tải CSV, chọn mẫu ánh xạ, ánh xạ cột, xem trước (tạo mới, cập nhật, dòng lỗi), tải danh sách lỗi, tạo hoặc cập nhật task theo SKU (chỉ ghi vùng Text) | P2 |
-| 3 Soạn nội dung Amazon | `TaskDetailPage` + `AmazonUploadForm` (title, price, brand, fabricType, careInstructions, origin, 5 bullet, ảnh, video, màu, size, A+) | `description`, `search_terms` (đếm byte), `product_type` (dropdown bắt buộc), SKU; đếm ký tự; bảng "Kiểm tra listing" (Tất cả, Trademark, Quy tắc), đánh dấu chữ theo vị trí, "Đi tới trường", "Bỏ qua…" kèm lý do, "Kiểm tra lại", catalog/ruleset version, disclaimer; nguồn ảnh (nội bộ, mockup, ảnh của khách) và xác nhận; ba vùng tách theo vai trò, lưu tự động ("Đã lưu hh:mm"), nút Gửi duyệt | P1, P3 |
+| 3 Soạn nội dung Amazon | `TaskDetailPage` + `AmazonUploadForm` (title, price, brand, fabricType, careInstructions, origin, 5 bullet, ảnh, video, màu, size, A+) | `description`, `search_terms` (đếm byte), `product_type` (dropdown bắt buộc), SKU; đếm ký tự; bảng "Kiểm tra listing" (Tất cả, Trademark, Quy tắc), đánh dấu chữ theo vị trí, "Đi tới trường", "Bỏ qua…" kèm lý do, "Kiểm tra lại", catalog/ruleset version, disclaimer; nguồn ảnh (nội bộ, mockup, ảnh của khách) và xác nhận; ba vùng tách theo vai trò, lưu tự động ("Đã lưu hh:mm"), nút Gửi duyệt. Câu "Marvel Labs sẽ được nhắc khi task gửi duyệt" trong thiết kế **không làm** ở bản đầu (Q10: chưa có thông báo) | P1, P3 |
 | 4 Preview chế độ review | `AmazonPreviewPage` + `EditableZone` + `CommentSection` (lọc theo thành phần, resolve) | Công tắc "Hiện cảnh báo trên trang" ghim số vào đúng chữ; trường người mua không thấy (search terms, product_type); comment hệ thống tác giả "Listing Guard" có mức rủi ro, đã sửa/đã bỏ qua kèm lý do; lọc Chưa xử lý/Listing Guard; "Đi tới trường"; comment gắn trường; nút Gửi duyệt | P4 |
 | 5 Duyệt task | Không có (chỉ enum trạng thái) | Trang duyệt: checklist (số ảnh đủ, ảnh khách đã xác nhận, text đủ trường bắt buộc, rủi ro cao chưa xử lý, cảnh báo đã bỏ qua), ghi chú cho Seller, Duyệt / Yêu cầu sửa / Duyệt dù còn rủi ro (lý do bắt buộc), lịch sử task | P5 |
 | 6 Quản trị tích hợp | `AdminUsersPage` (chỉ nhân sự) | Tab Tích hợp Listing Guard (địa chỉ, key qua env, client, kiểm tra kết nối `/health`, thông tin catalog, ruleset), chính sách kiểm tra và duyệt, tab Mẫu ánh xạ Sheet | P6 (mẫu ánh xạ tạo ở P2, chính sách ở P5) |
@@ -70,12 +70,13 @@ Quy ước đọc: **Màn N** là số màn trong thiết kế (1 Danh sách tas
 
 | Migration | Phase | Nội dung |
 |---|---|---|
-| `V2__task_sku_and_listing_text.sql` | P1 | `tasks.sku VARCHAR(100)` (null được cho task cũ), index `(project_id, sku)`. Trường text mới (description, searchTerms, productType; Etsy: tags[], materials[], whoMade, whenMade, taxonomyPath, quantity) nằm trong `previews.product_data` (JSONB), không thêm cột |
-| `V3__sheet_mapping_templates.sql` | P2 | `sheet_mapping_templates(id, project_id FK, platform, name, mapping JSONB, created_by, updated_by, created_at, updated_at)`, unique `(project_id, platform, name)`. Mẫu theo project |
-| `V4__listing_checks.sql` | P3 | `listing_checks(id, preview_id FK, kind RULES\|TRADEMARK, status, lg_check_id, ruleset_version, catalog_version, analysis_version, content_hash, risk_level, completeness, summary JSONB, disclaimer, text_hash, created_at, expires_at)` và `listing_check_findings(id, check_id FK, ordinal, kind, rule_id, level, field, start_idx, end_idx, snippet, mark, match_type, score, source_ids JSONB, message, suggestion, fingerprint)`. `fingerprint` ổn định qua các lần kiểm để giữ trạng thái đã bỏ qua |
-| `V5__image_source.sql` | P3 | Nguồn ảnh và xác nhận ảnh của khách. Đề xuất giữ `product_data.images[]` là mảng chuỗi (không phá renderer) và thêm bảng `preview_image_meta(preview_id, image_url, source SELLER\|MOCKUP\|CUSTOMER_CONTENT, confirmed_by, confirmed_at)` |
-| `V6__comment_anchor_and_system_comments.sql` | P4 | `comments`: `source USER\|LISTING_GUARD`, `field_path`, `anchor_start`, `anchor_end`, `severity`, `finding_id FK` null, `pin_no`, `resolution OPEN\|FIXED\|DISMISSED`, `dismiss_reason`, `dismissed_by`, `dismissed_at`; `user_id` cho phép null với `source = LISTING_GUARD` (hoặc user hệ thống, xem Q7). Giữ `is_resolved` để không phá `CommentSection` |
-| `V7__approval_and_audit.sql` | P5 | `users.can_approve BOOLEAN NOT NULL DEFAULT FALSE` (backfill `TRUE` cho Admin); `approval_policies(id, project_id null = mặc định, block_on_high BOOLEAN DEFAULT TRUE, auto_check_on_save, auto_check_on_import, seller_can_dismiss_medium, seller_can_dismiss_high, require_customer_image_confirmation, updated_by, updated_at)`; `task_events(id, task_id FK, event_type, actor_id, detail JSONB, created_at)`; cột duyệt trên `tasks` (`submitted_at/by`, `reviewed_at/by`, `review_note`, `override_reason`) hoặc suy ra từ `task_events` |
+| `V2__seed_projects.sql` | PR 1 | 4 project (happy, creative, hapify84, global) bằng `INSERT ... ON CONFLICT (project_key) DO NOTHING`. Dữ liệu tham chiếu, chạy ở mọi môi trường. Seed user dev nằm riêng ở `db/seed-dev`, chỉ chạy khi profile `dev` (xem mục 7) |
+| `V3__task_sku_and_listing_text.sql` | P1 | `tasks.sku VARCHAR(100)` (null được cho task cũ), index `(project_id, sku)`. Trường text mới (description, searchTerms, productType; Etsy: tags[], materials[], whoMade, whenMade, taxonomyPath, quantity) nằm trong `previews.product_data` (JSONB), không thêm cột. Thêm `task_events(id, task_id FK, event_type, actor_id, detail JSONB, created_at)` ngay từ P1 vì nội dung sửa tại chỗ (Q13), lịch sử nằm ở audit log; P5 dùng lại bảng này |
+| `V4__sheet_mapping_templates.sql` | P2 | `sheet_mapping_templates(id, project_id FK, platform, name, mapping JSONB, created_by, updated_by, created_at, updated_at)`, unique `(project_id, platform, name)`. Mẫu theo project |
+| `V5__listing_checks.sql` | P3 | `listing_checks(id, preview_id FK, kind RULES\|TRADEMARK, status, lg_check_id, ruleset_version, catalog_version, analysis_version, content_hash, risk_level, completeness, summary JSONB, disclaimer, text_hash, created_at, expires_at)` và `listing_check_findings(id, check_id FK, ordinal, kind, rule_id, level, field, start_idx, end_idx, snippet, mark, match_type, score, source_ids JSONB, message, suggestion, fingerprint)`. `fingerprint` ổn định qua các lần kiểm để giữ trạng thái đã bỏ qua |
+| `V6__image_source.sql` | P3 | Nguồn ảnh và xác nhận ảnh của khách. Đề xuất giữ `product_data.images[]` là mảng chuỗi (không phá renderer) và thêm bảng `preview_image_meta(preview_id, image_url, source SELLER\|MOCKUP\|CUSTOMER_CONTENT, confirmed_by, confirmed_at)` |
+| `V7__comment_anchor_and_system_comments.sql` | P4 | `comments`: `source USER\|LISTING_GUARD`, `field_path`, `anchor_start`, `anchor_end`, `severity`, `finding_id FK` null, `pin_no`, `resolution OPEN\|FIXED\|DISMISSED`, `dismiss_reason`, `dismissed_by`, `dismissed_at`; `user_id` cho phép null, kèm `source = LISTING_GUARD` (đã chốt ở Q7; CHECK: `user_id` null chỉ khi `source = LISTING_GUARD`). Giữ `is_resolved` để không phá `CommentSection` |
+| `V8__approval_and_audit.sql` | P5 | `users.can_approve BOOLEAN NOT NULL DEFAULT FALSE` (backfill `TRUE` cho Admin); `approval_policies(id, project_id null = mặc định, block_on_high BOOLEAN DEFAULT TRUE, auto_check_on_save, auto_check_on_import, seller_can_dismiss_medium, seller_can_dismiss_high, require_customer_image_confirmation, updated_by, updated_at)`; cột duyệt trên `tasks` (`submitted_at/by`, `reviewed_at/by`, `review_note`, `override_reason`) hoặc suy ra từ `task_events` (đã có từ P1) |
 
 Không có migration ở P7, P8 (chỉ UI). P6 có thể cần chỉ mục tổng hợp (quyết định khi làm).
 
@@ -112,15 +113,15 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P1. Trường text Amazon và Etsy (Màn 3, 10)
 
 - **File:** `AmazonUploadForm.jsx` (tách form Amazon và Etsy, tách vùng Text khỏi vùng media, lưu tự động), `TaskDetailPage.jsx` (nạp preview hiện hành), `TaskListPage.jsx` (tạo task nhập SKU), `appStore.js`; backend: `TaskService`, `TaskRequest/Response` (thêm `sku`), `PreviewController`, `CreatePreviewUseCaseImpl` + use case mới cập nhật text, `ProductData`, `PreviewDto`.
-- **Migration:** `V2`.
-- **API:** `GET /api/tasks/{id}/preview`, `PUT /api/tasks/{id}/content/text`, `sku` ở tạo task.
-- **Test:** unit cho use case cập nhật text (quyền Seller/Admin, version, tạo preview khi chưa có); `WebMvcTest` kiểm 403 cho Product Design và Marvel; test migration `V2` trên PostgreSQL thật (đề xuất thêm Testcontainers, Q12); kiểm tay trên trình duyệt: lưu, tải lại trang, nội dung còn nguyên.
+- **Migration:** `V3`.
+- **API:** `GET /api/tasks/{id}/preview` (nội dung hiện hành duy nhất của task), `PUT /api/tasks/{id}/content/text` (sửa tại chỗ, `version` tăng, ghi `task_events`), `sku` ở tạo task.
+- **Test:** unit cho use case cập nhật text (quyền Seller/Admin, version, tạo preview khi chưa có); `WebMvcTest` kiểm 403 cho Product Design và Marvel; test migration `V3` trên PostgreSQL thật bằng Testcontainers (hạ tầng đã có từ PR 1); kiểm tay trên trình duyệt: lưu, tải lại trang, nội dung còn nguyên.
 - **Xong khi:** Seller nhập đủ title, bullet, description, search terms, product_type (Amazon) hoặc tags, materials, who_made, when_made, taxonomy (Etsy), lưu rồi tải lại vẫn thấy; Preview hiển thị các trường mới (search terms và product_type ở khối "người mua không thấy" để dành cho P4); giữ nguyên upload ảnh/video hiện có; không còn phụ thuộc `previewId` trong state.
 
 ### P2. Import từ Sheet và mẫu ánh xạ (Màn 2, phần mẫu ở Màn 6)
 
 - **File:** trang `ImportSheetPage.jsx` mới (4 bước như thiết kế), `TaskListPage.jsx` (nút Import), route mới; backend: `ImportService`, parser CSV, `SheetTemplateService/Controller`, DTO xem trước.
-- **Migration:** `V3`.
+- **Migration:** `V4`.
 - **API:** `imports/preview`, `imports`, `sheet-templates` (mục 4.2).
 - **Test:** unit parser (dấu phẩy trong ô, xuống dòng, BOM UTF-8, cột thiếu, dòng lỗi); import cập nhật theo SKU chỉ động vào vùng Text, không đụng ảnh, video, comment; template theo project, người ngoài project nhận 403; giới hạn kích thước file (đề xuất 5 MB).
 - **Xong khi:** CSV mẫu 42 dòng cho kết quả "36 tạo mới, 3 cập nhật, 3 lỗi", tải được danh sách dòng lỗi; mẫu lưu lại và áp dụng lại ở lần sau; task mới ở trạng thái `PENDING_UPLOADS`. Ghi chú: thiết kế là **upload CSV tải từ Sheet**, không gọi Google Sheets API (Q6).
@@ -128,7 +129,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P3. Client Listing Guard và bảng kết quả ở màn soạn (Màn 3, 10)
 
 - **File:** backend `ListingGuardClient` (port ở `application/`, adapter ở `infrastructure/`), `ListingCheckService/Controller`, mapper listing, entity/repository kết quả; frontend component `ListingCheckPanel.jsx` (tab Tất cả/Trademark/Quy tắc, "Đi tới trường", "Kiểm tra lại"), đánh dấu chữ trong ô nhập, `ImageSourceSelect` và xác nhận ảnh khách ở vùng ảnh.
-- **Migration:** `V4`, `V5`. Nếu PR quá lớn, tách phần nguồn ảnh (`V5`) thành P3b.
+- **Migration:** `V5`, `V6`. Nếu PR quá lớn, tách phần nguồn ảnh (`V6`) thành P3b.
 - **API:** `POST /api/tasks/{id}/checks`, `GET .../checks/latest`, nguồn và xác nhận ảnh.
 - **Test:** `ListingGuardClient` với server giả (`MockRestServiceServer`): 200, `401`, `429` kèm `Retry-After`, `5xx` retry, timeout, `503 trademark-not-configured`; mapper Amazon và Etsy đúng tên trường; offset UTF-16 với tiếng Việt và emoji; `UNKNOWN` không bao giờ thành "đạt"; dedupe theo `text_hash`; Listing Guard sập vẫn lưu được nội dung.
 - **Xong khi:** lưu text thì bảng kết quả hiện đủ mức rủi ro, quy tắc, phiên bản catalog/ruleset, disclaimer; chữ bị cảnh báo được đánh dấu (gạch liền cao, gạch đứt trung bình); khi Listing Guard tắt hoặc `503`, bảng báo "Không xác định" và vẫn soạn tiếp được; ảnh của khách xác nhận được bởi Product Design.
@@ -136,7 +137,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P4. Cảnh báo ghim trên Preview và comment hệ thống (Màn 4)
 
 - **File:** `AmazonPreviewPage.jsx`, `EtsyPreviewPage.jsx`, `CommentSection.jsx` (lọc Listing Guard, Chưa xử lý, trả lời, đi tới trường), component `PinOverlay.jsx` (số ghim khớp comment), khối "trường người mua không thấy"; backend `CommentService/Controller` mở rộng, đồng bộ findings thành comment sau mỗi lần kiểm (giữ trạng thái đã bỏ qua theo `fingerprint`), kiểm quyền theo project cho preview và comment.
-- **Migration:** `V6`.
+- **Migration:** `V7`.
 - **API:** `dismiss`, mở rộng `GET/POST comments`.
 - **Test:** tạo comment hệ thống từ findings, không nhân đôi khi kiểm lại, finding biến mất thì đánh dấu "Đã sửa"; bỏ qua cần lý do và đúng quyền (theo chính sách, hoàn thiện ở P5); người ngoài project nhận 403 ở `GET /api/previews/{id}` và comment; kiểm tay công tắc "Hiện cảnh báo trên trang".
 - **Xong khi:** mỗi cảnh báo xuất hiện thành comment tác giả "Listing Guard" có mức rủi ro, gắn đúng trường; công tắc ghim số vào đúng chữ trên trang mô phỏng; Seller sửa hoặc bỏ qua kèm lý do thì comment đổi trạng thái. Bản mobile của Màn 14 để P8.
@@ -144,9 +145,10 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P5. Duyệt, checklist, chính sách, lịch sử, quyền Duyệt (Màn 5, 9)
 
 - **File:** trang `TaskApprovalPage.jsx` mới, `AdminUsersPage.jsx` (cột và cờ Quyền Duyệt), `TaskDetailPage.jsx` (Gửi duyệt), khối lịch sử task; backend `ApprovalService` (checklist, chính sách chặn/cảnh báo, duyệt dù còn rủi ro cần lý do), `TaskEventService`, `PolicyService`, `AccessControlService` (quyền Duyệt), `TaskService` (bỏ nhận `status`).
-- **Migration:** `V7`.
+- **Migration:** `V8`.
 - **API:** `submit`, `approve`, `request-changes`, `approval-checklist`, `events`, `admin/policy`, `canApprove` ở user.
 - **Test:** ma trận quyền (Seller không tự duyệt được, Marvel và Product Design 403, người có quyền Duyệt thì được); chính sách `block`: còn rủi ro cao thì từ chối duyệt; chính sách `warn`: duyệt được khi có lý do, lý do và người duyệt vào lịch sử; kiểm lại luôn chạy khi Gửi duyệt; chuyển trạng thái trái luồng bị từ chối; mọi sự kiện (kiểm tra, bỏ qua, xác nhận ảnh, gửi duyệt, duyệt, yêu cầu sửa) có trong `task_events`.
+- **Số ảnh tối thiểu theo case (Q8):** đọc từ cấu hình `app.content-rules`, không hard-code. Tạm thời Case 1 = 7 ảnh, hoặc 6 ảnh và 1 video; Case 2 và 3 = có ảnh chính. Chờ Product Design và Seller chốt số thật, đổi bằng cấu hình.
 - **Xong khi:** mặc định chính sách là **chặn** và làm được cả hai lựa chọn bằng cấu hình; Admin bật sẵn quyền Duyệt, gán thêm được cho user khác; Seller không còn tự đặt `APPROVED` qua API.
 
 ### P6. Danh sách task, dự án, quản trị tích hợp (Màn 1, 8, 6)
@@ -155,7 +157,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 - **Migration:** không bắt buộc; thêm chỉ mục nếu truy vấn tổng hợp chậm.
 - **API:** `GET /api/projects/{id}/tasks` mở rộng, `GET /api/approvals/pending`, `integrations/listing-guard`.
 - **Test:** tổng hợp đúng số liệu, quyền theo project, không rò thông tin giữa project; kiểm kết nối không bao giờ trả API key; kiểm tay các bộ lọc.
-- **Xong khi:** Màn 1 hiện cột Trademark và Quy tắc sàn từ kết quả mới nhất ("Chưa kiểm tra" khi nội dung đổi sau lần kiểm cuối); Màn 8 chỉ Admin và Marvel; Màn 6 chỉnh được chính sách và hiển thị trạng thái kết nối, API key không hiện trên giao diện. Mục "Thông tin catalog" (Nguồn, Ngày dữ liệu) cần dữ liệu mà Listing Guard hiện chưa có endpoint riêng (Q9).
+- **Xong khi:** Màn 1 hiện cột Trademark và Quy tắc sàn từ kết quả mới nhất ("Chưa kiểm tra" khi nội dung đổi sau lần kiểm cuối); Màn 8 chỉ Admin và Marvel; Màn 6 chỉnh được chính sách và hiển thị trạng thái kết nối, API key không hiện trên giao diện. Mục "Thông tin catalog" chỉ hiển thị `catalogVersion` và `rulesetVersion` lấy từ kết quả kiểm gần nhất (Q9); Nguồn và Ngày dữ liệu bỏ khỏi bản đầu vì Listing Guard chưa có endpoint cho các thông tin đó.
 
 ### P7. Làm lại đăng nhập và Amazon Search (Màn 7, 11)
 
@@ -171,30 +173,35 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 - **Test:** kiểm tay ở 375 px (iPhone SE) và 390 px, hai vai trò Seller và Product Design; không cuộn ngang; mục chạm đủ lớn.
 - **Xong khi:** ba màn mobile khớp thiết kế, luồng kiểm tra và xử lý cảnh báo dùng được trên điện thoại.
 
-## 6. Quyết định còn chờ (không tự chốt)
+## 6. Quyết định
 
-Ba quyết định thiết kế nêu ra, kèm cách làm tạm để code không bị chặn:
+### Đã chốt
 
-| # | Quyết định | Cách xử lý trong kế hoạch |
+| # | Quyết định | Áp dụng |
+|---|---|---|
+| D2 | Quyền Duyệt là cờ trên user, Admin bật sẵn | `users.can_approve` (P5) |
+| D3 | Mẫu Sheet theo project | `sheet_mapping_templates.project_id` (P2) |
+| Q4 | Commit 15 file thiết kế vào `docs/design/uiux-v1/` | Xong ở PR 1 |
+| Q5 | 4 project vào migration thường; user dev chỉ seed ở profile `dev`, mật khẩu lấy từ biến môi trường | `V2__seed_projects.sql`, `db/seed-dev` (PR 1) |
+| Q6 | Import là upload file CSV, không dùng Google Sheets API | P2 |
+| Q7 | `comments.user_id` null kèm `source = LISTING_GUARD` | `V7` (P4) |
+| Q8 | Số ảnh tối thiểu theo case nằm trong cấu hình. Tạm: Case 1 = 7 ảnh hoặc 6 ảnh và 1 video; Case 2 và 3 = có ảnh chính | P5, xem mục P5 |
+| Q9 | Màn 6 hiện `catalogVersion` từ kết quả gần nhất | P6 |
+| Q10 | Bản đầu không có thông báo; bỏ câu nhắc Marvel ở Màn 3 | P1, P3 |
+| Q11 | Vá phân quyền phía server trước P5 | Xong ở PR 1 (mục 7) |
+| Q12 | Testcontainers (PostgreSQL 15, bật Flyway trong test) và Vitest | Xong ở PR 1 |
+| Q13 | Một nội dung hiện hành mỗi task, sửa tại chỗ, `version` tăng, lịch sử bằng audit log | P1 |
+
+### Còn chờ
+
+| # | Quyết định | Cách xử lý tạm |
 |---|---|---|
 | D1 | Khi còn rủi ro trademark cao: chặn duyệt hay cảnh báo kèm lý do (CCO chốt) | Làm cả hai bằng `approval_policies.block_on_high`, **mặc định chặn**. Đổi mặc định chỉ cần đổi cấu hình |
-| D2 | Ai có quyền Duyệt: chỉ Admin, hay thêm Project Lead | Thêm cờ `users.can_approve`; Admin bật sẵn. Gán được cho bất kỳ user, nên không cần thêm vai trò mới |
-| D3 | Mẫu Sheet dùng chung hay theo project | Làm **theo project** (`sheet_mapping_templates.project_id`) |
+| Q8 | Số ảnh tối thiểu thật cho từng case (Product Design và Seller chốt) | Giá trị tạm ở trên, nằm trong cấu hình |
 
-Câu hỏi mới phát sinh khi kiểm tra, cần chủ dự án trả lời:
+## 7. Đã làm
 
-- **Q4.** Bộ thiết kế: commit nguyên file gộp `docs/uiux-v1/Preview Studio UI UX.html` hay đưa 15 file vào `docs/design/uiux-v1/`? (CLAUDE.md đang trỏ tới đường dẫn thứ hai.)
-- **Q5.** Seed dữ liệu cho DB dev: thêm migration cho 4 project (dữ liệu tham chiếu) và seed user chỉ chạy ở profile dev? Mật khẩu `Happyc123@` đang công khai (Open Issue #5 cũ) nên không đưa vào seed production.
-- **Q6.** "Import từ Google Sheet" là upload file CSV tải từ Sheet (đúng như thiết kế vẽ), không tích hợp Google Sheets API. Xác nhận.
-- **Q7.** Tác giả comment hệ thống: cho `comments.user_id` null kèm `source = LISTING_GUARD`, hay tạo một user hệ thống bị khoá?
-- **Q8.** Hạn mức media Case 2 và Case 3 vẫn chưa chốt (Open Issue #1 cũ). Checklist ở Màn 5 cần con số "đủ ảnh" cho từng case; hiện chỉ Case 1 (7 ảnh, hoặc 6 ảnh và 1 video) là rõ.
-- **Q9.** Màn 6 hiển thị Nguồn và Ngày dữ liệu catalog, nhưng API Listing Guard không có endpoint thông tin catalog (chỉ `catalogVersion` và `rulesetVersion` trong mỗi kết quả). Nhờ Listing Guard thêm endpoint, hay chỉ hiển thị phiên bản lấy từ kết quả gần nhất?
-- **Q10.** Màn 3 ghi "Marvel Labs sẽ được nhắc khi task gửi duyệt": kênh nhắc là gì (thông báo trong app, email)? Chưa có cơ chế thông báo nào.
-- **Q11.** Có muốn vá riêng và sớm lỗ hổng "Seller tự đặt `APPROVED` qua `PUT /api/tasks/{id}`" (và kiểm quyền cho các endpoint preview/comment) trước P5 không? Hiện đang hở trên `main`.
-- **Q12.** Thêm công cụ test: Testcontainers cho test migration trên PostgreSQL thật (cần Docker ở máy dev và CI) và Vitest cho frontend (hiện chưa có test frontend nào)?
-- **Q13.** Bản ghi nội dung: giữ mọi lần upload là một `Preview` mới (lịch sử) hay sửa tại chỗ (một nội dung hiện hành, `version` tăng)? Kế hoạch P1 giả định "preview hiện hành là bản mới nhất, text sửa tại chỗ".
-
-## 7. PR 0 đã làm (`chore/cleanup-before-ui`)
+### PR 0 (`chore/cleanup-before-ui`, đã merge)
 
 - Gỡ 5 file log và JSON khỏi git, cập nhật `.gitignore` (và bỏ `claude.md` khỏi gitignore để commit CLAUDE.md).
 - Bỏ `jwt.secret` mặc định ở cả `application.yml` và `JwtTokenProvider`; thiếu hoặc ngắn hơn 64 byte thì app dừng với thông báo tiếng Việt. Cập nhật `.env.example`.
@@ -202,3 +209,17 @@ Câu hỏi mới phát sinh khi kiểm tra, cần chủ dự án trả lời:
 - Tắt `show-sql`. Bỏ mount `init.sql` khỏi docker-compose.
 - Sửa test đỏ (`AmazonScraperServiceTest`, và lỗi thật ở `CreatePreviewUseCaseImpl` lưu trước khi kiểm), sửa 40 lỗi lint.
 - Viết lại README, thêm CLAUDE.md và tài liệu này.
+
+### PR 1 (`fix/authorization-and-dev-seed`)
+
+Vá phân quyền phía server, seed, công cụ test; không làm P1.
+
+- **`PUT /api/tasks/{id}`:** chỉ Admin được đặt `APPROVED` và `REJECTED`. Seller chỉ chuyển `PENDING_UPLOADS` sang `IN_REVIEW`, và chỉ với task của project mình; mọi chuyển trạng thái khác của Seller bị `403`. Marvel Labs và Product Design không sửa được task.
+- **Preview và comment:** `GET /api/previews/{id}`, comment (đọc, thêm, resolve) và tạo preview chỉ dùng được với task thuộc project của mình (Admin và Marvel Labs xem tất cả). Task của project khác, hoặc không tồn tại, đều trả `404`.
+- **Vùng nội dung theo vai trò, kiểm ở backend:** ảnh, A+ và swatch màu cần Product Design; video cần Marvel Labs; text (giá, brand, fabricType, careInstructions, origin, bullet, size) cần Seller; Admin được tất cả; sai vùng trả `403`. `POST /api/previews/import` (tạo từ ASIN, ghi cả text và ảnh) chỉ Admin. Với vai trò không có vùng Text, tiêu đề lấy từ task thay vì từ request.
+- **Seed:** `V2__seed_projects.sql` (4 project). User dev nằm ở `db/seed-dev`, chỉ nạp khi chạy profile `dev`; mật khẩu lấy từ `DEV_SEED_PASSWORD`, băm BCrypt lúc khởi động.
+- **Test:** Testcontainers PostgreSQL 15 (Flyway bật, Hibernate `validate`) và Vitest cùng Testing Library. Lệnh nằm trong CLAUDE.md. `AuthorizationApiTest` chạy các quy tắc trên qua HTTP thật.
+- **Hai lỗi có sẵn trên `main` mà test Testcontainers phát hiện, đã sửa:**
+  1. Mọi upload hoặc import preview thành công trả `500`: `Preview.id` khai báo `@GeneratedValue` nhưng domain gán sẵn UUID, nên `save()` chạy merge và Hibernate ném `StaleObjectStateException`. Test H2 và mock repository không thấy được lỗi này.
+  2. Response `401` và `403` từ filter chain lỗi serialize `Instant` vì `ObjectMapper` bean thiếu `JavaTimeModule`, nên request không token không nhận được body JSON.
+- **Còn lại:** `GET /uploads/**` vẫn mở (không cần token) vì thẻ `<img>` không gửi được JWT; URL chứa UUID khó đoán nhưng ai có link đều xem được. Quyền resolve comment chưa giới hạn theo vai trò ở backend (UI chỉ cho Admin và Seller); chưa có yêu cầu nên chưa đổi.

@@ -3,7 +3,9 @@ package com.happycreative.productpreview.service;
 import com.happycreative.productpreview.entity.Project;
 import com.happycreative.productpreview.entity.Role;
 import com.happycreative.productpreview.entity.Task;
+import com.happycreative.productpreview.entity.TaskStatus;
 import com.happycreative.productpreview.entity.User;
+import com.happycreative.productpreview.service.AccessControlService.ContentZone;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -77,6 +79,91 @@ class AccessControlServiceTest {
                 principal(Role.MARVEL, null), task));
         assertForbidden(() -> accessControlService.requireTaskUpdateAccess(
                 principal(Role.PRODUCT_DESIGN, "happy"), task));
+    }
+
+    @Test
+    void taskOfAnotherProjectIsNotFoundForSellerAndProductDesign() {
+        Task task = new Task();
+        task.setProject(project("creative"));
+
+        assertDoesNotThrow(() -> accessControlService.requireTaskVisible(principal(Role.ADMIN, null), task));
+        assertDoesNotThrow(() -> accessControlService.requireTaskVisible(principal(Role.MARVEL, null), task));
+        assertDoesNotThrow(() -> accessControlService.requireTaskVisible(principal(Role.SELLER, "creative"), task));
+
+        assertNotFound(() -> accessControlService.requireTaskVisible(principal(Role.SELLER, "happy"), task));
+        assertNotFound(() -> accessControlService.requireTaskVisible(principal(Role.PRODUCT_DESIGN, "happy"), task));
+        assertNotFound(() -> accessControlService.requireTaskVisible(principal(Role.SELLER, null), task));
+        assertNotFound(() -> accessControlService.requireTaskVisible(principal(Role.ADMIN, null), null));
+    }
+
+    @Test
+    void eachContentZoneBelongsToOneRoleAndAdminOwnsAll() {
+        for (ContentZone zone : ContentZone.values()) {
+            assertDoesNotThrow(() -> accessControlService.requireZoneEditAccess(principal(Role.ADMIN, null), zone));
+        }
+
+        assertDoesNotThrow(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.SELLER, "happy"), ContentZone.TEXT));
+        assertDoesNotThrow(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.PRODUCT_DESIGN, "happy"), ContentZone.IMAGE));
+        assertDoesNotThrow(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.MARVEL, null), ContentZone.VIDEO));
+
+        assertForbidden(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.SELLER, "happy"), ContentZone.IMAGE));
+        assertForbidden(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.SELLER, "happy"), ContentZone.VIDEO));
+        assertForbidden(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.PRODUCT_DESIGN, "happy"), ContentZone.TEXT));
+        assertForbidden(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.PRODUCT_DESIGN, "happy"), ContentZone.VIDEO));
+        assertForbidden(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.MARVEL, null), ContentZone.TEXT));
+        assertForbidden(() -> accessControlService.requireZoneEditAccess(
+                principal(Role.MARVEL, null), ContentZone.IMAGE));
+    }
+
+    @Test
+    void adminMayMoveTaskToAnyStatus() {
+        CustomUserDetails admin = principal(Role.ADMIN, null);
+        for (TaskStatus from : TaskStatus.values()) {
+            for (TaskStatus to : TaskStatus.values()) {
+                assertDoesNotThrow(() -> accessControlService.requireStatusChange(admin, from, to));
+            }
+        }
+    }
+
+    @Test
+    void sellerMayOnlySubmitPendingTaskForReview() {
+        CustomUserDetails seller = principal(Role.SELLER, "happy");
+
+        for (TaskStatus from : TaskStatus.values()) {
+            for (TaskStatus to : TaskStatus.values()) {
+                boolean allowed = from == to
+                        || (from == TaskStatus.PENDING_UPLOADS && to == TaskStatus.IN_REVIEW);
+                if (allowed) {
+                    assertDoesNotThrow(() -> accessControlService.requireStatusChange(seller, from, to));
+                } else {
+                    assertForbidden(() -> accessControlService.requireStatusChange(seller, from, to));
+                }
+            }
+        }
+    }
+
+    @Test
+    void marvelAndProductDesignCannotChangeTaskStatus() {
+        for (CustomUserDetails user : new CustomUserDetails[] {
+                principal(Role.MARVEL, null), principal(Role.PRODUCT_DESIGN, "happy")}) {
+            assertForbidden(() -> accessControlService.requireStatusChange(
+                    user, TaskStatus.PENDING_UPLOADS, TaskStatus.IN_REVIEW));
+            assertForbidden(() -> accessControlService.requireStatusChange(
+                    user, TaskStatus.IN_REVIEW, TaskStatus.APPROVED));
+        }
+    }
+
+    private void assertNotFound(Runnable action) {
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, action::run);
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
     private void assertForbidden(Runnable action) {
