@@ -14,16 +14,20 @@ Internal tool của Happy Creative: xem trước listing Amazon/Etsy, mỗi vai 
 ```powershell
 docker compose up -d                                  # Postgres dev
 cd backend;  .\mvnw.cmd spring-boot:run               # cần JWT_SECRET (xem .env.example)
-cd backend;  .\mvnw.cmd test                          # phải pass trước khi push
+cd backend;  .\mvnw.cmd test                          # unit + tích hợp (Testcontainers PostgreSQL 15, cần Docker); phải pass trước khi push
+cd backend;  .\mvnw.cmd test "-Dtest=AuthorizationApiTest"   # chạy một lớp test
 cd frontend; npm run dev
-cd frontend; npm run lint; npm run build              # cả hai phải pass trước khi push
+cd frontend; npm run lint; npm run build; npm test    # cả ba phải pass trước khi push (npm test = Vitest + Testing Library)
 ```
+
+Seed user dev: `SPRING_PROFILES_ACTIVE=dev` kèm `DEV_SEED_PASSWORD` trong `.env` (xem README). Production không bật profile `dev`.
 
 ## Quy ước
 
 - **Flyway:** mọi thay đổi schema là file mới `backend/src/main/resources/db/migration/V<n>__<mô_tả>.sql`. Không sửa migration đã chạy ở bất kỳ môi trường nào. `ddl-auto` là `validate`; đổi entity thì phải kèm migration. Migration viết cho PostgreSQL.
 - **Secret:** chỉ đọc từ biến môi trường (`.env` đã gitignore, mẫu ở `.env.example`). Không hard-code, không đặt giá trị mặc định cho secret trong code hay `application.yml`, không commit key, không log key. Thiếu `JWT_SECRET` thì app không khởi động.
-- **Phân quyền** kiểm ở backend, không chỉ ẩn UI. Thông báo lỗi cho người dùng bằng tiếng Việt.
+- **Phân quyền** kiểm ở backend, không chỉ ẩn UI. Quy tắc nằm ở `AccessControlService` (project, vùng Text/Ảnh/Video, đổi trạng thái task) và `PreviewAccessService` (preview, comment). Task hoặc preview của project user không xem được trả **404**, không trả 403. Mỗi quy tắc mới phải có test ở `AuthorizationApiTest` (HTTP thật trên PostgreSQL) và test đơn vị. Thông báo lỗi cho người dùng bằng tiếng Việt.
+- **Test:** bug chỉ lộ trên PostgreSQL thật (Flyway, `validate`, locking của Hibernate) thì viết test Testcontainers; test chạy H2 hoặc mock repository không thấy được.
 - **Nhánh:** `feat/...`, `fix/...`, `chore/...`, `docs/...` tách từ `main`. Mỗi phase trong [docs/ui-plan.md](docs/ui-plan.md) là một nhánh và một PR.
 - **Commit:** Conventional Commits (`type(scope): mô tả`), commit nhỏ, mô tả tiếng Việt.
 - **Không merge, không push lên `main`.** Push nhánh, người dùng tự mở PR.

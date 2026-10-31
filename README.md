@@ -44,8 +44,8 @@ npm run dev
 Kiểm tra:
 
 ```powershell
-cd backend;  .\mvnw.cmd test        # test backend (H2, không cần Postgres)
-cd frontend; npm run lint; npm run build
+cd backend;  .\mvnw.cmd test        # test backend: unit (H2/mock) và tích hợp trên PostgreSQL 15 bằng Testcontainers (cần Docker)
+cd frontend; npm run lint; npm run build; npm test
 ```
 
 Biến môi trường (xem [.env.example](.env.example)): `JWT_SECRET`, `DB_USER`, `DB_PASS`, `SPRING_DATASOURCE_URL`, `RAPIDAPI_AMAZON_KEY`, `RAPIDAPI_AMAZON_HOST`, `GOOGLE_CLIENT_ID`, `STORAGE_PROVIDER` và các biến `R2_*`. `.env` đã được Git bỏ qua.
@@ -56,7 +56,14 @@ Biến môi trường (xem [.env.example](.env.example)): `JWT_SECRET`, `DB_USER
 - Không sửa migration đã chạy; mọi thay đổi schema là một file `V<n>__<mô_tả>.sql` mới.
 - DB dev có sẵn từ trước được Flyway baseline ở V1 (`baseline-on-migrate`). DB trống chạy V1.
 - Reset DB dev: `docker compose down -v && docker compose up -d`.
-- Hiện chưa có migration seed, nên DB trống chưa có project và user. Xem mục câu hỏi trong [docs/ui-plan.md](docs/ui-plan.md).
+- `V2__seed_projects.sql` tạo 4 project (happy, creative, hapify84, global) ở mọi môi trường.
+- Seed user dev: chạy backend với profile `dev` và đặt `DEV_SEED_PASSWORD` (từ 8 ký tự, tối đa 72 byte) trong `.env`. Flyway nạp thêm `db/seed-dev` và tạo 10 tài khoản (`hc.admin`, `hc.marvel`, `hc.happy`, `hc.creative`, `hc.hapify84`, `hc.global`, `hc.pd.happy`, `hc.pd.creative`, `hc.pd.hapify84`, `hc.pd.global`), tất cả dùng mật khẩu đó (băm BCrypt lúc khởi động, không nằm trong code). Chỉ tạo user chưa có; muốn đổi mật khẩu thì xoá user rồi khởi động lại.
+  ```powershell
+  # .env: DEV_SEED_PASSWORD=<mật khẩu dev của bạn>
+  cd backend
+  $env:SPRING_PROFILES_ACTIVE = 'dev'; .\mvnw.cmd spring-boot:run
+  ```
+  Không bật profile `dev` ở production.
 
 ---
 

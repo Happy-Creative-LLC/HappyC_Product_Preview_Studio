@@ -218,4 +218,8 @@ Vá phân quyền phía server, seed, công cụ test; không làm P1.
 - **Preview và comment:** `GET /api/previews/{id}`, comment (đọc, thêm, resolve) và tạo preview chỉ dùng được với task thuộc project của mình (Admin và Marvel Labs xem tất cả). Task của project khác, hoặc không tồn tại, đều trả `404`.
 - **Vùng nội dung theo vai trò, kiểm ở backend:** ảnh, A+ và swatch màu cần Product Design; video cần Marvel Labs; text (giá, brand, fabricType, careInstructions, origin, bullet, size) cần Seller; Admin được tất cả; sai vùng trả `403`. `POST /api/previews/import` (tạo từ ASIN, ghi cả text và ảnh) chỉ Admin. Với vai trò không có vùng Text, tiêu đề lấy từ task thay vì từ request.
 - **Seed:** `V2__seed_projects.sql` (4 project). User dev nằm ở `db/seed-dev`, chỉ nạp khi chạy profile `dev`; mật khẩu lấy từ `DEV_SEED_PASSWORD`, băm BCrypt lúc khởi động.
-- **Test:** Testcontainers PostgreSQL 15 (Flyway bật, Hibernate `validate`) và Vitest cùng Testing Library. Lệnh nằm trong CLAUDE.md.
+- **Test:** Testcontainers PostgreSQL 15 (Flyway bật, Hibernate `validate`) và Vitest cùng Testing Library. Lệnh nằm trong CLAUDE.md. `AuthorizationApiTest` chạy các quy tắc trên qua HTTP thật.
+- **Hai lỗi có sẵn trên `main` mà test Testcontainers phát hiện, đã sửa:**
+  1. Mọi upload hoặc import preview thành công trả `500`: `Preview.id` khai báo `@GeneratedValue` nhưng domain gán sẵn UUID, nên `save()` chạy merge và Hibernate ném `StaleObjectStateException`. Test H2 và mock repository không thấy được lỗi này.
+  2. Response `401` và `403` từ filter chain lỗi serialize `Instant` vì `ObjectMapper` bean thiếu `JavaTimeModule`, nên request không token không nhận được body JSON.
+- **Còn lại:** `GET /uploads/**` vẫn mở (không cần token) vì thẻ `<img>` không gửi được JWT; URL chứa UUID khó đoán nhưng ai có link đều xem được. Quyền resolve comment chưa giới hạn theo vai trò ở backend (UI chỉ cho Admin và Seller); chưa có yêu cầu nên chưa đổi.
