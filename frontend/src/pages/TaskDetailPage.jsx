@@ -18,7 +18,9 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
 import SidebarLayout from '../components/shared/SidebarLayout';
-import AmazonUploadForm from '../components/upload/AmazonUploadForm';
+import ListingMediaForm from '../components/upload/ListingMediaForm';
+import AmazonTextForm from '../components/upload/AmazonTextForm';
+import EtsyTextForm from '../components/upload/EtsyTextForm';
 import { canSubmitTaskReview, canUseAmazonSearch, isSingleProjectRole } from '../utils/permissions';
 
 const STATUS_CONFIG = {
@@ -48,21 +50,6 @@ const CATEGORY_LABELS = {
   1: 'Case 1 · Clothing, Shoes & Jewelry',
   2: 'Case 2 · Home & Kitchen dọc',
   3: 'Case 3 · Home & Kitchen ngang',
-};
-
-const EMPTY_READINESS = {
-  hasTitle: false,
-  imageCount: 0,
-  imageLimit: null,
-  imageLimitPending: false,
-  hasVideo: false,
-  videoCount: 0,
-  videoLimit: null,
-  colorCount: 0,
-  sizeCount: 0,
-  aPlusCount: 0,
-  savedPreviewId: null,
-  hasUnsavedChanges: false,
 };
 
 const ReadinessItem = ({ icon: Icon, title, detail, pending = false, neutral = false }) => (
@@ -96,6 +83,7 @@ const TaskDetailPage = () => {
     projects,
     tasks,
     fetchTask,
+    fetchCurrentPreview,
     updateTaskStatus,
   } = useAppStore();
 
@@ -103,9 +91,10 @@ const TaskDetailPage = () => {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [reviewSubmission, setReviewSubmission] = useState({ taskId: null, submitting: false });
   const [reviewFeedbackState, setReviewFeedbackState] = useState({ taskId: null, feedback: null });
-  const [previewState, setPreviewState] = useState({ taskId: null, previewId: null });
+  const [previewState, setPreviewState] = useState({ taskId: null, preview: null });
   const [statusState, setStatusState] = useState({ taskId: null, status: null });
-  const [readinessState, setReadinessState] = useState({ taskId: null, value: EMPTY_READINESS });
+  const [textDirty, setTextDirty] = useState(false);
+  const [mediaDirty, setMediaDirty] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -117,9 +106,12 @@ const TaskDetailPage = () => {
     const cachedTask = (useAppStore.getState().tasks[projectId] || [])
       .find((item) => item.id === taskId);
 
-    fetchTask(projectId, taskId)
-      .then(() => {
-        if (active) setLoadState({ taskId, loading: false, error: '' });
+    Promise.all([fetchTask(projectId, taskId), fetchCurrentPreview(taskId)])
+      .then(([, preview]) => {
+        if (active) {
+          setPreviewState({ taskId, preview });
+          setLoadState({ taskId, loading: false, error: '' });
+        }
       })
       .catch(() => {
         if (active) {
@@ -134,16 +126,33 @@ const TaskDetailPage = () => {
     return () => {
       active = false;
     };
-  }, [fetchTask, loadAttempt, navigate, projectId, taskId, user]);
+  }, [fetchTask, fetchCurrentPreview, loadAttempt, navigate, projectId, taskId, user]);
 
   const task = (tasks[projectId] || []).find((item) => item.id === taskId);
-  const loading = loadState.taskId === taskId ? loadState.loading : !task;
+  const loading = loadState.taskId === taskId ? loadState.loading : true;
   const loadError = loadState.taskId === taskId ? loadState.error : '';
   const submittingReview = reviewSubmission.taskId === taskId && reviewSubmission.submitting;
   const reviewFeedback = reviewFeedbackState.taskId === taskId ? reviewFeedbackState.feedback : null;
-  const savedPreviewId = previewState.taskId === taskId ? previewState.previewId : null;
+  const currentPreview = previewState.taskId === taskId ? previewState.preview : null;
+  const savedPreviewId = currentPreview?.id;
   const statusOverride = statusState.taskId === taskId ? statusState.status : null;
-  const readiness = readinessState.taskId === taskId ? readinessState.value : EMPTY_READINESS;
+  const productData = (() => {
+    try {
+      return currentPreview?.productData ? JSON.parse(currentPreview.productData) : {};
+    } catch {
+      return {};
+    }
+  })();
+  const hasUnsavedChanges = textDirty || mediaDirty;
+  const readiness = {
+    hasTitle: Boolean(productData.title?.trim()),
+    imageCount: productData.images?.length || 0,
+    imageLimit: task?.platform === 'ETSY' ? 20 : (task?.category === 1 ? (productData.videos?.length ? 6 : 7) : null),
+    hasVideo: Boolean(productData.videos?.length),
+    videoCount: productData.videos?.length || 0,
+    videoLimit: task?.platform === 'ETSY' || task?.category === 1 ? 1 : null,
+    hasUnsavedChanges,
+  };
   const project = projects.find((item) => item.id === projectId);
   const projectName = project?.name || task?.projectName || 'Project';
   const displayedStatus = statusOverride || task?.status || 'PENDING_UPLOADS';
@@ -155,7 +164,6 @@ const TaskDetailPage = () => {
     ? `${task?.platform === 'ETSY' ? '/etsy' : '/amazon'}?${new URLSearchParams({
       taskId,
       projectId,
-      previewId: savedPreviewId,
     }).toString()}`
     : null;
   const searchPreviewUrl = savedPreviewId
@@ -164,7 +172,6 @@ const TaskDetailPage = () => {
     ? `/search?${new URLSearchParams({
       taskId,
       projectId,
-      previewId: savedPreviewId,
     }).toString()}`
     : null;
 
@@ -174,14 +181,12 @@ const TaskDetailPage = () => {
     { label: task?.title || 'Task' },
   ];
 
-  const handleSaved = useCallback((previewId) => {
-    setPreviewState({ taskId, previewId });
+  const handleSaved = useCallback((preview) => {
+    setPreviewState({ taskId, preview });
     setReviewFeedbackState({ taskId, feedback: null });
   }, [taskId]);
-
-  const handleReadinessChange = useCallback((nextReadiness) => {
-    setReadinessState({ taskId, value: nextReadiness });
-  }, [taskId]);
+  const handleTextDirty = useCallback((dirty) => setTextDirty(dirty), []);
+  const handleMediaDirty = useCallback((dirty) => setMediaDirty(dirty), []);
 
   const handleRetry = () => {
     setLoadState({ taskId, loading: true, error: '' });
@@ -203,7 +208,7 @@ const TaskDetailPage = () => {
       });
       return;
     }
-    if (readiness.hasUnsavedChanges) {
+    if (hasUnsavedChanges) {
       setReviewFeedbackState({
         taskId,
         feedback: { type: 'error', text: 'Hãy lưu thay đổi mới trước khi gửi review.' },
@@ -233,7 +238,7 @@ const TaskDetailPage = () => {
 
   if (!user) return null;
 
-  if (loading && !task) {
+  if (loading) {
     return (
       <SidebarLayout breadcrumbs={breadcrumbs} previewPath={null}>
         <div className="hc-loading-page" role="status" aria-live="polite">
@@ -244,13 +249,13 @@ const TaskDetailPage = () => {
     );
   }
 
-  if (loadError && !task) {
+  if (loadError) {
     return (
       <SidebarLayout breadcrumbs={breadcrumbs} previewPath={null}>
         <div className="hc-card hc-empty-state" role="alert">
           <AlertCircle size={34} aria-hidden="true" />
           <strong>Không thể mở task</strong>
-          <p>{loadError}</p>
+          <p>{loadError === 'STALE_CACHE' ? 'Không thể tải bản nội dung hiện hành. Vui lòng thử lại.' : loadError}</p>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <button className="hc-button hc-button--primary" type="button" onClick={handleRetry}>
               Thử lại
@@ -290,10 +295,10 @@ const TaskDetailPage = () => {
       ? `Đã chọn ${videoCount} video · giới hạn Case 2/3 đang chờ chốt`
       : `Đã chọn ${videoCount}/${readiness.videoLimit} video`);
   const savedPreviewDetail = savedPreviewId
-    ? (readiness.hasUnsavedChanges
+    ? (hasUnsavedChanges
       ? 'Có thay đổi mới chưa lưu; link mở bản đã lưu gần nhất'
-      : `Đã lưu · ${String(savedPreviewId).slice(0, 8)}…`)
-    : 'Chưa lưu Preview trong phiên làm việc này';
+      : 'Đã lưu bản hiện hành')
+    : 'Chưa lưu nội dung cho task này';
 
   return (
     <SidebarLayout breadcrumbs={breadcrumbs} previewPath={previewUrl}>
@@ -312,6 +317,7 @@ const TaskDetailPage = () => {
                   {CATEGORY_LABELS[task.category] || `Case ${task.category}`}
                 </span>
               )}
+              {task.sku && <span className="text-xs font-semibold">SKU {task.sku}</span>}
             </div>
             <p>
               {projectName}
@@ -345,8 +351,8 @@ const TaskDetailPage = () => {
                   className="hc-button hc-button--success"
                   type="button"
                   onClick={handleSubmitForReview}
-                  disabled={submittingReview || !savedPreviewId || readiness.hasUnsavedChanges}
-                  aria-describedby={(!savedPreviewId || readiness.hasUnsavedChanges) ? 'review-disabled-help' : undefined}
+                  disabled={submittingReview || !savedPreviewId || hasUnsavedChanges}
+                  aria-describedby={(!savedPreviewId || hasUnsavedChanges) ? 'review-disabled-help' : undefined}
                 >
                   {submittingReview
                     ? <Loader2 size={17} className="animate-spin" aria-hidden="true" />
@@ -357,12 +363,12 @@ const TaskDetailPage = () => {
             </div>
             {!previewUrl && (
               <p id="preview-disabled-help" className="max-w-sm text-xs text-[var(--hc-gray-500)]">
-                Lưu form để tạo previewId trước khi mở Preview.
+                Lưu nội dung hoặc media để mở Preview.
               </p>
             )}
-            {canSendCurrentTask && (!savedPreviewId || readiness.hasUnsavedChanges) && (
+            {canSendCurrentTask && (!savedPreviewId || hasUnsavedChanges) && (
               <span id="review-disabled-help" className="text-xs text-[var(--hc-orange-600)]">
-                {readiness.hasUnsavedChanges
+                {hasUnsavedChanges
                   ? 'Hãy lưu thay đổi mới trước khi gửi review.'
                   : 'Cần lưu một bản Preview trước khi gửi Review.'}
               </span>
@@ -391,17 +397,27 @@ const TaskDetailPage = () => {
         )}
 
         <div className="hc-workspace-grid">
-          <AmazonUploadForm
-            key={taskId}
-            projectId={projectId}
-            taskId={taskId}
-            platform={task.platform}
-            category={task.category}
-            role={user.role}
-            initialTitle={task.title}
-            onSaved={handleSaved}
-            onReadinessChange={handleReadinessChange}
-          />
+          <div className="space-y-6">
+            <ListingMediaForm
+              taskId={taskId}
+              platform={task.platform}
+              category={task.category}
+              role={user.role}
+              title={task.title}
+              productData={productData}
+              onSaved={handleSaved}
+              onDirtyChange={handleMediaDirty}
+            />
+            {task.platform === 'ETSY' ? (
+              <EtsyTextForm key={taskId} taskId={taskId} role={user.role} title={task.title}
+                productData={productData} updatedAt={currentPreview?.updatedAt}
+                onSaved={handleSaved} onDirtyChange={handleTextDirty} />
+            ) : (
+              <AmazonTextForm key={taskId} taskId={taskId} role={user.role} title={task.title}
+                productData={productData} updatedAt={currentPreview?.updatedAt}
+                onSaved={handleSaved} onDirtyChange={handleTextDirty} />
+            )}
+          </div>
 
           <aside className="hc-card hc-readiness" aria-labelledby="workspace-readiness-title">
             <div className="hc-readiness__score">
@@ -434,10 +450,10 @@ const TaskDetailPage = () => {
                 neutral={!readiness.hasVideo}
               />
               <ReadinessItem
-                icon={savedPreviewId && !readiness.hasUnsavedChanges ? CheckCircle2 : Save}
+                icon={savedPreviewId && !hasUnsavedChanges ? CheckCircle2 : Save}
                 title="Bản Preview"
                 detail={savedPreviewDetail}
-                pending={!savedPreviewId || readiness.hasUnsavedChanges}
+                pending={!savedPreviewId || hasUnsavedChanges}
               />
               <ReadinessItem
                 icon={statusConfig.icon}
@@ -455,13 +471,13 @@ const TaskDetailPage = () => {
             ) : (
               <button className="hc-button hc-button--primary hc-button--block" type="button" disabled>
                 <Eye size={17} aria-hidden="true" />
-                Chưa có previewId
+                Chưa có nội dung đã lưu
               </button>
             )}
 
             <p className="mt-3 flex items-start gap-2 text-[10px] leading-4 text-[var(--hc-gray-500)]">
               <ShieldCheck size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-              Preview chỉ mở bản đã lưu gần nhất; thay đổi chưa lưu không được đưa vào URL.
+              Preview mở bản đã lưu của task; thay đổi đang lưu sẽ xuất hiện sau khi hoàn tất.
             </p>
           </aside>
         </div>

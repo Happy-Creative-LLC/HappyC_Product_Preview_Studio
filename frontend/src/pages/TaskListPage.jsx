@@ -117,6 +117,7 @@ const TaskListPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [newTitle, setNewTitle] = useState('');
+  const [newSku, setNewSku] = useState('');
   const [newPlatform, setNewPlatform] = useState('AMAZON');
   const [newCategory, setNewCategory] = useState(1);
 
@@ -250,10 +251,12 @@ const TaskListPage = () => {
     try {
       await createTask(projectId, {
         title,
+        sku: newSku.trim() || null,
         platform: newPlatform,
         category: newPlatform === 'AMAZON' ? newCategory : 1,
       });
       setNewTitle('');
+      setNewSku('');
       setNewPlatform('AMAZON');
       setNewCategory(1);
       dialogRef.current?.close();
@@ -452,7 +455,7 @@ const TaskListPage = () => {
                                     {task.title}
                                   </strong>
                                   <span className="mt-0.5 block text-[0.625rem] text-[var(--hc-gray-400)]">
-                                    Tạo ngày {formatDate(task.createdAt)}
+                                    {task.sku ? `SKU ${task.sku} · ` : ''}Tạo ngày {formatDate(task.createdAt)}
                                   </span>
                                 </span>
                               </button>
@@ -574,6 +577,12 @@ const TaskListPage = () => {
             </p>
 
             <form className="hc-dialog__form" onSubmit={handleCreateTask} noValidate>
+              <label className="hc-field" htmlFor="task-sku">
+                <span>SKU</span>
+                <input id="task-sku" type="text" className="hc-input text-base md:text-sm"
+                  value={newSku} onChange={(event) => setNewSku(event.target.value)}
+                  maxLength={100} placeholder="Ví dụ: GLB-JRS-0142" />
+              </label>
               <label className="hc-field" htmlFor="task-title">
                 <span>Tên task</span>
                 <input

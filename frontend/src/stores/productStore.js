@@ -60,5 +60,5 @@ const initialData = {
 
 // Store chỉ còn dùng để ĐỌC: scaffold hiển thị khi vào /amazon, /etsy, /search
 // mà chưa có preview thật. Toàn bộ action ghi trước đây chỉ phục vụ ControlPanel
-// (đã xoá) — nội dung thật đi qua AmazonUploadForm → API → previews.product_data.
+// (đã xoá) — nội dung thật đi qua form Text/Media → API → previews.product_data.
 export const useProductStore = create(() => ({ ...initialData }));

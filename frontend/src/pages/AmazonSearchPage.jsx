@@ -106,9 +106,9 @@ const AmazonSearchPage = () => {
   const hasUserSearched = useRef(false);
 
   const [sourceState, setSourceState] = useState({
-    loading: Boolean(previewId),
+    loading: Boolean(taskId || previewId),
     data: null,
-    error: previewId ? '' : 'Chưa có Preview đã lưu. Hãy mở Search Preview từ trang Task Detail.',
+    error: taskId || previewId ? '' : 'Chưa có Preview đã lưu. Hãy mở Search Preview từ trang Task Detail.',
   });
   const [searchInput, setSearchInput] = useState('');
   const [searchRequest, setSearchRequest] = useState(null);
@@ -122,12 +122,12 @@ const AmazonSearchPage = () => {
   const [injected, setInjected] = useState(DEFAULT_INJECTED);
 
   useEffect(() => {
-    if (!previewId) return undefined;
+    if (!taskId && !previewId) return undefined;
 
     const controller = new AbortController();
     let active = true;
 
-    axiosInstance.get(`/api/previews/${previewId}`, { signal: controller.signal })
+    axiosInstance.get(taskId ? `/api/tasks/${taskId}/preview` : `/api/previews/${previewId}`, { signal: controller.signal })
       .then((response) => {
         if (!active) return;
         const product = parsePreviewProduct(response.data?.productData);
@@ -155,7 +155,7 @@ const AmazonSearchPage = () => {
       active = false;
       controller.abort();
     };
-  }, [previewId]);
+  }, [taskId, previewId]);
 
   useEffect(() => {
     if (!searchRequest?.keyword) return undefined;

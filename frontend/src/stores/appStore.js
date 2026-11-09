@@ -72,6 +72,16 @@ export const useAppStore = create(
         return response.data;
       },
 
+      fetchCurrentPreview: async (taskId) => {
+        const response = await axiosInstance.get(`/api/tasks/${taskId}/preview`);
+        return response.status === 204 ? null : response.data;
+      },
+
+      saveTaskText: async (taskId, content) => {
+        const response = await axiosInstance.put(`/api/tasks/${taskId}/content/text`, content);
+        return response.data;
+      },
+
       updateTaskStatus: async (taskId, status) => {
         const cachedTask = Object.values(get().tasks)
           .flat()

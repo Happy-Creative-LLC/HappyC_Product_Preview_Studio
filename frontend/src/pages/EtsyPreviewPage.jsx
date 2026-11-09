@@ -16,7 +16,7 @@ import { Loader2, MessageCircle } from 'lucide-react';
 
 const EtsyPreviewPage = () => {
   const [searchParams] = useSearchParams();
-  const previewId = searchParams.get('previewId');
+  const previewIdParam = searchParams.get('previewId');
   const taskId    = searchParams.get('taskId');
   const projectId = searchParams.get('projectId');
 
@@ -28,23 +28,25 @@ const EtsyPreviewPage = () => {
     : null;
   const taskProductData = task?.productData;
 
-  const [previewData, setPreviewData] = useState(null);
-  const [isLoading, setIsLoading] = useState(!!previewId);
+  const [loadedPreview, setLoadedPreview] = useState(null);
+  const [isLoading, setIsLoading] = useState(Boolean(taskId || previewIdParam));
 
   const [commentPanelOpen, setCommentPanelOpen] = useState(false);
   const [commentDefaultZone, setCommentDefaultZone] = useState(null);
 
   useEffect(() => {
-    if (!previewId) return;
-    axiosInstance.get(`/api/previews/${previewId}`)
-      .then((res) => {
-        if (res.data?.productData) {
-          try { setPreviewData(JSON.parse(res.data.productData)); } catch { /* productData không phải JSON hợp lệ: giữ dữ liệu mặc định */ }
-        }
-      })
+    if (!taskId && !previewIdParam) return;
+    axiosInstance.get(taskId ? `/api/tasks/${taskId}/preview` : `/api/previews/${previewIdParam}`)
+      .then((res) => setLoadedPreview(res.data || null))
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [previewId]);
+  }, [taskId, previewIdParam]);
+
+  const loadedPreviewId = loadedPreview?.id || (taskId ? null : previewIdParam);
+  const previewData = (() => {
+    try { return loadedPreview?.productData ? JSON.parse(loadedPreview.productData) : null; }
+    catch { return null; }
+  })();
 
   const handleZoneComment = (zone) => {
     setCommentDefaultZone(zone);
@@ -113,10 +115,23 @@ const EtsyPreviewPage = () => {
                   price={Number(pd.price || 0)}
                   listPrice={Number(pd.oldPrice || 0)}
                   bulletPoints={bulletPoints}
-                  materials={pd.fabricType ? [pd.fabricType] : []}
+                  materials={pd.materials || []}
                   images={images}
                 />
               </EditableZone>
+              {(pd.description || pd.materials?.length || pd.tags?.length || pd.whoMade || pd.whenMade || pd.taxonomyPath || pd.quantity != null) && (
+                <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+                  <section className="mt-5 space-y-2 rounded-xl border p-4 text-sm" aria-label="Chi tiết listing Etsy">
+                    {pd.description && <p className="whitespace-pre-wrap">{pd.description}</p>}
+                    {pd.materials?.length > 0 && <p><strong>Materials:</strong> {pd.materials.join(', ')}</p>}
+                    {pd.tags?.length > 0 && <p><strong>Tags:</strong> {pd.tags.join(', ')}</p>}
+                    {pd.whoMade && <p><strong>Who made:</strong> {pd.whoMade}</p>}
+                    {pd.whenMade && <p><strong>When made:</strong> {pd.whenMade}</p>}
+                    {pd.taxonomyPath && <p><strong>Danh mục:</strong> {pd.taxonomyPath}</p>}
+                    {pd.quantity != null && <p><strong>Số lượng:</strong> {pd.quantity}</p>}
+                  </section>
+                </EditableZone>
+              )}
             </div>
           </div>
         </div>
@@ -147,7 +162,7 @@ const EtsyPreviewPage = () => {
         }`}
       >
         <CommentSection
-          previewId={previewId}
+          previewId={loadedPreviewId}
           defaultComponent={commentDefaultZone}
           onClose={() => setCommentPanelOpen(false)}
         />
