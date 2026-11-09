@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Mỗi ref chỉ giữ một run: push mới vào cùng nhánh/PR thì hủy run cũ.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Maven test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      # Test tích hợp dùng Testcontainers (PostgreSQL 15) trên Docker có sẵn của runner.
+      # Không cần secret: mỗi test @SpringBootTest tự đặt jwt.secret giả và DEV_SEED_PASSWORD giả
+      # (xem application-test.yml và các lớp test), nên workflow không khai báo biến môi trường nào.
+      - name: Chạy test backend
+        run: ./mvnw -B test
+
+      - name: Upload báo cáo surefire khi fail
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend:
+    name: Frontend (lint, build, test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # frontend/package.json chưa ghim Node. Vite 8, Vitest 5 và jsdom 30 yêu cầu Node 22.22+/24.15+,
+      # nên dùng Node 24 (LTS).
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cài dependency
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
