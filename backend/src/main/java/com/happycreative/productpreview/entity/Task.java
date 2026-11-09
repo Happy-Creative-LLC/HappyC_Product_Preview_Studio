@@ -30,6 +30,9 @@ public class Task {
     @Column(nullable = false)
     private String title;
 
+    @Column(length = 100)
+    private String sku;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Platform platform = Platform.AMAZON;

@@ -53,6 +53,7 @@ public class TaskService {
         task.setProject(project);
         task.setCreatedBy(createdBy);
         task.setTitle(requireTitle(request.getTitle()));
+        task.setSku(normalizeSku(request.getSku()));
         task.setPlatform(request.getPlatform() == null
                 ? Platform.AMAZON
                 : parseEnum(request.getPlatform(), Platform.class, "nền tảng"));
@@ -86,6 +87,9 @@ public class TaskService {
 
         if (request.getTitle() != null) {
             task.setTitle(requireTitle(request.getTitle()));
+        }
+        if (request.getSku() != null) {
+            task.setSku(normalizeSku(request.getSku()));
         }
         if (request.getPlatform() != null) {
             task.setPlatform(parseEnum(request.getPlatform(), Platform.class, "nền tảng"));
@@ -121,6 +125,17 @@ public class TaskService {
             throw badRequest("Tên task không được để trống.");
         }
         return title.trim();
+    }
+
+    private String normalizeSku(String sku) {
+        if (sku == null || sku.isBlank()) {
+            return null;
+        }
+        String normalized = sku.trim();
+        if (normalized.length() > 100) {
+            throw badRequest("SKU không được dài quá 100 ký tự.");
+        }
+        return normalized;
     }
 
     private int requireValidCategory(int category) {

@@ -12,6 +12,7 @@ public class TaskResponse {
     private UUID projectId;
     private String projectName;
     private String title;
+    private String sku;
     private String platform;
     private int category;
     private String status;
@@ -26,6 +27,7 @@ public class TaskResponse {
         dto.setProjectId(task.getProject().getId());
         dto.setProjectName(task.getProject().getName());
         dto.setTitle(task.getTitle());
+        dto.setSku(task.getSku());
         dto.setPlatform(task.getPlatform().name());
         dto.setCategory(task.getCategory());
         dto.setStatus(task.getStatus().name());
