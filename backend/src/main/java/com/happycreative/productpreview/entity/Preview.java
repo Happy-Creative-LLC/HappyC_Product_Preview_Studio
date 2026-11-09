@@ -51,6 +51,12 @@ public class Preview {
     @Column(nullable = false)
     private int version = 1;
 
+    // Khóa lạc quan do Hibernate quản lý (V4). Khác với version ở trên là số phiên bản nội dung
+    // hiển thị cho người dùng. Wrapper Long để entity mới (null) đi đường persist.
+    @Version
+    @Column(name = "lock_version", nullable = false)
+    private Long lockVersion;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

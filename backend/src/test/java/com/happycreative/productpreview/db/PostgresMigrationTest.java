@@ -55,11 +55,11 @@ class PostgresMigrationTest {
     }
 
     @Test
-    void v1RunsOnEmptyDatabaseThenV2AndV3() {
+    void v1RunsOnEmptyDatabaseThenV2V3AndV4() {
         List<Map<String, Object>> history = jdbc.queryForList(
                 "SELECT version, type, success FROM flyway_schema_history ORDER BY installed_rank");
 
-        assertEquals(List.of("1", "2", "3"), history.stream().map(row -> (String) row.get("version")).toList());
+        assertEquals(List.of("1", "2", "3", "4"), history.stream().map(row -> (String) row.get("version")).toList());
         // V1 chạy thật (SQL), không phải baseline
         assertTrue(history.stream().allMatch(row -> "SQL".equals(row.get("type"))));
         assertTrue(history.stream().allMatch(row -> Boolean.TRUE.equals(row.get("success"))));
@@ -95,6 +95,19 @@ class PostgresMigrationTest {
         assertEquals(6L, jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns WHERE table_name = 'task_events' "
                         + "AND column_name IN ('id', 'task_id', 'event_type', 'actor_id', 'detail', 'created_at')", Long.class));
+    }
+
+    @Test
+    void v4AddsNotNullPreviewLockVersionDefaultingToZero() {
+        assertEquals("bigint", jdbc.queryForObject(
+                "SELECT data_type FROM information_schema.columns "
+                        + "WHERE table_name = 'previews' AND column_name = 'lock_version'", String.class));
+        assertEquals("NO", jdbc.queryForObject(
+                "SELECT is_nullable FROM information_schema.columns "
+                        + "WHERE table_name = 'previews' AND column_name = 'lock_version'", String.class));
+        assertEquals("0", jdbc.queryForObject(
+                "SELECT column_default FROM information_schema.columns "
+                        + "WHERE table_name = 'previews' AND column_name = 'lock_version'", String.class));
     }
 
     @Test
