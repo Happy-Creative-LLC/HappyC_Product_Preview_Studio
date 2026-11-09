@@ -20,6 +20,8 @@ public record TextContentRequest(
         String whenMade,
         String taxonomyPath,
         Integer quantity,
-        List<String> clearFields
+        List<String> clearFields,
+        /** Version của preview mà client đã tải; null khi task chưa có preview. Lệch thì trả 409. */
+        Integer version
 ) {
 }

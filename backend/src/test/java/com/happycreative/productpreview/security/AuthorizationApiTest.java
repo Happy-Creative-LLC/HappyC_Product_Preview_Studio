@@ -257,7 +257,7 @@ class AuthorizationApiTest {
         String first = saveText(sellerHappy, task, "{\"title\":\"First\",\"description\":\"Draft\",\"productType\":\"SHIRT\"}", 200);
         String previewId = objectMapper.readTree(first).get("id").asText();
         assertEquals(1, objectMapper.readTree(first).get("version").asInt());
-        String second = saveText(admin, task, "{\"title\":\"Second\",\"searchTerms\":\"blue jersey\"}", 200);
+        String second = saveText(admin, task, "{\"title\":\"Second\",\"searchTerms\":\"blue jersey\",\"version\":1}", 200);
         assertEquals(previewId, objectMapper.readTree(second).get("id").asText());
         assertEquals(2, objectMapper.readTree(second).get("version").asInt());
         assertEquals(2L, jdbc.queryForObject(
@@ -287,7 +287,7 @@ class AuthorizationApiTest {
         try (HttpClient client = HttpClient.newHttpClient()) {
             assertEquals(204, http(client, "GET", "/api/tasks/" + task.getId() + "/preview", sellerHappy, null).statusCode());
             assertEquals(200, http(client, "PUT", path, sellerHappy, "{\"title\":\"HTTP Seller\"}").statusCode());
-            assertEquals(200, http(client, "PUT", path, admin, "{\"description\":\"HTTP Admin\"}").statusCode());
+            assertEquals(200, http(client, "PUT", path, admin, "{\"description\":\"HTTP Admin\",\"version\":1}").statusCode());
             assertEquals(403, http(client, "PUT", path, pdHappy, "{\"title\":\"Blocked\"}").statusCode());
             assertEquals(403, http(client, "PUT", path, marvel, "{\"title\":\"Blocked\"}").statusCode());
             assertEquals(404, http(client, "PUT", path, sellerCreative, "{\"title\":\"Hidden\"}").statusCode());

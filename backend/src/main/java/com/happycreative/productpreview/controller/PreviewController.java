@@ -47,6 +47,8 @@ public class PreviewController {
             @RequestParam(value = "video", required = false) MultipartFile video,
             @RequestParam(value = "videos", required = false) List<MultipartFile> videos,
             @RequestParam(value = "aPlusImages", required = false) List<MultipartFile> aPlusImages,
+            // Version preview client đã tải; lệch thì 409. Bỏ trống chỉ hợp lệ khi task chưa có preview.
+            @RequestParam(value = "version", required = false) Integer version,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         PreviewDto previewDto = createPreviewUseCase.execute(
@@ -68,7 +70,8 @@ public class PreviewController {
                         colorImages,
                         sizes,
                         mergeVideos(video, videos),
-                        aPlusImages
+                        aPlusImages,
+                        version
                 )
         );
         return ResponseEntity.ok(previewDto);
@@ -99,6 +102,7 @@ public class PreviewController {
                         userDetails.getUserId(),
                         platform,
                         asin,
+                        null,
                         null,
                         null,
                         null,

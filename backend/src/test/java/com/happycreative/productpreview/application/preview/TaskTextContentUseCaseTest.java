@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,7 +92,7 @@ class TaskTextContentUseCaseTest {
         Preview current = Preview.create(UUID.randomUUID(), PreviewPlatform.AMAZON, user.getId(), taskId,
                 new ProductData("{\"title\":\"Old\",\"images\":[\"/uploads/a.jpg\"],\"videos\":[\"/uploads/v.mp4\"]}"));
         when(previewRepository.findByTaskId(taskId)).thenReturn(List.of(current));
-        var saved = useCase.save(taskId, amazonText("Updated", "SHIRT"), actor());
+        var saved = useCase.save(taskId, amazonText("Updated", "SHIRT", 1), actor());
         assertEquals(current.getId().toUUID(), saved.id);
         assertEquals(2, saved.version);
         assertTrue(saved.productData.contains("/uploads/a.jpg"));
@@ -123,10 +125,42 @@ class TaskTextContentUseCaseTest {
                 () -> useCase.save(taskId, amazonText("Draft", "UNKNOWN"), actor()));
     }
 
+    @Test
+    void staleOrMissingVersionIsConflictAndNothingIsSaved() {
+        Preview current = Preview.create(UUID.randomUUID(), PreviewPlatform.AMAZON, user.getId(), taskId,
+                new ProductData("{\"title\":\"Old\"}"));
+        when(previewRepository.findByTaskId(taskId)).thenReturn(List.of(current));
+
+        assertStatus(HttpStatus.CONFLICT, () -> useCase.save(taskId, amazonText("Stale", "SHIRT", 0), actor()));
+        assertStatus(HttpStatus.CONFLICT, () -> useCase.save(taskId, amazonText("Missing", "SHIRT", null), actor()));
+
+        verify(previewRepository, never()).save(any());
+        verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    void versionSentForTaskWithoutPreviewIsConflict() {
+        assertStatus(HttpStatus.CONFLICT, () -> useCase.save(taskId, amazonText("Title", "SHIRT", 3), actor()));
+        verify(previewRepository, never()).save(any());
+    }
+
+    @Test
+    void writerLocksTheTaskRowBeforeReadingThePreview() {
+        useCase.save(taskId, amazonText("Title", "SHIRT"), actor());
+
+        var order = inOrder(taskRepository, previewRepository);
+        order.verify(taskRepository).findByIdForUpdate(taskId);
+        order.verify(previewRepository).findByTaskId(taskId);
+    }
+
     private TextContentRequest amazonText(String title, String productType) {
+        return amazonText(title, productType, null);
+    }
+
+    private TextContentRequest amazonText(String title, String productType, Integer version) {
         return new TextContentRequest(title, 19.99, "Brand", null, null, null,
                 List.of("Bullet"), List.of("M"), "Description", "search terms", productType,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, version);
     }
 
     private CustomUserDetails actor() {

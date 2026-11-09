@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.happycreative.productpreview.application.preview.PreviewVersionCheck;
 import com.happycreative.productpreview.application.preview.TaskTextContentUseCase;
 import com.happycreative.productpreview.application.preview.dto.PreviewDto;
 import com.happycreative.productpreview.config.ContentProperties;
@@ -67,7 +68,11 @@ public class TaskTextContentUseCaseImpl implements TaskTextContentUseCase {
 
         User user = userRepository.findById(actor.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng."));
+        // Khóa hàng task rồi mới đọc preview: các lần ghi của cùng một task chạy lần lượt, nên hai request
+        // đầu tiên đến cùng lúc không tạo hai preview, và request mang version cũ nhận 409.
+        taskRepository.findByIdForUpdate(taskId);
         List<Preview> previews = previewRepository.findByTaskId(taskId);
+        PreviewVersionCheck.require(previews, request.version());
         boolean created = previews.isEmpty();
         Preview preview = created
                 ? Preview.create(UUID.randomUUID(), PreviewPlatform.fromString(task.getPlatform().name()),

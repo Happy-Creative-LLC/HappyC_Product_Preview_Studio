@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.happycreative.productpreview.application.preview.CreatePreviewCommand;
 import com.happycreative.productpreview.application.preview.CreatePreviewUseCase;
+import com.happycreative.productpreview.application.preview.PreviewVersionCheck;
 import com.happycreative.productpreview.application.preview.dto.PreviewDto;
 import com.happycreative.productpreview.domain.preview.Preview;
 import com.happycreative.productpreview.domain.preview.PreviewPlatform;
@@ -58,6 +59,14 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
         accessControlService.requireTaskVisible(actor, task);
         requireZoneAccess(actor, command);
 
+        // Khóa hàng task rồi mới đọc preview và kiểm version, trước khi lưu file để 409 không để lại file mồ côi.
+        // Import từ ASIN thay cả nội dung nên không kiểm version (khóa lạc quan của Hibernate vẫn bảo vệ hàng).
+        taskRepository.findByIdForUpdate(taskId);
+        List<Preview> existing = previewRepository.findByTaskId(taskId);
+        if (command.asin == null || command.asin.isBlank()) {
+            PreviewVersionCheck.require(existing, command.expectedVersion);
+        }
+
         // Tiêu đề luôn đi kèm request; người không có vùng Text chỉ được giữ tiêu đề của task.
         String title = accessControlService.canEditZone(actor, ContentZone.TEXT)
                 ? command.title
@@ -75,7 +84,6 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
 
         PreviewPlatform platform = PreviewPlatform.fromString(command.platform);
 
-        List<Preview> existing = previewRepository.findByTaskId(taskId);
         Preview preview;
         if (existing.isEmpty()) {
             preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
