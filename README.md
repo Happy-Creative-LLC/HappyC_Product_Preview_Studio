@@ -21,7 +21,11 @@ Thiết kế UI/UX mới đang được triển khai theo [docs/ui-plan.md](docs
 
 ## Chạy local
 
-Yêu cầu: Java 21, Node.js, Docker.
+Yêu cầu môi trường:
+
+- Java 21
+- Node.js 24 trở lên: phiên bản ghim ở [frontend/.nvmrc](frontend/.nvmrc) (CI đọc đúng file này) và trường `engines` trong `frontend/package.json`. Dùng nvm/fnm thì chạy `nvm use` hoặc `fnm use` trong `frontend/`.
+- Docker (Postgres dev và test tích hợp bằng Testcontainers)
 
 ```powershell
 # 1. Database (PostgreSQL 15, cổng 5432, user dev / pass dev123, DB productpreview)
@@ -53,7 +57,7 @@ cd frontend; npm run lint; npm run build; npm test
 Workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) chạy khi mở hoặc cập nhật PR vào `main`, khi push vào `main` và khi chạy tay (`workflow_dispatch`). Mỗi ref chỉ giữ một run: push mới vào cùng nhánh hủy run cũ. Token chỉ có `contents: read`; workflow không deploy, không push image và không cần secret.
 
 - **Backend (Maven test):** Temurin 21, `./mvnw -B test` trong `backend/`. Test tích hợp dùng Testcontainers PostgreSQL 15 trên Docker có sẵn của runner. Fail thì upload báo cáo surefire (artifact `surefire-reports`, giữ 7 ngày).
-- **Frontend (lint, build, test):** Node 24, `npm ci`, `npm run lint`, `npm run build`, `npm test` trong `frontend/`.
+- **Frontend (lint, build, test):** Node đọc từ `frontend/.nvmrc` (hiện là 24), `npm ci`, `npm run lint`, `npm run build`, `npm test` trong `frontend/`.
 
 Cả hai job phải xanh trước khi merge PR vào `main`; đây là bản chạy lại đúng các lệnh ở mục "Kiểm tra" trên một máy sạch. Muốn GitHub chặn merge khi CI đỏ, đặt hai job trên làm required status check trong branch protection của `main` (cài đặt repo, không nằm trong code).
 
