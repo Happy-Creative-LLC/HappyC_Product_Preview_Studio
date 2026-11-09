@@ -1,5 +1,7 @@
 # Kế hoạch triển khai UI/UX v1 và tích hợp Listing Guard
 
+> **Phạm vi hiện hành:** Listing Guard tạm dừng theo yêu cầu của chủ dự án. P1 và các phase tiếp theo không tạo client, gọi API, lưu kết quả, bảng kiểm tra, cảnh báo, đánh dấu chữ, cột Trademark/Quy tắc sàn hay mục checklist “rủi ro cao chưa xử lý” cho đến khi chủ dự án cho phép. Những phần thiết kế phụ thuộc Listing Guard được ẩn hoặc để trống; không dùng dữ liệu giả. Các mục P3–P6/P8 liên quan Listing Guard bên dưới là kế hoạch tham khảo, **chưa được phép triển khai**.
+
 Nguồn thiết kế: bộ `uiux-v1` (15 màn). Tài liệu này đối chiếu thiết kế với code tại `main` (commit 954e232, 2026-10-31), chia công việc thành các phase mỗi phase một PR, và ghi lại những quyết định còn chờ. Trạng thái "đã làm" chỉ có PR 0 (nhánh `chore/cleanup-before-ui`).
 
 Quy ước đọc: **Màn N** là số màn trong thiết kế (1 Danh sách task, 2 Import từ Sheet, 3 Soạn nội dung Amazon, 4 Preview chế độ review, 5 Duyệt task, 6 Quản trị tích hợp, 7 Đăng nhập, 8 Dự án, 9 Quản lý nhân sự, 10 Soạn nội dung Etsy, 11 Amazon Search Preview, 12 đến 14 Mobile).
@@ -198,8 +200,18 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 |---|---|---|
 | D1 | Khi còn rủi ro trademark cao: chặn duyệt hay cảnh báo kèm lý do (CCO chốt) | Làm cả hai bằng `approval_policies.block_on_high`, **mặc định chặn**. Đổi mặc định chỉ cần đổi cấu hình |
 | Q8 | Số ảnh tối thiểu thật cho từng case (Product Design và Seller chốt) | Giá trị tạm ở trên, nằm trong cấu hình |
+| P1-product-type | Danh sách Amazon `product_type` thực tế do Seller cung cấp | Dropdown lấy từ `app.content.amazon-product-types` qua API đọc; hiện cấu hình chỉ có `SHIRT`. Backend từ chối giá trị ngoài danh sách bằng 400 tiếng Việt. Task cũ thiếu giá trị vẫn mở/lưu được; P5 mới bắt buộc khi Gửi duyệt |
 
 ## 7. Đã làm
+
+### P1 (`feat/p1-listing-text`)
+
+- Migration V3 thêm `tasks.sku`, chỉ mục `(project_id, sku)` và `task_events`; các trường text Amazon/Etsy mới lưu trong `previews.product_data` JSONB.
+- API đọc preview hiện hành theo task và lưu vùng Text cho Seller/Admin; lần lưu tăng version, ghi sự kiện `TEXT_SAVED`, giữ media đang có. SKU được nhận khi tạo task.
+- Tách form Text Amazon/Etsy khỏi media; nội dung tự lưu và nạp lại theo task, có thời điểm “Đã lưu hh:mm”; bộ đếm ký tự/byte chỉ hiển thị số đếm, chưa áp ngưỡng. Amazon `product_type` lấy từ cấu hình backend qua API đọc.
+- Upload ảnh/video (`POST /api/previews/upload`) ghi vào preview hiện hành của task (tạo mới nếu chưa có), chỉ chạm đúng vùng được gửi và không ghi đè text đã lưu; `findByTaskId` truy vấn theo task và sắp bản mới nhất lên đầu. Trang Preview/Search mở theo `taskId`, không cần `previewId` trên URL.
+- Kiểm: `mvnw.cmd test` 113 test pass (gồm migration V3 trên PostgreSQL thật, nâng cấp DB đang ở V2 mà không mất task, phân quyền HTTP thật cho `GET /api/tasks/{id}/preview` và `PUT /api/tasks/{id}/content/text`); `npm run lint`, `npm run build`, `npm test` pass. Chưa kiểm tay trên trình duyệt.
+- P1 không tích hợp Listing Guard; các thành phần phụ thuộc Listing Guard vẫn ẩn/để trống như ghi chú phạm vi ở đầu tài liệu.
 
 ### PR 0 (`chore/cleanup-before-ui`, đã merge)
 
