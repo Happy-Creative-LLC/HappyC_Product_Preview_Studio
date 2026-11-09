@@ -30,3 +30,6 @@ documents/
 
 # Media upload khi chạy STORAGE_PROVIDER=local — không commit data demo
 backend/uploads/
+
+# Bản thiết kế gộp, không commit (xem docs/ui-plan.md)
+docs/uiux-v1/
