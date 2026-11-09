@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.happycreative.productpreview.application.preview.CreatePreviewCommand;
 import com.happycreative.productpreview.application.preview.CreatePreviewUseCase;
+import com.happycreative.productpreview.application.preview.PreviewVersionCheck;
 import com.happycreative.productpreview.application.preview.dto.PreviewDto;
 import com.happycreative.productpreview.domain.preview.Preview;
 import com.happycreative.productpreview.domain.preview.PreviewPlatform;
@@ -58,6 +59,14 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
         accessControlService.requireTaskVisible(actor, task);
         requireZoneAccess(actor, command);
 
+        // Khóa hàng task rồi mới đọc preview và kiểm version, trước khi lưu file để 409 không để lại file mồ côi.
+        // Import từ ASIN thay cả nội dung nên không kiểm version (khóa lạc quan của Hibernate vẫn bảo vệ hàng).
+        taskRepository.findByIdForUpdate(taskId);
+        List<Preview> existing = previewRepository.findByTaskId(taskId);
+        if (command.asin == null || command.asin.isBlank()) {
+            PreviewVersionCheck.require(existing, command.expectedVersion);
+        }
+
         // Tiêu đề luôn đi kèm request; người không có vùng Text chỉ được giữ tiêu đề của task.
         String title = accessControlService.canEditZone(actor, ContentZone.TEXT)
                 ? command.title
@@ -75,7 +84,16 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
 
         PreviewPlatform platform = PreviewPlatform.fromString(command.platform);
 
-        Preview preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
+        Preview preview;
+        if (existing.isEmpty()) {
+            preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
+        } else {
+            preview = existing.getFirst();
+            ProductData nextData = command.asin != null && !command.asin.isBlank()
+                    ? productData
+                    : mergeUpload(preview.getProductData(), productData, command);
+            preview.update(nextData);
+        }
         previewRepository.save(preview);
 
         return mapper.toDto(preview);
@@ -96,6 +114,32 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
     private ProductData buildProductDataFromAsin(String asin) {
         ObjectNode scraped = amazonScraperService.scrapeProductByAsin(asin);
         return new ProductData(scraped.toString());
+    }
+
+    private ProductData mergeUpload(ProductData current, ProductData incoming, CreatePreviewCommand command) {
+        ObjectNode result = (current == null ? new ProductData("{}") : current).toObjectNode();
+        ObjectNode added = incoming.toObjectNode();
+        if (command.touchesText()) {
+            for (String key : List.of("title", "price", "brand", "fabricType",
+                    "careInstructions", "origin", "bulletPoints", "sizes")) {
+                if (added.has(key)) result.set(key, added.get(key));
+            }
+        }
+        if (command.touchesImages()) {
+            appendArray(result, added, "images");
+            appendArray(result, added, "colors");
+            appendArray(result, added, "aPlusImages");
+        }
+        if (command.touchesVideo()) {
+            appendArray(result, added, "videos");
+        }
+        return new ProductData(result.toString());
+    }
+
+    private void appendArray(ObjectNode result, ObjectNode added, String key) {
+        if (!added.has(key) || !added.get(key).isArray()) return;
+        ArrayNode target = result.withArray(key);
+        added.withArray(key).forEach(target::add);
     }
 
     private ProductData buildProductData(String title, Double price, String brand, String fabricType,

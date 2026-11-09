@@ -120,7 +120,7 @@ const Carousel = ({ title, cards }) => {
    ══════════════════════════════════════════════════════════════ */
 const AmazonPreviewPage = () => {
   const [searchParams] = useSearchParams();
-  const previewId = searchParams.get('previewId');
+  const previewIdParam = searchParams.get('previewId');
   const taskId    = searchParams.get('taskId');
   const projectId = searchParams.get('projectId');
 
@@ -137,24 +137,26 @@ const AmazonPreviewPage = () => {
   const caseOverride = Number(searchParams.get('case'));
   const caseType = task?.category ? Number(task.category) : ([2, 3].includes(caseOverride) ? caseOverride : 1);
 
-  const [previewData, setPreviewData] = useState(null);
-  const [isLoading, setIsLoading]     = useState(!!previewId);
+  const [loadedPreview, setLoadedPreview] = useState(null);
+  const [isLoading, setIsLoading]     = useState(Boolean(taskId || previewIdParam));
   const [activeVideo, setActiveVideo] = useState(0);
   const videoRowRef = React.useRef(null);
   const [commentPanelOpen, setCommentPanelOpen]     = useState(false);
   const [commentDefaultZone, setCommentDefaultZone] = useState(null);
 
   useEffect(() => {
-    if (!previewId) return;
-    axiosInstance.get(`/api/previews/${previewId}`)
-      .then(res => {
-        if (res.data?.productData) {
-          try { setPreviewData(JSON.parse(res.data.productData)); } catch { /* productData không phải JSON hợp lệ: giữ dữ liệu mặc định */ }
-        }
-      })
+    if (!taskId && !previewIdParam) return;
+    axiosInstance.get(taskId ? `/api/tasks/${taskId}/preview` : `/api/previews/${previewIdParam}`)
+      .then(res => setLoadedPreview(res.data || null))
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [previewId]);
+  }, [taskId, previewIdParam]);
+
+  const loadedPreviewId = loadedPreview?.id || (taskId ? null : previewIdParam);
+  const previewData = (() => {
+    try { return loadedPreview?.productData ? JSON.parse(loadedPreview.productData) : null; }
+    catch { return null; }
+  })();
 
   const handleZoneComment = (zone) => {
     setCommentDefaultZone(zone);
@@ -295,10 +297,23 @@ const AmazonPreviewPage = () => {
       <div id="amz-details" className="bg-white mt-3 scroll-mt-12">
         <div className="max-w-[1500px] mx-auto px-4 py-5">
           <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Product description</h2>
+          {productData.description && (
+            <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+              <p className="mb-5 whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{productData.description}</p>
+            </EditableZone>
+          )}
           <AplusCarousel slides={productData.aPlusSlides || []} onCommentClick={handleZoneComment} />
           <AplusContent banners={productData.aPlusBanners || []} onCommentClick={handleZoneComment} />
         </div>
       </div>
+
+      {(productData.searchTerms || productData.productType) && (
+        <section className="mx-auto mt-3 max-w-[1500px] bg-white px-4 py-5" aria-label="Trường người mua không thấy">
+          <h2 className="mb-2 text-sm font-bold">Trường người mua không thấy</h2>
+          {productData.searchTerms && <p className="text-sm"><strong>Search terms:</strong> {productData.searchTerms}</p>}
+          {productData.productType && <p className="text-sm"><strong>Product type:</strong> {productData.productType}</p>}
+        </section>
+      )}
 
       {/* ══════════════════════════════════════════════════
           [4] PRODUCT INFORMATION TABLE — static
@@ -848,7 +863,7 @@ const AmazonPreviewPage = () => {
         }`}
       >
         <CommentSection
-          previewId={previewId}
+          previewId={loadedPreviewId}
           defaultComponent={commentDefaultZone}
           onClose={() => setCommentPanelOpen(false)}
         />

@@ -1,7 +1,10 @@
 package com.happycreative.productpreview.controller;
 
+import com.happycreative.productpreview.application.preview.TaskTextContentUseCase;
+import com.happycreative.productpreview.application.preview.dto.PreviewDto;
 import com.happycreative.productpreview.dto.TaskRequest;
 import com.happycreative.productpreview.dto.TaskResponse;
+import com.happycreative.productpreview.dto.TextContentRequest;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import com.happycreative.productpreview.service.TaskService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,23 @@ import java.util.UUID;
 public class TaskController {
 
     private final TaskService taskService;
+    private final TaskTextContentUseCase taskTextContentUseCase;
+
+    @GetMapping("/api/tasks/{taskId}/preview")
+    public ResponseEntity<PreviewDto> getTaskPreview(
+            @PathVariable UUID taskId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        PreviewDto preview = taskTextContentUseCase.getCurrent(taskId, userDetails);
+        return preview == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(preview);
+    }
+
+    @PutMapping("/api/tasks/{taskId}/content/text")
+    public ResponseEntity<PreviewDto> saveTaskText(
+            @PathVariable UUID taskId,
+            @RequestBody TextContentRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(taskTextContentUseCase.save(taskId, request, userDetails));
+    }
 
     @GetMapping("/api/projects/{projectId}/tasks")
     public ResponseEntity<List<TaskResponse>> getTasksByProject(

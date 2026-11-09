@@ -1,5 +1,7 @@
 package com.happycreative.productpreview.db;
 
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,8 +15,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.sql.DriverManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -50,11 +55,11 @@ class PostgresMigrationTest {
     }
 
     @Test
-    void v1RunsOnEmptyDatabaseThenV2() {
+    void v1RunsOnEmptyDatabaseThenV2V3AndV4() {
         List<Map<String, Object>> history = jdbc.queryForList(
                 "SELECT version, type, success FROM flyway_schema_history ORDER BY installed_rank");
 
-        assertEquals(List.of("1", "2"), history.stream().map(row -> (String) row.get("version")).toList());
+        assertEquals(List.of("1", "2", "3", "4"), history.stream().map(row -> (String) row.get("version")).toList());
         // V1 chạy thật (SQL), không phải baseline
         assertTrue(history.stream().allMatch(row -> "SQL".equals(row.get("type"))));
         assertTrue(history.stream().allMatch(row -> Boolean.TRUE.equals(row.get("success"))));
@@ -68,8 +73,41 @@ class PostgresMigrationTest {
                 String.class);
 
         assertEquals(
-                List.of("comments", "previews", "projects", "search_cache", "stored_files", "tasks", "users"),
+                List.of("comments", "previews", "projects", "search_cache", "stored_files", "task_events", "tasks", "users"),
                 tables);
+    }
+
+    @Test
+    void v3AddsSkuIndexAndTaskEventsWithoutChangingPreviewJsonb() {
+        assertEquals("character varying", jdbc.queryForObject(
+                "SELECT data_type FROM information_schema.columns WHERE table_name = 'tasks' AND column_name = 'sku'",
+                String.class));
+        assertEquals(100, jdbc.queryForObject(
+                "SELECT character_maximum_length FROM information_schema.columns "
+                        + "WHERE table_name = 'tasks' AND column_name = 'sku'", Integer.class));
+        assertEquals("jsonb", jdbc.queryForObject(
+                "SELECT data_type FROM information_schema.columns "
+                        + "WHERE table_name = 'previews' AND column_name = 'product_data'", String.class));
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE tablename = 'tasks' "
+                        + "AND indexname = 'idx_tasks_project_sku' "
+                        + "AND indexdef LIKE '%(project_id, sku)%'", Long.class));
+        assertEquals(6L, jdbc.queryForObject(
+                "SELECT count(*) FROM information_schema.columns WHERE table_name = 'task_events' "
+                        + "AND column_name IN ('id', 'task_id', 'event_type', 'actor_id', 'detail', 'created_at')", Long.class));
+    }
+
+    @Test
+    void v4AddsNotNullPreviewLockVersionDefaultingToZero() {
+        assertEquals("bigint", jdbc.queryForObject(
+                "SELECT data_type FROM information_schema.columns "
+                        + "WHERE table_name = 'previews' AND column_name = 'lock_version'", String.class));
+        assertEquals("NO", jdbc.queryForObject(
+                "SELECT is_nullable FROM information_schema.columns "
+                        + "WHERE table_name = 'previews' AND column_name = 'lock_version'", String.class));
+        assertEquals("0", jdbc.queryForObject(
+                "SELECT column_default FROM information_schema.columns "
+                        + "WHERE table_name = 'previews' AND column_name = 'lock_version'", String.class));
     }
 
     @Test
@@ -79,5 +117,41 @@ class PostgresMigrationTest {
 
         assertEquals(List.of("creative", "global", "hapify84", "happy"), projectKeys);
         assertEquals(0L, jdbc.queryForObject("SELECT count(*) FROM users", Long.class));
+    }
+
+    @Test
+    void v3UpgradesExistingV2TaskWithoutDeletingIt() throws Exception {
+        String databaseName = "p1_upgrade_" + UUID.randomUUID().toString().substring(0, 8);
+        jdbc.execute("CREATE DATABASE " + databaseName);
+        String url = POSTGRES.getJdbcUrl().replace("/" + POSTGRES.getDatabaseName(), "/" + databaseName);
+        Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword())
+                .target(MigrationVersion.fromVersion("2")).load().migrate();
+        UUID userId = UUID.randomUUID();
+        UUID taskId = UUID.randomUUID();
+        try (var connection = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword())) {
+            try (var user = connection.prepareStatement(
+                    "INSERT INTO public.users(id, email, role, project_key) VALUES (?, ?, 'SELLER', 'happy')")) {
+                user.setObject(1, userId);
+                user.setString(2, "p1-v2-" + userId + "@test.local");
+                user.executeUpdate();
+            }
+            try (var task = connection.prepareStatement(
+                    "INSERT INTO public.tasks(id, project_id, created_by, title) "
+                            + "VALUES (?, (SELECT id FROM public.projects WHERE project_key = 'happy'), ?, 'Existing V2')")) {
+                task.setObject(1, taskId);
+                task.setObject(2, userId);
+                task.executeUpdate();
+            }
+        }
+        Flyway.configure().dataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword()).load().migrate();
+        try (var connection = DriverManager.getConnection(url, POSTGRES.getUsername(), POSTGRES.getPassword());
+             var check = connection.prepareStatement("SELECT title, sku FROM public.tasks WHERE id = ?")) {
+            check.setObject(1, taskId);
+            try (var row = check.executeQuery()) {
+                assertTrue(row.next());
+                assertEquals("Existing V2", row.getString("title"));
+                assertNull(row.getString("sku"));
+            }
+        }
     }
 }

@@ -1,5 +1,7 @@
 # Kế hoạch triển khai UI/UX v1 và tích hợp Listing Guard
 
+> **Phạm vi hiện hành:** Listing Guard tạm dừng theo yêu cầu của chủ dự án. P1 và các phase tiếp theo không tạo client, gọi API, lưu kết quả, bảng kiểm tra, cảnh báo, đánh dấu chữ, cột Trademark/Quy tắc sàn hay mục checklist “rủi ro cao chưa xử lý” cho đến khi chủ dự án cho phép. Những phần thiết kế phụ thuộc Listing Guard được ẩn hoặc để trống; không dùng dữ liệu giả. Các mục P3–P6/P8 liên quan Listing Guard bên dưới là kế hoạch tham khảo, **chưa được phép triển khai**.
+
 Nguồn thiết kế: bộ `uiux-v1` (15 màn). Tài liệu này đối chiếu thiết kế với code tại `main` (commit 954e232, 2026-10-31), chia công việc thành các phase mỗi phase một PR, và ghi lại những quyết định còn chờ. Trạng thái "đã làm" chỉ có PR 0 (nhánh `chore/cleanup-before-ui`).
 
 Quy ước đọc: **Màn N** là số màn trong thiết kế (1 Danh sách task, 2 Import từ Sheet, 3 Soạn nội dung Amazon, 4 Preview chế độ review, 5 Duyệt task, 6 Quản trị tích hợp, 7 Đăng nhập, 8 Dự án, 9 Quản lý nhân sự, 10 Soạn nội dung Etsy, 11 Amazon Search Preview, 12 đến 14 Mobile).
@@ -72,11 +74,12 @@ Quy ước đọc: **Màn N** là số màn trong thiết kế (1 Danh sách tas
 |---|---|---|
 | `V2__seed_projects.sql` | PR 1 | 4 project (happy, creative, hapify84, global) bằng `INSERT ... ON CONFLICT (project_key) DO NOTHING`. Dữ liệu tham chiếu, chạy ở mọi môi trường. Seed user dev nằm riêng ở `db/seed-dev`, chỉ chạy khi profile `dev` (xem mục 7) |
 | `V3__task_sku_and_listing_text.sql` | P1 | `tasks.sku VARCHAR(100)` (null được cho task cũ), index `(project_id, sku)`. Trường text mới (description, searchTerms, productType; Etsy: tags[], materials[], whoMade, whenMade, taxonomyPath, quantity) nằm trong `previews.product_data` (JSONB), không thêm cột. Thêm `task_events(id, task_id FK, event_type, actor_id, detail JSONB, created_at)` ngay từ P1 vì nội dung sửa tại chỗ (Q13), lịch sử nằm ở audit log; P5 dùng lại bảng này |
-| `V4__sheet_mapping_templates.sql` | P2 | `sheet_mapping_templates(id, project_id FK, platform, name, mapping JSONB, created_by, updated_by, created_at, updated_at)`, unique `(project_id, platform, name)`. Mẫu theo project |
-| `V5__listing_checks.sql` | P3 | `listing_checks(id, preview_id FK, kind RULES\|TRADEMARK, status, lg_check_id, ruleset_version, catalog_version, analysis_version, content_hash, risk_level, completeness, summary JSONB, disclaimer, text_hash, created_at, expires_at)` và `listing_check_findings(id, check_id FK, ordinal, kind, rule_id, level, field, start_idx, end_idx, snippet, mark, match_type, score, source_ids JSONB, message, suggestion, fingerprint)`. `fingerprint` ổn định qua các lần kiểm để giữ trạng thái đã bỏ qua |
-| `V6__image_source.sql` | P3 | Nguồn ảnh và xác nhận ảnh của khách. Đề xuất giữ `product_data.images[]` là mảng chuỗi (không phá renderer) và thêm bảng `preview_image_meta(preview_id, image_url, source SELLER\|MOCKUP\|CUSTOMER_CONTENT, confirmed_by, confirmed_at)` |
-| `V7__comment_anchor_and_system_comments.sql` | P4 | `comments`: `source USER\|LISTING_GUARD`, `field_path`, `anchor_start`, `anchor_end`, `severity`, `finding_id FK` null, `pin_no`, `resolution OPEN\|FIXED\|DISMISSED`, `dismiss_reason`, `dismissed_by`, `dismissed_at`; `user_id` cho phép null, kèm `source = LISTING_GUARD` (đã chốt ở Q7; CHECK: `user_id` null chỉ khi `source = LISTING_GUARD`). Giữ `is_resolved` để không phá `CommentSection` |
-| `V8__approval_and_audit.sql` | P5 | `users.can_approve BOOLEAN NOT NULL DEFAULT FALSE` (backfill `TRUE` cho Admin); `approval_policies(id, project_id null = mặc định, block_on_high BOOLEAN DEFAULT TRUE, auto_check_on_save, auto_check_on_import, seller_can_dismiss_medium, seller_can_dismiss_high, require_customer_image_confirmation, updated_by, updated_at)`; cột duyệt trên `tasks` (`submitted_at/by`, `reviewed_at/by`, `review_note`, `override_reason`) hoặc suy ra từ `task_events` (đã có từ P1) |
+| `V4__preview_lock_version.sql` | P1 | `previews.lock_version BIGINT NOT NULL DEFAULT 0` cho khóa lạc quan (`@Version`), tách khỏi cột `version` hiển thị cho người dùng. Lưu Text và upload media gửi kèm `version`; lệch thì trả 409. Thêm vì lưu tự động có thể chạy cùng lúc với upload media. Các migration của P2 đến P5 vì vậy lùi một số so với bản kế hoạch đầu |
+| `V5__sheet_mapping_templates.sql` | P2 | `sheet_mapping_templates(id, project_id FK, platform, name, mapping JSONB, created_by, updated_by, created_at, updated_at)`, unique `(project_id, platform, name)`. Mẫu theo project |
+| `V6__listing_checks.sql` | P3 | `listing_checks(id, preview_id FK, kind RULES\|TRADEMARK, status, lg_check_id, ruleset_version, catalog_version, analysis_version, content_hash, risk_level, completeness, summary JSONB, disclaimer, text_hash, created_at, expires_at)` và `listing_check_findings(id, check_id FK, ordinal, kind, rule_id, level, field, start_idx, end_idx, snippet, mark, match_type, score, source_ids JSONB, message, suggestion, fingerprint)`. `fingerprint` ổn định qua các lần kiểm để giữ trạng thái đã bỏ qua |
+| `V7__image_source.sql` | P3 | Nguồn ảnh và xác nhận ảnh của khách. Đề xuất giữ `product_data.images[]` là mảng chuỗi (không phá renderer) và thêm bảng `preview_image_meta(preview_id, image_url, source SELLER\|MOCKUP\|CUSTOMER_CONTENT, confirmed_by, confirmed_at)` |
+| `V8__comment_anchor_and_system_comments.sql` | P4 | `comments`: `source USER\|LISTING_GUARD`, `field_path`, `anchor_start`, `anchor_end`, `severity`, `finding_id FK` null, `pin_no`, `resolution OPEN\|FIXED\|DISMISSED`, `dismiss_reason`, `dismissed_by`, `dismissed_at`; `user_id` cho phép null, kèm `source = LISTING_GUARD` (đã chốt ở Q7; CHECK: `user_id` null chỉ khi `source = LISTING_GUARD`). Giữ `is_resolved` để không phá `CommentSection` |
+| `V9__approval_and_audit.sql` | P5 | `users.can_approve BOOLEAN NOT NULL DEFAULT FALSE` (backfill `TRUE` cho Admin); `approval_policies(id, project_id null = mặc định, block_on_high BOOLEAN DEFAULT TRUE, auto_check_on_save, auto_check_on_import, seller_can_dismiss_medium, seller_can_dismiss_high, require_customer_image_confirmation, updated_by, updated_at)`; cột duyệt trên `tasks` (`submitted_at/by`, `reviewed_at/by`, `review_note`, `override_reason`) hoặc suy ra từ `task_events` (đã có từ P1) |
 
 Không có migration ở P7, P8 (chỉ UI). P6 có thể cần chỉ mục tổng hợp (quyết định khi làm).
 
@@ -113,7 +116,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P1. Trường text Amazon và Etsy (Màn 3, 10)
 
 - **File:** `AmazonUploadForm.jsx` (tách form Amazon và Etsy, tách vùng Text khỏi vùng media, lưu tự động), `TaskDetailPage.jsx` (nạp preview hiện hành), `TaskListPage.jsx` (tạo task nhập SKU), `appStore.js`; backend: `TaskService`, `TaskRequest/Response` (thêm `sku`), `PreviewController`, `CreatePreviewUseCaseImpl` + use case mới cập nhật text, `ProductData`, `PreviewDto`.
-- **Migration:** `V3`.
+- **Migration:** `V3`, `V4`.
 - **API:** `GET /api/tasks/{id}/preview` (nội dung hiện hành duy nhất của task), `PUT /api/tasks/{id}/content/text` (sửa tại chỗ, `version` tăng, ghi `task_events`), `sku` ở tạo task.
 - **Test:** unit cho use case cập nhật text (quyền Seller/Admin, version, tạo preview khi chưa có); `WebMvcTest` kiểm 403 cho Product Design và Marvel; test migration `V3` trên PostgreSQL thật bằng Testcontainers (hạ tầng đã có từ PR 1); kiểm tay trên trình duyệt: lưu, tải lại trang, nội dung còn nguyên.
 - **Xong khi:** Seller nhập đủ title, bullet, description, search terms, product_type (Amazon) hoặc tags, materials, who_made, when_made, taxonomy (Etsy), lưu rồi tải lại vẫn thấy; Preview hiển thị các trường mới (search terms và product_type ở khối "người mua không thấy" để dành cho P4); giữ nguyên upload ảnh/video hiện có; không còn phụ thuộc `previewId` trong state.
@@ -121,7 +124,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P2. Import từ Sheet và mẫu ánh xạ (Màn 2, phần mẫu ở Màn 6)
 
 - **File:** trang `ImportSheetPage.jsx` mới (4 bước như thiết kế), `TaskListPage.jsx` (nút Import), route mới; backend: `ImportService`, parser CSV, `SheetTemplateService/Controller`, DTO xem trước.
-- **Migration:** `V4`.
+- **Migration:** `V5`.
 - **API:** `imports/preview`, `imports`, `sheet-templates` (mục 4.2).
 - **Test:** unit parser (dấu phẩy trong ô, xuống dòng, BOM UTF-8, cột thiếu, dòng lỗi); import cập nhật theo SKU chỉ động vào vùng Text, không đụng ảnh, video, comment; template theo project, người ngoài project nhận 403; giới hạn kích thước file (đề xuất 5 MB).
 - **Xong khi:** CSV mẫu 42 dòng cho kết quả "36 tạo mới, 3 cập nhật, 3 lỗi", tải được danh sách dòng lỗi; mẫu lưu lại và áp dụng lại ở lần sau; task mới ở trạng thái `PENDING_UPLOADS`. Ghi chú: thiết kế là **upload CSV tải từ Sheet**, không gọi Google Sheets API (Q6).
@@ -129,7 +132,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P3. Client Listing Guard và bảng kết quả ở màn soạn (Màn 3, 10)
 
 - **File:** backend `ListingGuardClient` (port ở `application/`, adapter ở `infrastructure/`), `ListingCheckService/Controller`, mapper listing, entity/repository kết quả; frontend component `ListingCheckPanel.jsx` (tab Tất cả/Trademark/Quy tắc, "Đi tới trường", "Kiểm tra lại"), đánh dấu chữ trong ô nhập, `ImageSourceSelect` và xác nhận ảnh khách ở vùng ảnh.
-- **Migration:** `V5`, `V6`. Nếu PR quá lớn, tách phần nguồn ảnh (`V6`) thành P3b.
+- **Migration:** `V6`, `V7`. Nếu PR quá lớn, tách phần nguồn ảnh (`V7`) thành P3b.
 - **API:** `POST /api/tasks/{id}/checks`, `GET .../checks/latest`, nguồn và xác nhận ảnh.
 - **Test:** `ListingGuardClient` với server giả (`MockRestServiceServer`): 200, `401`, `429` kèm `Retry-After`, `5xx` retry, timeout, `503 trademark-not-configured`; mapper Amazon và Etsy đúng tên trường; offset UTF-16 với tiếng Việt và emoji; `UNKNOWN` không bao giờ thành "đạt"; dedupe theo `text_hash`; Listing Guard sập vẫn lưu được nội dung.
 - **Xong khi:** lưu text thì bảng kết quả hiện đủ mức rủi ro, quy tắc, phiên bản catalog/ruleset, disclaimer; chữ bị cảnh báo được đánh dấu (gạch liền cao, gạch đứt trung bình); khi Listing Guard tắt hoặc `503`, bảng báo "Không xác định" và vẫn soạn tiếp được; ảnh của khách xác nhận được bởi Product Design.
@@ -137,7 +140,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P4. Cảnh báo ghim trên Preview và comment hệ thống (Màn 4)
 
 - **File:** `AmazonPreviewPage.jsx`, `EtsyPreviewPage.jsx`, `CommentSection.jsx` (lọc Listing Guard, Chưa xử lý, trả lời, đi tới trường), component `PinOverlay.jsx` (số ghim khớp comment), khối "trường người mua không thấy"; backend `CommentService/Controller` mở rộng, đồng bộ findings thành comment sau mỗi lần kiểm (giữ trạng thái đã bỏ qua theo `fingerprint`), kiểm quyền theo project cho preview và comment.
-- **Migration:** `V7`.
+- **Migration:** `V8`.
 - **API:** `dismiss`, mở rộng `GET/POST comments`.
 - **Test:** tạo comment hệ thống từ findings, không nhân đôi khi kiểm lại, finding biến mất thì đánh dấu "Đã sửa"; bỏ qua cần lý do và đúng quyền (theo chính sách, hoàn thiện ở P5); người ngoài project nhận 403 ở `GET /api/previews/{id}` và comment; kiểm tay công tắc "Hiện cảnh báo trên trang".
 - **Xong khi:** mỗi cảnh báo xuất hiện thành comment tác giả "Listing Guard" có mức rủi ro, gắn đúng trường; công tắc ghim số vào đúng chữ trên trang mô phỏng; Seller sửa hoặc bỏ qua kèm lý do thì comment đổi trạng thái. Bản mobile của Màn 14 để P8.
@@ -145,7 +148,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 ### P5. Duyệt, checklist, chính sách, lịch sử, quyền Duyệt (Màn 5, 9)
 
 - **File:** trang `TaskApprovalPage.jsx` mới, `AdminUsersPage.jsx` (cột và cờ Quyền Duyệt), `TaskDetailPage.jsx` (Gửi duyệt), khối lịch sử task; backend `ApprovalService` (checklist, chính sách chặn/cảnh báo, duyệt dù còn rủi ro cần lý do), `TaskEventService`, `PolicyService`, `AccessControlService` (quyền Duyệt), `TaskService` (bỏ nhận `status`).
-- **Migration:** `V8`.
+- **Migration:** `V9`.
 - **API:** `submit`, `approve`, `request-changes`, `approval-checklist`, `events`, `admin/policy`, `canApprove` ở user.
 - **Test:** ma trận quyền (Seller không tự duyệt được, Marvel và Product Design 403, người có quyền Duyệt thì được); chính sách `block`: còn rủi ro cao thì từ chối duyệt; chính sách `warn`: duyệt được khi có lý do, lý do và người duyệt vào lịch sử; kiểm lại luôn chạy khi Gửi duyệt; chuyển trạng thái trái luồng bị từ chối; mọi sự kiện (kiểm tra, bỏ qua, xác nhận ảnh, gửi duyệt, duyệt, yêu cầu sửa) có trong `task_events`.
 - **Số ảnh tối thiểu theo case (Q8):** đọc từ cấu hình `app.content-rules`, không hard-code. Tạm thời Case 1 = 7 ảnh, hoặc 6 ảnh và 1 video; Case 2 và 3 = có ảnh chính. Chờ Product Design và Seller chốt số thật, đổi bằng cấu hình.
@@ -184,7 +187,7 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 | Q4 | Commit 15 file thiết kế vào `docs/design/uiux-v1/` | Xong ở PR 1 |
 | Q5 | 4 project vào migration thường; user dev chỉ seed ở profile `dev`, mật khẩu lấy từ biến môi trường | `V2__seed_projects.sql`, `db/seed-dev` (PR 1) |
 | Q6 | Import là upload file CSV, không dùng Google Sheets API | P2 |
-| Q7 | `comments.user_id` null kèm `source = LISTING_GUARD` | `V7` (P4) |
+| Q7 | `comments.user_id` null kèm `source = LISTING_GUARD` | `V8` (P4) |
 | Q8 | Số ảnh tối thiểu theo case nằm trong cấu hình. Tạm: Case 1 = 7 ảnh hoặc 6 ảnh và 1 video; Case 2 và 3 = có ảnh chính | P5, xem mục P5 |
 | Q9 | Màn 6 hiện `catalogVersion` từ kết quả gần nhất | P6 |
 | Q10 | Bản đầu không có thông báo; bỏ câu nhắc Marvel ở Màn 3 | P1, P3 |
@@ -198,8 +201,21 @@ Mỗi phase là một nhánh `feat/...` tách từ `main` đã gồm PR trước
 |---|---|---|
 | D1 | Khi còn rủi ro trademark cao: chặn duyệt hay cảnh báo kèm lý do (CCO chốt) | Làm cả hai bằng `approval_policies.block_on_high`, **mặc định chặn**. Đổi mặc định chỉ cần đổi cấu hình |
 | Q8 | Số ảnh tối thiểu thật cho từng case (Product Design và Seller chốt) | Giá trị tạm ở trên, nằm trong cấu hình |
+| P1-product-type | Danh sách Amazon `product_type` thực tế do Seller cung cấp | Dropdown lấy từ `app.content.amazon-product-types` qua API đọc; hiện cấu hình chỉ có `SHIRT`. Backend từ chối giá trị ngoài danh sách bằng 400 tiếng Việt. Task cũ thiếu giá trị vẫn mở/lưu được; P5 mới bắt buộc khi Gửi duyệt |
 
 ## 7. Đã làm
+
+### P1 (`feat/p1-listing-text`)
+
+- Migration V3 thêm `tasks.sku`, chỉ mục `(project_id, sku)` và `task_events`; các trường text Amazon/Etsy mới lưu trong `previews.product_data` JSONB.
+- API đọc preview hiện hành theo task và lưu vùng Text cho Seller/Admin; lần lưu tăng version, ghi sự kiện `TEXT_SAVED`, giữ media đang có. SKU được nhận khi tạo task.
+- Tách form Text Amazon/Etsy khỏi media; nội dung tự lưu và nạp lại theo task, có thời điểm “Đã lưu hh:mm”; bộ đếm ký tự/byte chỉ hiển thị số đếm, chưa áp ngưỡng. Amazon `product_type` lấy từ cấu hình backend qua API đọc.
+- Upload ảnh/video (`POST /api/previews/upload`) ghi vào preview hiện hành của task (tạo mới nếu chưa có), chỉ chạm đúng vùng được gửi và không ghi đè text đã lưu; `findByTaskId` truy vấn theo task và sắp bản mới nhất lên đầu. Trang Preview/Search mở theo `taskId`, không cần `previewId` trên URL.
+- Ghi đồng thời: V4 thêm `previews.lock_version` (`@Version`). `PUT /api/tasks/{id}/content/text` và `POST /api/previews/upload` nhận `version` của preview đã tải; lệch thì trả 409 với thông báo tiếng Việt, upload kiểm trước khi lưu file. Xung đột do Hibernate phát hiện (`@Version`) cũng trả 409 thay vì 500. Import từ ASIN thay cả nội dung nên không kiểm `version`. Frontend: Text gặp 409 thì tải lại bản hiện hành rồi lưu lại phần Text đang gõ (tối đa 3 lần liên tiếp); media gặp 409 thì tải lại, giữ file đã chọn và gửi lại một lần.
+- Khóa hàng task: hai luồng ghi (lưu Text, upload media) gọi `findByIdForUpdate` (`PESSIMISTIC_WRITE`) trước khi đọc preview của task. Lý do: chỉ dùng `@Version` thì hai request ghi đầu tiên đến cùng lúc, khi task chưa có preview, đều thấy "chưa có preview" và cùng tạo preview mới, bản hiện hành chỉ còn vùng của một bên. Khóa cho các lần ghi của cùng một task chạy lần lượt, request đến sau nhận 409 rồi tự lưu lại. Khóa giữ trong lúc lưu file của upload, nên tự lưu Text chờ upload xong rồi mới chạy.
+- Kiểm: `mvnw.cmd test` 123 test pass (gồm migration V3 và V4 trên PostgreSQL thật, nâng cấp DB đang ở V2 mà không mất task, phân quyền HTTP thật, và test đồng thời: lưu Text cùng lúc upload ảnh không ghi đè vùng của nhau, ghi lần đầu chỉ tạo một preview, ghi theo từng task chạy lần lượt, ghi dựa trên hàng cũ bị Hibernate từ chối); `npm run lint`, `npm run build`, `npm test` (13 test) pass.
+- Kiểm tay trên trình duyệt (2026-11-09, Playwright, PostgreSQL và backend profile `dev` dựng riêng): Seller tạo task Amazon và Etsy có SKU, nhập đủ trường, tự lưu, tải lại trang vẫn còn nguyên; trang Preview hiện description, khối "Trường người mua không thấy" (search terms, product type) và chi tiết Etsy (tags, materials, who_made, when_made, taxonomy, số lượng). Admin gõ Text rồi bấm Lưu media đúng lúc tự lưu chạy: upload nhận 409, trang tự tải lại và gửi lại, sau khi tải lại có đủ chữ mới, text cũ và ảnh. Nhánh 409 phía Text mới được kiểm bằng test Vitest và test đồng thời ở backend, chưa kiểm trên trình duyệt.
+- P1 không tích hợp Listing Guard; các thành phần phụ thuộc Listing Guard vẫn ẩn/để trống như ghi chú phạm vi ở đầu tài liệu.
 
 ### PR 0 (`chore/cleanup-before-ui`, đã merge)
 

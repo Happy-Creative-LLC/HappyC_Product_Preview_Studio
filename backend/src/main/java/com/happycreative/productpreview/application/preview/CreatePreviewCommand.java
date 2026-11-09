@@ -24,12 +24,15 @@ public class CreatePreviewCommand {
     public final List<String> sizes;
     public final List<MultipartFile> videos;
     public final List<MultipartFile> aPlusImages;
+    /** Version preview client đã tải (null khi task chưa có preview). Import từ ASIN thay cả nội dung nên không kiểm. */
+    public final Integer expectedVersion;
 
     public CreatePreviewCommand(UUID taskId, UUID userId, String platform, String asin, String title, Double price,
                                 String brand, String fabricType, String careInstructions, String origin,
                                 List<String> bulletPoints, MultipartFile mainImage, List<MultipartFile> galleryImages,
                                 List<String> colorNames, List<MultipartFile> colorImages, List<String> sizes,
-                                List<MultipartFile> videos, List<MultipartFile> aPlusImages) {
+                                List<MultipartFile> videos, List<MultipartFile> aPlusImages,
+                                Integer expectedVersion) {
         this.taskId = taskId;
         this.userId = userId;
         this.platform = platform;
@@ -48,6 +51,7 @@ public class CreatePreviewCommand {
         this.sizes = sizes;
         this.videos = videos;
         this.aPlusImages = aPlusImages;
+        this.expectedVersion = expectedVersion;
     }
 
     /**

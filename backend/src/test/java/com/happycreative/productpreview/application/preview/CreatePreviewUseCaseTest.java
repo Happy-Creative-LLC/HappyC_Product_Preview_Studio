@@ -202,6 +202,41 @@ class CreatePreviewUseCaseTest {
     }
 
     @Test
+    void imageUploadKeepsExistingTextAndCurrentPreviewId() {
+        givenUser(Role.PRODUCT_DESIGN, "happy");
+        givenTask("happy");
+        Preview current = Preview.create(UUID.randomUUID(), PreviewPlatform.AMAZON, userId, taskId,
+                new com.happycreative.productpreview.domain.preview.ProductData(
+                        "{\"title\":\"Seller title\",\"description\":\"Seller description\",\"images\":[]}"));
+        when(previewRepository.findByTaskId(taskId)).thenReturn(List.of(current));
+
+        PreviewDto result = useCase.execute(command("Ignored title", null, null, null, image(), null, null, 1));
+
+        assertEquals(current.getId().toUUID(), result.id);
+        assertEquals(2, result.version);
+        assertTrue(result.productData.contains("Seller description"));
+        assertTrue(result.productData.contains("Seller title"));
+        assertTrue(result.productData.contains("/uploads/a.bin"));
+    }
+
+    @Test
+    void staleVersionIsConflictAndStoresNoFile() {
+        givenUser(Role.PRODUCT_DESIGN, "happy");
+        givenTask("happy");
+        Preview current = Preview.create(UUID.randomUUID(), PreviewPlatform.AMAZON, userId, taskId,
+                new com.happycreative.productpreview.domain.preview.ProductData("{\"title\":\"Seller title\"}"));
+        when(previewRepository.findByTaskId(taskId)).thenReturn(List.of(current));
+
+        assertStatus(HttpStatus.CONFLICT,
+                () -> useCase.execute(command("Ignored title", null, null, null, image(), null, null, 7)));
+        assertStatus(HttpStatus.CONFLICT,
+                () -> useCase.execute(command("Ignored title", null, null, null, image(), null, null)));
+
+        org.mockito.Mockito.verify(fileStorageService, org.mockito.Mockito.never()).storeFile(any());
+        org.mockito.Mockito.verify(previewRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
     void productDesignCannotWriteTextOrVideo() {
         givenUser(Role.PRODUCT_DESIGN, "happy");
         givenTask("happy");
@@ -318,14 +353,20 @@ class CreatePreviewUseCaseTest {
     private CreatePreviewCommand command(String title, Double price, String brand, List<String> bullets,
                                          MockMultipartFile mainImage, List<MockMultipartFile> videos,
                                          List<String> sizes) {
+        return command(title, price, brand, bullets, mainImage, videos, sizes, null);
+    }
+
+    private CreatePreviewCommand command(String title, Double price, String brand, List<String> bullets,
+                                         MockMultipartFile mainImage, List<MockMultipartFile> videos,
+                                         List<String> sizes, Integer expectedVersion) {
         return new CreatePreviewCommand(taskId, userId, "AMAZON", null, title, price, brand, null, null, null,
                 bullets, mainImage, null, null, null, sizes,
-                videos == null ? null : List.copyOf(videos), null);
+                videos == null ? null : List.copyOf(videos), null, expectedVersion);
     }
 
     private CreatePreviewCommand asinCommand(String asin) {
         return new CreatePreviewCommand(taskId, userId, "AMAZON", asin, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null);
     }
 
     private void assertStatus(HttpStatus expected, Runnable action) {

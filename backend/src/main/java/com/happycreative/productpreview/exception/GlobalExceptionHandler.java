@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -83,6 +84,14 @@ public class GlobalExceptionHandler {
             HttpRequestMethodNotSupportedException exception,
             HttpServletRequest request) {
         return build(HttpStatus.METHOD_NOT_ALLOWED, "Phương thức HTTP không được hỗ trợ.", request);
+    }
+
+    /** Hai request cùng sửa một hàng: Hibernate từ chối request đến sau, client tải lại rồi lưu lại. */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handleOptimisticLock(
+            OptimisticLockingFailureException exception,
+            HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, PreviewConflictException.MESSAGE, request);
     }
 
     @ExceptionHandler(Exception.class)

@@ -41,6 +41,9 @@ server:
 
 app:
   base-url: ${APP_BASE_URL:}
+  content:
+    amazon-product-types:
+      - SHIRT
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
   search-cache:
