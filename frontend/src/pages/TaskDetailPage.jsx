@@ -405,16 +405,17 @@ const TaskDetailPage = () => {
               role={user.role}
               title={task.title}
               productData={productData}
+              version={currentPreview?.version ?? null}
               onSaved={handleSaved}
               onDirtyChange={handleMediaDirty}
             />
             {task.platform === 'ETSY' ? (
               <EtsyTextForm key={taskId} taskId={taskId} role={user.role} title={task.title}
-                productData={productData} updatedAt={currentPreview?.updatedAt}
+                productData={productData} updatedAt={currentPreview?.updatedAt} version={currentPreview?.version ?? null}
                 onSaved={handleSaved} onDirtyChange={handleTextDirty} />
             ) : (
               <AmazonTextForm key={taskId} taskId={taskId} role={user.role} title={task.title}
-                productData={productData} updatedAt={currentPreview?.updatedAt}
+                productData={productData} updatedAt={currentPreview?.updatedAt} version={currentPreview?.version ?? null}
                 onSaved={handleSaved} onDirtyChange={handleTextDirty} />
             )}
           </div>

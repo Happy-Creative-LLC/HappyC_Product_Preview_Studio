@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image as ImageIcon, Loader2, Upload, Video } from 'lucide-react';
 import axiosInstance from '../../api/axiosConfig';
+import { useAppStore } from '../../stores/appStore';
 import { canEditZone } from '../../utils/permissions';
 
 const FilePicker = ({ label, accept, multiple, onChange }) => (
@@ -22,7 +23,7 @@ const SelectedImage = ({ file, alt }) => {
   return url ? <img className="rounded-lg" src={url} alt={alt} /> : null;
 };
 
-const ListingMediaForm = ({ taskId, platform, category, role, title, productData, onSaved, onDirtyChange }) => {
+const ListingMediaForm = ({ taskId, platform, category, role, title, productData, version, onSaved, onDirtyChange }) => {
   const canEditImages = canEditZone(role, 'PRODUCT_DESIGN');
   const canEditVideo = canEditZone(role, 'MARVEL');
   const [images, setImages] = useState([]);
@@ -32,6 +33,13 @@ const ListingMediaForm = ({ taskId, platform, category, role, title, productData
   const [aPlusImages, setAPlusImages] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Version preview mà trang đã tải; gửi kèm khi upload để backend phát hiện nội dung đã đổi ở nơi khác (409).
+  const versionRef = useRef(version ?? null);
+  useEffect(() => {
+    if (version != null && (versionRef.current == null || version > versionRef.current)) {
+      versionRef.current = version;
+    }
+  }, [version]);
   const savedImages = productData?.images || [];
   const savedVideos = productData?.videos || [];
   const savedColors = productData?.colors || [];
@@ -62,11 +70,12 @@ const ListingMediaForm = ({ taskId, platform, category, role, title, productData
     if (!dirty || saving) return;
     setSaving(true);
     setError('');
-    try {
+    const buildBody = () => {
       const body = new FormData();
       body.append('taskId', taskId);
       body.append('platform', platform);
       body.append('title', title);
+      if (versionRef.current != null) body.append('version', versionRef.current);
       if (images.length) {
         body.append('mainImage', images[0]);
         images.slice(1).forEach((file) => body.append('galleryImages', file));
@@ -77,16 +86,32 @@ const ListingMediaForm = ({ taskId, platform, category, role, title, productData
         body.append('colorImages', file);
       });
       aPlusImages.forEach((file) => body.append('aPlusImages', file));
-      const response = await axiosInstance.post('/api/previews/upload', body);
+      return body;
+    };
+    try {
+      let response;
+      try {
+        response = await axiosInstance.post('/api/previews/upload', buildBody());
+      } catch (requestError) {
+        if (requestError.response?.status !== 409) throw requestError;
+        // Nội dung vừa đổi ở nơi khác (ví dụ đang tự lưu Text): tải lại bản hiện hành, giữ nguyên các file đã chọn
+        // rồi gửi lại một lần với version mới.
+        const fresh = await useAppStore.getState().fetchCurrentPreview(taskId);
+        versionRef.current = fresh?.version ?? null;
+        if (fresh) onSaved?.(fresh);
+        response = await axiosInstance.post('/api/previews/upload', buildBody());
+      }
+      if (response.data?.version != null) versionRef.current = response.data.version;
       setImages([]);
       setVideos([]);
       setColorImages([]);
       setAPlusImages([]);
       onSaved?.(response.data);
     } catch (requestError) {
-      setError(requestError.response?.status === 403
-        ? 'Bạn không có quyền lưu vùng media này.'
-        : 'Không lưu được media. Vui lòng thử lại.');
+      const status = requestError.response?.status;
+      if (status === 403) setError('Bạn không có quyền lưu vùng media này.');
+      else if (status === 409) setError('Nội dung vừa được cập nhật ở nơi khác. Đã tải lại, hãy bấm Lưu media lần nữa.');
+      else setError('Không lưu được media. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }

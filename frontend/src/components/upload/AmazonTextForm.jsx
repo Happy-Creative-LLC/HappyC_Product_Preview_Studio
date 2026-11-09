@@ -26,13 +26,14 @@ const toRequest = (form) => ({
   sizes: form.sizes.split(',').map((item) => item.trim()).filter(Boolean),
 });
 
-const AmazonTextForm = ({ taskId, role, title, productData, updatedAt, onSaved, onDirtyChange }) => {
+const AmazonTextForm = ({ taskId, role, title, productData, updatedAt, version, onSaved, onDirtyChange }) => {
   const editable = canEditZone(role, 'SELLER');
   const [productTypes, setProductTypes] = useState([]);
   const [configError, setConfigError] = useState('');
-  const { form, change, dirty, saving, error, retry, saveLabel } = useAutosaveText(
-    taskId, initialForm(productData, title), updatedAt, editable, onSaved, onDirtyChange, toRequest,
-  );
+  const { form, change, dirty, saving, error, retry, saveLabel } = useAutosaveText({
+    taskId, initialForm: initialForm(productData, title), initialUpdatedAt: updatedAt, editable, version,
+    onSaved, onDirtyChange, toRequest,
+  });
 
   useEffect(() => {
     let active = true;

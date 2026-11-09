@@ -22,11 +22,12 @@ const toRequest = (form) => ({
   clearFields: ['price', 'quantity'].filter((field) => form[field] === ''),
 });
 
-const EtsyTextForm = ({ taskId, role, title, productData, updatedAt, onSaved, onDirtyChange }) => {
+const EtsyTextForm = ({ taskId, role, title, productData, updatedAt, version, onSaved, onDirtyChange }) => {
   const editable = canEditZone(role, 'SELLER');
-  const { form, change, dirty, error, retry, saveLabel } = useAutosaveText(
-    taskId, initialForm(productData, title), updatedAt, editable, onSaved, onDirtyChange, toRequest,
-  );
+  const { form, change, dirty, error, retry, saveLabel } = useAutosaveText({
+    taskId, initialForm: initialForm(productData, title), initialUpdatedAt: updatedAt, editable, version,
+    onSaved, onDirtyChange, toRequest,
+  });
 
   const input = (label, key, type = 'text') => (
     <label className="hc-field" htmlFor={`etsy-${key}`}>
