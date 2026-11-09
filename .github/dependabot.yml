@@ -1,5 +1,6 @@
 version: 2
 
+# Mọi nhóm chỉ nhận bản minor và patch. Bản major không thuộc nhóm nào nên luôn là PR riêng.
 updates:
   - package-ecosystem: maven
     directory: /backend
@@ -8,7 +9,16 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     groups:
+      # Spring Boot (parent và các starter) tách nhóm riêng để nâng bản có chủ đích.
+      spring-boot:
+        patterns:
+          - "org.springframework.boot*"
+        update-types:
+          - minor
+          - patch
       maven-minor-patch:
+        exclude-patterns:
+          - "org.springframework.boot*"
         update-types:
           - minor
           - patch
