@@ -12,8 +12,10 @@ import com.happycreative.productpreview.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +29,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +46,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Phân quyền phía server qua HTTP thật (filter chain, JWT, PostgreSQL): không dựa vào việc frontend ẩn nút.
  * Cần Docker. Project lấy từ migration V2; mỗi vai trò có một user riêng trong project happy và creative.
  */
-@SpringBootTest(properties = "jwt.secret=test-only-jwt-secret-not-for-real-use-0123456789-abcdefghijklmnopqrstuvwxyz")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "jwt.secret=test-only-jwt-secret-not-for-real-use-0123456789-abcdefghijklmnopqrstuvwxyz")
 @AutoConfigureMockMvc
 @Testcontainers
 class AuthorizationApiTest {
@@ -61,6 +68,8 @@ class AuthorizationApiTest {
     @Autowired private TaskRepository taskRepository;
     @Autowired private JwtTokenProvider jwtTokenProvider;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private JdbcTemplate jdbc;
+    @Value("${local.server.port}") private int serverPort;
 
     private static String admin;
     private static String marvel;
@@ -232,6 +241,88 @@ class AuthorizationApiTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"APPROVED\"}"))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(multipart("/api/previews/upload")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/tasks/{id}/preview", UUID.randomUUID())).andExpect(status().isUnauthorized());
+        mockMvc.perform(put("/api/tasks/{id}/content/text", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void taskTextIsSavedBySellerAndAdminWithVersionAndAudit() throws Exception {
+        Task task = newTask("happy");
+        mockMvc.perform(get("/api/tasks/{id}/preview", task.getId())
+                        .header("Authorization", bearer(sellerHappy)))
+                .andExpect(status().isNoContent());
+
+        String first = saveText(sellerHappy, task, "{\"title\":\"First\",\"description\":\"Draft\",\"productType\":\"SHIRT\"}", 200);
+        String previewId = objectMapper.readTree(first).get("id").asText();
+        assertEquals(1, objectMapper.readTree(first).get("version").asInt());
+        String second = saveText(admin, task, "{\"title\":\"Second\",\"searchTerms\":\"blue jersey\"}", 200);
+        assertEquals(previewId, objectMapper.readTree(second).get("id").asText());
+        assertEquals(2, objectMapper.readTree(second).get("version").asInt());
+        assertEquals(2L, jdbc.queryForObject(
+                "SELECT count(*) FROM task_events WHERE task_id = ?", Long.class, task.getId()));
+        mockMvc.perform(get("/api/tasks/{id}/preview", task.getId())
+                        .header("Authorization", bearer(pdHappy)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void taskTextRejectsOtherRolesAndHidesOtherProjects() throws Exception {
+        Task task = newTask("happy");
+        saveText(pdHappy, task, "{\"title\":\"Blocked\"}", 403);
+        saveText(marvel, task, "{\"title\":\"Blocked\"}", 403);
+        saveText(sellerCreative, task, "{\"title\":\"Hidden\"}", 404);
+        mockMvc.perform(get("/api/tasks/{id}/preview", task.getId())
+                        .header("Authorization", bearer(sellerCreative)))
+                .andExpect(status().isNotFound());
+        assertEquals(0L, jdbc.queryForObject(
+                "SELECT count(*) FROM task_events WHERE task_id = ?", Long.class, task.getId()));
+    }
+
+    @Test
+    void taskTextAuthorizationWorksOverRealHttpAndPostgres() throws Exception {
+        Task task = newTask("happy");
+        String path = "/api/tasks/" + task.getId() + "/content/text";
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            assertEquals(204, http(client, "GET", "/api/tasks/" + task.getId() + "/preview", sellerHappy, null).statusCode());
+            assertEquals(200, http(client, "PUT", path, sellerHappy, "{\"title\":\"HTTP Seller\"}").statusCode());
+            assertEquals(200, http(client, "PUT", path, admin, "{\"description\":\"HTTP Admin\"}").statusCode());
+            assertEquals(403, http(client, "PUT", path, pdHappy, "{\"title\":\"Blocked\"}").statusCode());
+            assertEquals(403, http(client, "PUT", path, marvel, "{\"title\":\"Blocked\"}").statusCode());
+            assertEquals(404, http(client, "PUT", path, sellerCreative, "{\"title\":\"Hidden\"}").statusCode());
+            assertEquals(200, http(client, "GET", "/api/tasks/" + task.getId() + "/preview", pdHappy, null).statusCode());
+            assertEquals(404, http(client, "GET", "/api/tasks/" + task.getId() + "/preview", sellerCreative, null).statusCode());
+            assertEquals(200, http(client, "GET", "/api/content/amazon-product-types", sellerHappy, null).statusCode());
+            assertEquals(401, http(client, "PUT", path, null, "{}").statusCode());
+        }
+        assertEquals(2L, jdbc.queryForObject("SELECT count(*) FROM task_events WHERE task_id = ?", Long.class, task.getId()));
+    }
+
+    @Test
+    void amazonProductTypeComesFromConfigAndInvalidValueIsBadRequest() throws Exception {
+        Task task = newTask("happy");
+        mockMvc.perform(get("/api/content/amazon-product-types")
+                        .header("Authorization", bearer(sellerHappy)))
+                .andExpect(status().isOk());
+        saveText(sellerHappy, task, "{\"title\":\"Draft\"}", 200);
+        String body = saveText(sellerHappy, task, "{\"productType\":\"NOT_CONFIGURED\"}", 400);
+        org.junit.jupiter.api.Assertions.assertTrue(body.contains("Loại sản phẩm"));
+    }
+
+    @Test
+    void skuIsAcceptedWhenCreatingTaskAndProductDesignCannotCreate() throws Exception {
+        UUID projectId = projectRepository.findByKey("happy").orElseThrow().getId();
+        String request = "{\"title\":\"New task\",\"platform\":\"AMAZON\",\"sku\":\"HC-142\"}";
+        String body = mockMvc.perform(post("/api/projects/{id}/tasks", projectId)
+                        .header("Authorization", bearer(sellerHappy))
+                        .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertEquals("HC-142", objectMapper.readTree(body).get("sku").asText());
+        mockMvc.perform(post("/api/projects/{id}/tasks", projectId)
+                        .header("Authorization", bearer(pdHappy))
+                        .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isForbidden());
     }
 
     // ---------- helpers ----------
@@ -272,6 +363,23 @@ class AuthorizationApiTest {
 
     private String bearer(String token) {
         return "Bearer " + token;
+    }
+
+    private HttpResponse<String> http(HttpClient client, String method, String path,
+                                      String token, String json) throws Exception {
+        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + serverPort + path));
+        if (token != null) request.header("Authorization", bearer(token));
+        if (json != null) request.header("Content-Type", "application/json");
+        request.method(method, json == null ? HttpRequest.BodyPublishers.noBody()
+                : HttpRequest.BodyPublishers.ofString(json));
+        return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private String saveText(String token, Task task, String json, int expected) throws Exception {
+        return mockMvc.perform(put("/api/tasks/{id}/content/text", task.getId())
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON).content(json))
+                .andExpect(status().is(expected)).andReturn().getResponse().getContentAsString();
     }
 
     private void updateStatus(String token, Task task, String status, int expected) throws Exception {

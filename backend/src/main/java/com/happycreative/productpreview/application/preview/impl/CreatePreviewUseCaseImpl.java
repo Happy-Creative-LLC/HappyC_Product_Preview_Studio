@@ -75,7 +75,17 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
 
         PreviewPlatform platform = PreviewPlatform.fromString(command.platform);
 
-        Preview preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
+        List<Preview> existing = previewRepository.findByTaskId(taskId);
+        Preview preview;
+        if (existing.isEmpty()) {
+            preview = Preview.create(UUID.randomUUID(), platform, userId, taskId, productData);
+        } else {
+            preview = existing.getFirst();
+            ProductData nextData = command.asin != null && !command.asin.isBlank()
+                    ? productData
+                    : mergeUpload(preview.getProductData(), productData, command);
+            preview.update(nextData);
+        }
         previewRepository.save(preview);
 
         return mapper.toDto(preview);
@@ -96,6 +106,32 @@ public class CreatePreviewUseCaseImpl implements CreatePreviewUseCase {
     private ProductData buildProductDataFromAsin(String asin) {
         ObjectNode scraped = amazonScraperService.scrapeProductByAsin(asin);
         return new ProductData(scraped.toString());
+    }
+
+    private ProductData mergeUpload(ProductData current, ProductData incoming, CreatePreviewCommand command) {
+        ObjectNode result = (current == null ? new ProductData("{}") : current).toObjectNode();
+        ObjectNode added = incoming.toObjectNode();
+        if (command.touchesText()) {
+            for (String key : List.of("title", "price", "brand", "fabricType",
+                    "careInstructions", "origin", "bulletPoints", "sizes")) {
+                if (added.has(key)) result.set(key, added.get(key));
+            }
+        }
+        if (command.touchesImages()) {
+            appendArray(result, added, "images");
+            appendArray(result, added, "colors");
+            appendArray(result, added, "aPlusImages");
+        }
+        if (command.touchesVideo()) {
+            appendArray(result, added, "videos");
+        }
+        return new ProductData(result.toString());
+    }
+
+    private void appendArray(ObjectNode result, ObjectNode added, String key) {
+        if (!added.has(key) || !added.get(key).isArray()) return;
+        ArrayNode target = result.withArray(key);
+        added.withArray(key).forEach(target::add);
     }
 
     private ProductData buildProductData(String title, Double price, String brand, String fabricType,

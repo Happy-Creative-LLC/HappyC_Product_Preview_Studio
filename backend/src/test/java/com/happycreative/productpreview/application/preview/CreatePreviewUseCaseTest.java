@@ -202,6 +202,24 @@ class CreatePreviewUseCaseTest {
     }
 
     @Test
+    void imageUploadKeepsExistingTextAndCurrentPreviewId() {
+        givenUser(Role.PRODUCT_DESIGN, "happy");
+        givenTask("happy");
+        Preview current = Preview.create(UUID.randomUUID(), PreviewPlatform.AMAZON, userId, taskId,
+                new com.happycreative.productpreview.domain.preview.ProductData(
+                        "{\"title\":\"Seller title\",\"description\":\"Seller description\",\"images\":[]}"));
+        when(previewRepository.findByTaskId(taskId)).thenReturn(List.of(current));
+
+        PreviewDto result = useCase.execute(command("Ignored title", null, null, null, image(), null, null));
+
+        assertEquals(current.getId().toUUID(), result.id);
+        assertEquals(2, result.version);
+        assertTrue(result.productData.contains("Seller description"));
+        assertTrue(result.productData.contains("Seller title"));
+        assertTrue(result.productData.contains("/uploads/a.bin"));
+    }
+
+    @Test
     void productDesignCannotWriteTextOrVideo() {
         givenUser(Role.PRODUCT_DESIGN, "happy");
         givenTask("happy");

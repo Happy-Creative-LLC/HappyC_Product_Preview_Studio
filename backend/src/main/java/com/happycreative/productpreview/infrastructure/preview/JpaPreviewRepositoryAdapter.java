@@ -38,8 +38,7 @@ public class JpaPreviewRepositoryAdapter implements PreviewRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Preview> findByTaskId(UUID taskId) {
-        return jpaRepo.findAll().stream()
-                .filter(e -> e.getTask() != null && taskId.equals(e.getTask().getId()))
+        return jpaRepo.findByTaskIdOrderByUpdatedAtDescCreatedAtDesc(taskId).stream()
                 .map(this::toDomain)
                 .collect(Collectors.toList());
     }
