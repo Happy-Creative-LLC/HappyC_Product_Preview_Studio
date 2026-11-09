@@ -1,0 +1,48 @@
+version: 2
+
+# Mọi nhóm chỉ nhận bản minor và patch. Bản major không thuộc nhóm nào nên luôn là PR riêng.
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Spring Boot (parent và các starter) tách nhóm riêng để nâng bản có chủ đích.
+      spring-boot:
+        patterns:
+          - "org.springframework.boot*"
+        update-types:
+          - minor
+          - patch
+      maven-minor-patch:
+        exclude-patterns:
+          - "org.springframework.boot*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - minor
+          - patch

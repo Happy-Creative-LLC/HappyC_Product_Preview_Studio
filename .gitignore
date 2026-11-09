@@ -2,9 +2,6 @@
 .idea/
 .vscode/
 
-# GitHub Actions / CI config (local)
-.github/
-
 # Local secrets and environment overrides
 .env
 .env.*
@@ -12,6 +9,8 @@
 
 # Custom tool folders
 .sixth/
+.kilo/
+.playwright-mcp/
 
 # Log chạy local và dữ liệu thử API
 *.log

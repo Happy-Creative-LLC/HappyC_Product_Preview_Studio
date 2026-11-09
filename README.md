@@ -21,7 +21,11 @@ Thiết kế UI/UX mới đang được triển khai theo [docs/ui-plan.md](docs
 
 ## Chạy local
 
-Yêu cầu: Java 21, Node.js, Docker.
+Yêu cầu môi trường:
+
+- Java 21
+- Node.js 24 trở lên: phiên bản ghim ở [frontend/.nvmrc](frontend/.nvmrc) (CI đọc đúng file này) và trường `engines` trong `frontend/package.json`. Dùng nvm/fnm thì chạy `nvm use` hoặc `fnm use` trong `frontend/`.
+- Docker (Postgres dev và test tích hợp bằng Testcontainers)
 
 ```powershell
 # 1. Database (PostgreSQL 15, cổng 5432, user dev / pass dev123, DB productpreview)
@@ -47,6 +51,17 @@ Kiểm tra:
 cd backend;  .\mvnw.cmd test        # test backend: unit (H2/mock) và tích hợp trên PostgreSQL 15 bằng Testcontainers (cần Docker)
 cd frontend; npm run lint; npm run build; npm test
 ```
+
+### CI (GitHub Actions)
+
+Workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) chạy khi mở hoặc cập nhật PR vào `main`, khi push vào `main` và khi chạy tay (`workflow_dispatch`). Mỗi ref chỉ giữ một run: push mới vào cùng nhánh hủy run cũ. Token chỉ có `contents: read`; workflow không deploy, không push image và không cần secret.
+
+- **Backend (Maven test):** Temurin 21, `./mvnw -B test` trong `backend/`. Test tích hợp dùng Testcontainers PostgreSQL 15 trên Docker có sẵn của runner. Fail thì upload báo cáo surefire (artifact `surefire-reports`, giữ 7 ngày).
+- **Frontend (lint, build, test):** Node đọc từ `frontend/.nvmrc` (hiện là 24), `npm ci`, `npm run lint`, `npm run build`, `npm test` trong `frontend/`.
+
+Cả hai job phải xanh trước khi merge PR vào `main`; đây là bản chạy lại đúng các lệnh ở mục "Kiểm tra" trên một máy sạch. Muốn GitHub chặn merge khi CI đỏ, đặt hai job trên làm required status check trong branch protection của `main` (cài đặt repo, không nằm trong code).
+
+Dependabot ([.github/dependabot.yml](.github/dependabot.yml)) mở PR cập nhật dependency hằng tuần cho `backend` (Maven), `frontend` (npm) và GitHub Actions, gom bản minor và patch thành một PR cho mỗi nhóm. PR của Dependabot cũng phải qua CI.
 
 Biến môi trường (xem [.env.example](.env.example)): `JWT_SECRET`, `DB_USER`, `DB_PASS`, `SPRING_DATASOURCE_URL`, `RAPIDAPI_AMAZON_KEY`, `RAPIDAPI_AMAZON_HOST`, `GOOGLE_CLIENT_ID`, `STORAGE_PROVIDER` và các biến `R2_*`. `.env` đã được Git bỏ qua.
 
@@ -89,6 +104,7 @@ Biến môi trường (xem [.env.example](.env.example)): `JWT_SECRET`, `DB_USER
 │       └── resources/
 │           ├── application.yml
 │           └── db/migration/ # Flyway
+├── .github/                  # CI (workflows/ci.yml) và dependabot.yml
 ├── docs/                     # ui-plan.md và tài liệu thiết kế
 ├── docker-compose.yml        # PostgreSQL cho dev
 └── .env.example
