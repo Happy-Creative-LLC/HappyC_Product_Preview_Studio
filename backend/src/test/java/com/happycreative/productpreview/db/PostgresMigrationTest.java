@@ -55,11 +55,11 @@ class PostgresMigrationTest {
     }
 
     @Test
-    void v1RunsOnEmptyDatabaseThenV2V3AndV4() {
+    void runsAllMigrationsOnEmptyDatabaseThroughV5() {
         List<Map<String, Object>> history = jdbc.queryForList(
                 "SELECT version, type, success FROM flyway_schema_history ORDER BY installed_rank");
 
-        assertEquals(List.of("1", "2", "3", "4"), history.stream().map(row -> (String) row.get("version")).toList());
+        assertEquals(List.of("1", "2", "3", "4", "5"), history.stream().map(row -> (String) row.get("version")).toList());
         // V1 chạy thật (SQL), không phải baseline
         assertTrue(history.stream().allMatch(row -> "SQL".equals(row.get("type"))));
         assertTrue(history.stream().allMatch(row -> Boolean.TRUE.equals(row.get("success"))));
@@ -73,8 +73,18 @@ class PostgresMigrationTest {
                 String.class);
 
         assertEquals(
-                List.of("comments", "previews", "projects", "search_cache", "stored_files", "task_events", "tasks", "users"),
+                List.of("comment_mentions", "comments", "previews", "projects", "search_cache", "stored_files", "task_events", "tasks", "users"),
                 tables);
+    }
+
+    @Test
+    void v5AddsTaskScopedThreadsAndMentionStorage() {
+        assertEquals(3L, jdbc.queryForObject(
+                "SELECT count(*) FROM information_schema.columns WHERE table_name = 'comments' "
+                        + "AND column_name IN ('task_id', 'parent_comment_id', 'audience')", Long.class));
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' "
+                        + "AND table_name = 'comment_mentions'", Long.class));
     }
 
     @Test
