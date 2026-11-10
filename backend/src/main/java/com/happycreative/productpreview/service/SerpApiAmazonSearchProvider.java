@@ -153,40 +153,140 @@ public class SerpApiAmazonSearchProvider implements AmazonSearchProvider {
     }
 
     @Override
-    public com.fasterxml.jackson.databind.node.ObjectNode product(String asin) {
+    public com.fasterxml.jackson.databind.node.ObjectNode product(String asin, String device) {
         return withAllowance(() -> {
             JsonNode root = getJson(UriComponentsBuilder.fromUriString("https://serpapi.com/search.json")
                     .queryParam("engine", "amazon_product").queryParam("api_key", apiKey)
                     .queryParam("asin", asin).queryParam("amazon_domain", "amazon.com")
-                    .queryParam("delivery_zip", "10001").build().encode(StandardCharsets.UTF_8).toUri());
+                    .queryParam("delivery_zip", "10001").queryParam("device", device)
+                    .build().encode(StandardCharsets.UTF_8).toUri());
             JsonNode product = root.path("product_results");
             String title = text(product, "title");
             if (!product.isObject() || title == null) throw unavailable();
+
             var result = objectMapper.createObjectNode();
             result.put("title", HtmlUtils.htmlUnescape(title));
-            result.put("asin", asin);
-            String brand = text(product, "brand");
-            if (brand != null) result.put("brand", brand);
+            result.put("asin", text(product, "asin") == null ? asin : text(product, "asin"));
+            copyText(product, result, "brand", "brand");
+            copyText(product, result, "rating", "rating");
+            copyText(product, result, "reviews", "reviewsCount");
+            copyText(product, result, "bought_last_month", "salesStat");
+            copyText(product, result, "bought_last_month", "boughtRecently");
+            copyText(product, result, "seller", "seller");
+            copyText(product, result, "save_with_coupon", "promotion");
+            copyText(product, result, "delivery", "deliveryText");
+
             Double price = amount(product, "extracted_price", "price");
             if (price == null) price = amount(product.path("buybox"), "extracted_price", "price");
             if (price == null) price = amount(product.path("purchase_options").path("buy_new"), "extracted_price", "price");
             if (price != null) result.put("price", price);
+            Double oldPrice = amount(product, "extracted_old_price", "old_price");
+            if (oldPrice != null) result.put("oldPrice", oldPrice);
+            if (price != null && oldPrice != null && oldPrice > price) {
+                result.put("discountPercent", Math.round((oldPrice - price) / oldPrice * 100));
+            }
+
+            var badges = result.putArray("badges");
+            appendTextArray(product.path("badges"), badges);
             var bullets = result.putArray("bulletPoints");
             JsonNode about = product.path("about_item");
-            if (about.isArray()) for (JsonNode item : about) {
-                if (item.isTextual()) bullets.add(HtmlUtils.htmlUnescape(item.asText()));
-            }
+            if (!about.isArray()) about = product.path("product_features");
+            appendTextArray(about, bullets);
+            copyDescription(product.path("product_description"), result);
+
             var images = result.putArray("images");
-            JsonNode thumbnails = product.path("thumbnails");
-            if (thumbnails.isArray()) for (JsonNode item : thumbnails) {
-                if (item.isTextual() && isHttps(item.asText())) images.add(item.asText());
-            }
+            appendImageArray(product.path("images"), images);
+            appendImageArray(product.path("thumbnails"), images);
             String thumbnail = text(product, "thumbnail");
             if (images.isEmpty() && thumbnail != null && isHttps(thumbnail)) images.add(thumbnail);
-            String origin = text(product.path("product_details"), "country_of_origin");
-            if (origin != null) result.put("origin", origin);
+
+            JsonNode details = product.path("product_details");
+            copyFirstText(details, result, "fabricType", "fabric_type", "material", "material_type");
+            copyFirstText(details, result, "careInstructions", "care_instructions", "care");
+            copyFirstText(details, result, "origin", "country_of_origin", "origin");
+            mapVariants(product, result);
             return result;
         });
+    }
+
+    private static void copyText(JsonNode source, com.fasterxml.jackson.databind.node.ObjectNode target,
+                                 String sourceField, String targetField) {
+        JsonNode value = source.path(sourceField);
+        if (value.isTextual() && !value.asText().isBlank()) target.put(targetField, value.asText());
+        else if (value.isNumber()) target.put(targetField, value.asText());
+    }
+
+    private static void appendTextArray(JsonNode source, com.fasterxml.jackson.databind.node.ArrayNode target) {
+        if (!source.isArray()) return;
+        for (JsonNode item : source) {
+            if (item.isTextual() && !item.asText().isBlank()) {
+                String value = HtmlUtils.htmlUnescape(item.asText());
+                if (!target.toString().contains(value)) target.add(value);
+            }
+        }
+    }
+
+    private static void appendImageArray(JsonNode source, com.fasterxml.jackson.databind.node.ArrayNode target) {
+        if (!source.isArray()) return;
+        for (JsonNode item : source) {
+            String url = item.isTextual() ? item.asText() : text(item, "link");
+            if (url == null) url = text(item, "url");
+            if (url != null && isHttps(url) && !target.toString().contains(url)) target.add(url);
+        }
+    }
+
+    private static void copyDescription(JsonNode description,
+                                        com.fasterxml.jackson.databind.node.ObjectNode target) {
+        if (description.isTextual() && !description.asText().isBlank()) {
+            target.put("description", HtmlUtils.htmlUnescape(description.asText()));
+        } else if (description.isArray()) {
+            List<String> parts = new ArrayList<>();
+            description.forEach(item -> {
+                if (item.isTextual() && !item.asText().isBlank()) parts.add(HtmlUtils.htmlUnescape(item.asText()));
+            });
+            if (!parts.isEmpty()) target.put("description", String.join("\n", parts));
+        }
+    }
+
+    private static void copyFirstText(JsonNode source, com.fasterxml.jackson.databind.node.ObjectNode target,
+                                      String targetField, String... sourceFields) {
+        for (String field : sourceFields) {
+            String value = text(source, field);
+            if (value != null) {
+                target.put(targetField, value);
+                return;
+            }
+        }
+    }
+
+    private static void mapVariants(JsonNode product, com.fasterxml.jackson.databind.node.ObjectNode target) {
+        JsonNode variants = product.path("variants");
+        if (!variants.isArray()) return;
+        for (JsonNode group : variants) {
+            String title = text(group, "title");
+            JsonNode items = group.path("items");
+            if (title == null || !items.isArray()) continue;
+            if (target.path("variationLabel").isMissingNode()) target.put("variationLabel", title);
+            if (title.toLowerCase(Locale.ROOT).matches(".*(size|length).*")) {
+                var sizes = target.withArray("sizes");
+                for (JsonNode item : items) {
+                    String name = text(item, "name");
+                    if (name != null && !sizes.toString().contains(name)) sizes.add(name);
+                }
+            } else {
+                var colors = target.withArray("colors");
+                for (JsonNode item : items) {
+                    String name = text(item, "name");
+                    if (name == null) continue;
+                    var color = colors.addObject();
+                    color.put("name", name);
+                    String image = text(item, "image");
+                    if (image != null && isHttps(image)) color.put("image", image);
+                    Double variantPrice = amount(item, "extracted_price", "price");
+                    if (variantPrice != null) color.put("price", variantPrice);
+                }
+            }
+        }
     }
 
     private void checkFreeAllowance() {

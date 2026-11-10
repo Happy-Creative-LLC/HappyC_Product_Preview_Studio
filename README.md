@@ -154,6 +154,7 @@ Amazon có 3 layout theo `category` của task: Case 1 Clothing (thumbnail dọc
 | GET / POST | `/api/previews/{id}/comments` | Danh sách / thêm comment |
 | PUT | `/api/comments/{id}/resolve` | Đánh dấu comment đã xử lý |
 | GET | `/api/amazon/search?keyword=` | Tìm Amazon thật qua SerpApi, ưu tiên cache và giữ quota Free |
+| GET | `/api/amazon/product?asin=&device=` | Lấy dữ liệu trang sản phẩm Amazon theo ASIN, cache theo thiết bị |
 | GET / POST / PUT | `/api/admin/users`, `/api/admin/users/{id}` | Quản lý nhân sự (Admin) |
 | GET | `/uploads/**` | Phục vụ file media đã lưu |
 
@@ -168,6 +169,18 @@ Amazon Search dùng [SerpApi Amazon Search API](https://serpapi.com/amazon-searc
 5. Cập nhật cùng từ khoá cách nhau tối thiểu 60 phút (`SEARCH_CACHE_MIN_REFRESH_MINUTES`); request trùng từ khoá được gộp tại một backend instance. Mỗi instance chỉ xử lý một truy vấn provider tại một thời điểm để tránh tranh quota cuối cùng. Hết quota/lỗi provider khi refresh thì giữ kết quả cũ.
 6. Job tự làm mới nền mặc định tắt (`SEARCH_CACHE_REFRESH_ENABLED=false`). Ngưỡng `SEARCH_CACHE_MAX_AGE_DAYS=15` chỉ đánh dấu dữ liệu cũ; giao diện hiển thị thời điểm lấy dữ liệu thật, không cam kết cache 24 giờ.
 7. Search hiện lấy trang 1 của `amazon.com`, tiếng Anh, ZIP `10001`, dữ liệu desktop dùng chung cho bố cục desktop/mobile; không truy vấn thêm chỉ vì đổi kích thước màn hình. Giữ thứ tự thẻ của `organic_results` (bao gồm thẻ có cờ sponsored); chưa dựng các khối quảng cáo thương hiệu/video riêng.
+
+### Amazon Product API — tham chiếu và áp dụng vào task
+
+Product API dùng SerpApi `amazon_product` để lấy dữ liệu trang sản phẩm Amazon theo ASIN. Frontend dùng cùng bộ dựng Amazon nội bộ để hiển thị dữ liệu theo bố cục responsive; API cung cấp dữ liệu sản phẩm, không trả về ảnh chụp hay HTML nguyên trang của Amazon.
+
+- `GET /api/amazon/product?asin={ASIN}&device=desktop|mobile|tablet` lấy thông tin sản phẩm. `device` mặc định là `desktop`; giao diện nội bộ luôn dùng dữ liệu desktop và tự co giãn trên mobile để tránh tạo cache/API request riêng chỉ do đổi kích thước màn hình.
+- Trên trang Amazon Preview, nút **Product API** mở công cụ cho `ADMIN` và `SELLER`. Nhập ASIN hoặc URL Amazon hợp lệ để tải tham chiếu.
+- **Xem trên trang preview** chỉ thay dữ liệu đang hiển thị trong phiên hiện tại. **Áp dụng vào task** là thao tác riêng, gọi `POST /api/previews/import` để lưu dữ liệu vào preview của task đang mở. Không tự lưu khi tải tham chiếu.
+- Kết quả được cache trong bảng `search_cache` theo ASIN và loại thiết bị. Mặc định dùng cache trong 24 giờ; nếu lần gọi mới lỗi hoặc hết quota thì trả cache cũ nếu có. Product API và Amazon Search cùng dùng quota của một key SerpApi Free.
+- Cấu hình key chỉ ở backend qua `SERPAPI_API_KEY`; bật giới hạn gói Free bằng `SERPAPI_FREE_ONLY=true`. Không đưa key vào frontend, response, log hoặc Git. Chạy kiểm tra mặc định bằng HTTP giả lập để không tiêu quota; chỉ bật smoke test live khi chủ động chấp nhận một lượt gọi thật.
+
+Response JSON giữ các trường sản phẩm có thể lấy được như `asin`, `title`, `brand`, `price`, `oldPrice`, `rating`, `reviewsCount`, `images`, `bulletPoints`, `description`, `colors`, `sizes`, `fabricType`, `careInstructions` và `origin`. Các trường thiếu trên trang nguồn sẽ không được bịa thêm. Header `X-Product-Source` cho biết `serpapi` hay `cache`, `X-Product-Stale` cho biết cache đã cũ được dùng dự phòng, `X-Product-Device` cho biết biến thể thiết bị được yêu cầu.
 
 Contract `GET /api/amazon/search?keyword=&forceRefresh=false` vẫn trả mảng sản phẩm. Các trường tuỳ chọn mới: `position`, `promotion`, `deliveryTime`, `demo`. Metadata nằm ở header `X-Search-Source` (`cache`/`serpapi`/`demo`), `X-Search-Fetched-At` (UTC ISO-8601), `X-Search-Stale`, `X-Search-Notice` (`REFRESH_COOLDOWN`, `QUOTA_LIMIT`, `REFRESH_FAILED`, `EMPTY_REFRESH`). Khi hết quota hoặc API không khả dụng: ưu tiên cache thật; nếu chưa có cache, trả dữ liệu mẫu (`source=demo`, `notice=DEMO_QUOTA_LIMIT` hoặc `DEMO_UNAVAILABLE`) để tiếp tục thử bố cục. Dữ liệu mẫu không phải đối thủ theo từ khoá, được gắn nhãn trên banner/từng thẻ và không bao giờ lưu vào cache thật. Provider có cooldown 60 giây sau lỗi, tránh gọi lại liên tục; mọi thông báo bằng tiếng Việt.
 

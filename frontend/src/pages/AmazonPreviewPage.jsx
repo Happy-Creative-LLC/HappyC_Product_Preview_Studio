@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axiosInstance from '../api/axiosConfig';
+import AmazonProductApiPanel from '../components/amazon/AmazonProductApiPanel';
 import { useProductStore } from '../stores/productStore';
 import { useAppStore } from '../stores/appStore';
 import Header from '../components/amazon/Header';
@@ -139,7 +140,8 @@ const AmazonPreviewPage = () => {
   const taskId    = searchParams.get('taskId');
   const projectId = searchParams.get('projectId');
 
-  const { tasks } = useAppStore();
+  const { tasks, role } = useAppStore();
+  const canUseProductApi = role === 'ADMIN' || role === 'SELLER';
   const storeData  = useProductStore();
 
   const task = (projectId && taskId && tasks[projectId])
@@ -157,6 +159,26 @@ const AmazonPreviewPage = () => {
   const [activeVideo, setActiveVideo] = useState(0);
   const videoRowRef = React.useRef(null);
   const [commentPanelOpen, setCommentPanelOpen]     = useState(false);
+  const [apiProductData, setApiProductData] = useState(null);
+  const [useApiProduct, setUseApiProduct] = useState(false);
+  const [applyingApiProduct, setApplyingApiProduct] = useState(false);
+
+  const applyApiProductToTask = async (asin) => {
+    if (!taskId) return;
+    const formData = new FormData();
+    formData.append('taskId', taskId);
+    formData.append('platform', 'AMAZON');
+    formData.append('asin', asin);
+    setApplyingApiProduct(true);
+    try {
+      const response = await axiosInstance.post('/api/previews/import', formData);
+      setLoadedPreview(response.data || null);
+      setUseApiProduct(false);
+      setApiProductData(null);
+    } finally {
+      setApplyingApiProduct(false);
+    }
+  };
 
   useEffect(() => {
     if (!taskId && !previewIdParam) return;
@@ -172,10 +194,13 @@ const AmazonPreviewPage = () => {
   })();
 
   // Case override routes are QA fixtures; keep sample product copy aligned with the selected Home & Kitchen layout.
-  const isDevCaseOverride = !task && [2, 3].includes(caseType) && (storeData.images || []).length === 0;
-  const productData = isDevCaseOverride
-    ? { ...storeData, ...DEV_CASE_FIXTURES[caseType] }
-    : taskProductData || previewData || storeData;
+  const isDevCaseOverride = !task && !previewData && !useApiProduct && [2, 3].includes(caseType) && (storeData.images || []).length === 0;
+  const savedProductData = previewData || taskProductData || storeData;
+  const productData = useApiProduct && apiProductData
+    ? apiProductData
+    : isDevCaseOverride
+      ? { ...storeData, ...DEV_CASE_FIXTURES[caseType] }
+      : savedProductData;
   const images = isDevCaseOverride ? devPlaceholderImages(8) : (productData.images || []);
   const videos = productData.videos || [];
   const basePrice = Number(productData.price) || 24.99;
@@ -204,6 +229,17 @@ const AmazonPreviewPage = () => {
   return (
     <div className="font-amazon min-h-screen bg-[#EAEDED] text-[#111] text-[13px] relative">
       <Header caseType={caseType} />
+      {canUseProductApi && (
+        <AmazonProductApiPanel
+          taskId={taskId}
+          product={apiProductData}
+          previewing={useApiProduct}
+          applying={applyingApiProduct}
+          onPreview={(data, activate = true) => { setApiProductData(data); if (activate) setUseApiProduct(true); }}
+          onApply={applyApiProductToTask}
+          onClear={() => { setApiProductData(null); setUseApiProduct(false); }}
+        />
+      )}
 
       {/* ── Breadcrumb ── */}
       <div className="bg-white border-b border-gray-200">
@@ -235,7 +271,7 @@ const AmazonPreviewPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-7 relative overflow-visible">
 
             {/* Gallery — 🔴 IMAGE zone (sticky) */}
-            <div className="md:col-span-5 overflow-visible md:sticky md:top-2 self-start">
+            <div data-amazon-gallery-column className="md:col-span-5 overflow-visible md:sticky md:top-2 self-start">
               <EditableZone zone="IMAGE">
                 <ProductGallery images={images} videos={videos} caseType={caseType} />
               </EditableZone>

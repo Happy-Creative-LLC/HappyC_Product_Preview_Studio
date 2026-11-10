@@ -8,5 +8,9 @@ import java.util.List;
 public interface AmazonSearchProvider {
     List<AmazonSearchResultDto> search(String keyword);
 
-    com.fasterxml.jackson.databind.node.ObjectNode product(String asin);
+    default com.fasterxml.jackson.databind.node.ObjectNode product(String asin) {
+        return product(asin, "desktop");
+    }
+
+    com.fasterxml.jackson.databind.node.ObjectNode product(String asin, String device);
 }

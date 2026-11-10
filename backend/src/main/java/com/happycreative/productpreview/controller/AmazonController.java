@@ -15,6 +15,19 @@ public class AmazonController {
 
     private final AmazonScraperService amazonScraperService;
 
+    @GetMapping("/product")
+    public ResponseEntity<com.fasterxml.jackson.databind.node.ObjectNode> getAmazonProduct(
+            @RequestParam String asin,
+            @RequestParam(defaultValue = "desktop") String device) {
+        AmazonScraperService.ProductOutcome result = amazonScraperService.getProductByAsin(asin, device);
+        return ResponseEntity.ok()
+                .header("X-Product-Source", result.source())
+                .header("X-Product-Stale", String.valueOf(result.stale()))
+                .header("X-Product-Device", device.toLowerCase(java.util.Locale.ROOT))
+                .header("X-Product-Fetched-At", result.fetchedAt().toString())
+                .body(result.product());
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<AmazonSearchResultDto>> searchAmazon(
             @RequestParam String keyword,

@@ -159,14 +159,18 @@ class AmazonScraperServiceTest {
     @Test
     void asinUrlIsValidatedBeforeCallingProvider() {
         ObjectMapper mapper = new ObjectMapper();
-        when(searchProvider.product("B012345678")).thenReturn(mapper.createObjectNode().put("title", "Shirt"));
+        when(searchCacheRepository.findByKeywordIgnoreCase("amazon_product:B012345678:desktop"))
+                .thenReturn(Optional.empty());
+        when(searchProvider.product("B012345678", "desktop"))
+                .thenReturn(mapper.createObjectNode().put("title", "Shirt"));
 
         assertEquals("Shirt", service.scrapeProductByAsin(
                 "https://www.amazon.com/name/dp/B012345678?ref=test").path("title").asText());
         assertThrows(ResponseStatusException.class, () -> service.scrapeProductByAsin("invalid"));
         assertThrows(ResponseStatusException.class, () -> service.scrapeProductByAsin(
                 "https://example.com/dp/B012345678"));
-        org.mockito.Mockito.verify(searchProvider, org.mockito.Mockito.times(1)).product("B012345678");
+        org.mockito.Mockito.verify(searchProvider, org.mockito.Mockito.times(1))
+                .product("B012345678", "desktop");
     }
 
     @Test

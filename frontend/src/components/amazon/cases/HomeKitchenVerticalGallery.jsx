@@ -187,7 +187,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
           </EditableZone>
         ) : (
           <EditableZone zone="IMAGE">
-            <div className="relative w-full overflow-hidden rounded-sm bg-white" style={{ aspectRatio: '1 / 1' }}>
+            <div className="relative w-full overflow-visible rounded-sm bg-white" style={{ aspectRatio: '1 / 1' }}>
               <ZoomLens src={activeImageSrc}>
                 {activeImageSrc ? (
                   <img

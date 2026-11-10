@@ -26,14 +26,35 @@ const ZoomLens = ({ src, hiResSrc, imgWidth, imgHeight, alt = 'Product image', c
   const containerRef = useRef(null);
   const [hover, setHover] = useState(false);
   const [lens, setLens] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  const [visiblePanelWidth, setVisiblePanelWidth] = useState(panelWidth);
 
   const zoomSrc = hiResSrc || src;
+
+  const handleMouseEnter = () => {
+    setHover(true);
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) {
+      const availableWidth = window.innerWidth - rect.right - panelGap - 16;
+      setVisiblePanelWidth(Math.min(panelWidth, Math.max(280, availableWidth)));
+    }
+    const galleryColumn = containerRef.current?.closest('[data-amazon-gallery-column]');
+    if (galleryColumn) galleryColumn.style.zIndex = '40';
+  };
+
+  const handleMouseLeave = () => {
+    setHover(false);
+    const galleryColumn = containerRef.current?.closest('[data-amazon-gallery-column]');
+    if (galleryColumn) galleryColumn.style.zIndex = '';
+  };
 
   const handleMouseMove = (e) => {
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
+
+    const availableWidth = window.innerWidth - rect.right - panelGap - 16;
+    setVisiblePanelWidth(Math.min(panelWidth, Math.max(280, availableWidth)));
 
     const w = imgWidth || rect.width;
     const h = imgHeight || rect.height;
@@ -57,43 +78,37 @@ const ZoomLens = ({ src, hiResSrc, imgWidth, imgHeight, alt = 'Product image', c
     <div
       ref={containerRef}
       className="relative w-full h-full"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
-      style={{ cursor: 'crosshair' }}
+      style={{ cursor: 'crosshair', zIndex: hover ? 40 : 'auto' }}
     >
       {children}
 
       {hover && (
         <>
-          {/* Lens — 254×268, bám cursor, nền tile-grid (checkerboard nhạt) */}
+          {/* Lens — vùng trong suốt bám theo cursor, như Amazon product zoom. */}
           <div
             data-testid="zoom-lens"
-            className="absolute pointer-events-none border border-white/80 shadow-md"
+            className="absolute pointer-events-none border border-dotted shadow-md"
             style={{
               left: lens.x,
               top: lens.y,
               width: lensWidth,
               height: lensHeight,
               zIndex: 20,
-              backgroundColor: 'rgba(255,255,255,0.35)',
-              backgroundImage:
-                'linear-gradient(45deg, rgba(0,0,0,0.07) 25%, transparent 25%), ' +
-                'linear-gradient(-45deg, rgba(0,0,0,0.07) 25%, transparent 25%), ' +
-                'linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.07) 75%), ' +
-                'linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.07) 75%)',
-              backgroundSize: '12px 12px',
-              backgroundPosition: '0 0, 0 6px, 6px -6px, -6px 0px',
+              backgroundColor: 'rgba(0,113,133,0.14)',
+              borderColor: 'rgba(0,113,133,0.8)',
             }}
           />
 
-          {/* Magnified panel — 636×669, ~75px bên phải ảnh gốc, magnification 2.5× cố định */}
+          {/* Panel phóng đại nằm cạnh ảnh; tự co theo chiều rộng viewport. */}
           <div
             data-testid="zoom-panel"
             className="absolute top-0 border border-gray-200 bg-white shadow-xl overflow-hidden"
             style={{
               left: `calc(100% + ${panelGap}px)`,
-              width: panelWidth,
+              width: visiblePanelWidth,
               height: panelHeight,
               zIndex: 30,
             }}
@@ -109,6 +124,7 @@ const ZoomLens = ({ src, hiResSrc, imgWidth, imgHeight, alt = 'Product image', c
                 width: lens.w * magnification,
                 height: lens.h * magnification,
                 maxWidth: 'none',
+                objectFit: 'cover',
               }}
             />
           </div>
