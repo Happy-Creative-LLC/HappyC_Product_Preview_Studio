@@ -33,3 +33,6 @@ backend/uploads/
 
 # Bản thiết kế gộp, không commit (xem docs/ui-plan.md)
 docs/uiux-v1/
+
+# Serena local project metadata
+.serena/
