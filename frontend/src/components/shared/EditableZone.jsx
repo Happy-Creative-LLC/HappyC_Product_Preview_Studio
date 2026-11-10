@@ -56,7 +56,7 @@ const EditableZone = ({ zone = 'GENERAL', onCommentClick, className = '', childr
       id={id}
       data-zone={zone}
       data-group={group}
-      className={`relative rounded-lg transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${className}`}
+      className={`relative rounded-lg transition-shadow duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${className}`}
       style={{ boxShadow }}
       tabIndex={-1}
       onMouseEnter={() => setHovered(true)}
@@ -83,7 +83,7 @@ const EditableZone = ({ zone = 'GENERAL', onCommentClick, className = '', childr
       {onCommentClick && (
         <button
           type="button"
-          className={`absolute bottom-2 right-2 z-30 min-h-11 items-center gap-1 bg-blue-600 text-white text-xs font-medium px-3 rounded-full shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 md:min-h-0 md:px-2.5 md:py-1.5 ${hovered ? 'flex md:flex' : 'flex md:hidden'}`}
+          className={`absolute bottom-2 right-2 z-30 min-h-11 items-center gap-1 bg-blue-600 text-white text-xs font-medium px-3 rounded-full shadow-md transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 md:min-h-0 md:px-2.5 md:py-1.5 ${hovered ? 'flex md:flex' : 'flex md:hidden'}`}
           onClick={() => onCommentClick(zone)}
           title="Comment"
           aria-label={`Comment vào ${config.label}`}

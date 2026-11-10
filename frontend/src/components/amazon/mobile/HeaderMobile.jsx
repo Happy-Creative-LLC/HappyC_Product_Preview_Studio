@@ -24,7 +24,7 @@ const HeaderMobile = ({
       {/* Row 1: menu · logo · sign in · cart */}
       <div className="flex items-center gap-2 px-3 h-12">
         <button
-          className="w-11 h-11 -ml-2 flex items-center justify-center rounded active:bg-white/10"
+          className="w-11 h-11 -ml-2 flex items-center justify-center rounded-sm active:bg-white/10"
           aria-label="Open menu"
         >
           <Menu size={26} />
@@ -32,12 +32,12 @@ const HeaderMobile = ({
         <AmazonLogo className="h-[26px] w-[92px] object-contain" />
 
         <div className="ml-auto flex items-center gap-1">
-          <button className="flex items-center h-11 px-1.5 rounded active:bg-white/10" aria-label="Sign in">
+          <button className="flex items-center h-11 px-1.5 rounded-sm active:bg-white/10" aria-label="Sign in">
             <span className="hidden text-[13px] min-[430px]:inline">Sign in</span>
             <ChevronRight size={13} className="mx-0.5 hidden text-[#CCCCCC] min-[430px]:block" />
             <User size={20} />
           </button>
-          <button className="relative w-11 h-11 flex items-center justify-center rounded active:bg-white/10" aria-label="Cart, 0 items">
+          <button className="relative w-11 h-11 flex items-center justify-center rounded-sm active:bg-white/10" aria-label="Cart, 0 items">
             <ShoppingCart size={26} />
             <span className="absolute top-1 right-1.5 text-[#FF9900] font-bold text-[12px] leading-none">0</span>
           </button>
@@ -55,7 +55,7 @@ const HeaderMobile = ({
             type="text"
             placeholder={searchPlaceholder}
             aria-label="Từ khoá tìm kiếm Amazon"
-            className="h-full min-w-0 flex-1 px-3 text-base text-[#111] outline-none"
+            className="h-full min-w-0 flex-1 px-3 text-base text-[#111] outline-hidden"
             {...controlledSearchProps}
           />
           <button

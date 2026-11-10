@@ -1,8 +1,32 @@
-@import './styles/hc-app.css';
+@import "tailwindcss";
+/* hc-app.css nằm trong layer components để utility Tailwind vẫn thắng khi trùng độ ưu tiên,
+   đúng thứ tự cũ của Tailwind 3 (CSS không nằm trong layer luôn thắng utility ở Tailwind 4). */
+@import './styles/hc-app.css' layer(components);
+@config "../tailwind.config.js";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Giữ hành vi mặc định của Tailwind 3 để giao diện không đổi khi lên Tailwind 4 */
+@layer base {
+  /* Viền mặc định: v3 là gray-200, v4 là currentColor */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  /* Nút: v3 có con trỏ pointer, v4 để default */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* Placeholder: v3 là gray-400, v4 là màu chữ giảm 50% */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
 
 /* ──────────────────────────────────────────────────────────────
    Preview typefaces (self-hosted, offline)

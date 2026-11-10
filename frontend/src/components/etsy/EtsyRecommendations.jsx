@@ -90,7 +90,7 @@ const EtsyRecommendations = ({ images = [], tags = [] }) => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           {INTEREST_CARDS.map((c) => (
-            <div key={c.label} className={`rounded-xl bg-gradient-to-br ${c.bg} aspect-square flex items-end p-4 cursor-pointer hover:opacity-90 transition-opacity`}>
+            <div key={c.label} className={`rounded-xl bg-linear-to-br ${c.bg} aspect-square flex items-end p-4 cursor-pointer hover:opacity-90 transition-opacity`}>
               <span className="text-sm font-bold text-gray-800">{c.label}</span>
             </div>
           ))}

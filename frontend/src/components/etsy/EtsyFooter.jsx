@@ -20,7 +20,7 @@ const EtsyFooter = () => {
             <input
               type="email"
               placeholder="Enter your email"
-              className="flex-grow border border-gray-400 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-gray-900"
+              className="grow border border-gray-400 rounded-full px-4 py-2.5 text-sm focus:outline-hidden focus:border-gray-900"
             />
             <button className="bg-gray-900 text-white text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-black whitespace-nowrap">
               Subscribe

@@ -19,11 +19,11 @@ const EtsyHeaderDesktop = () => {
           <span>Categories</span>
         </button>
 
-        <div className="flex-grow max-w-3xl">
+        <div className="grow max-w-3xl">
           <div className="relative">
             <input
               type="text"
-              className="w-full border border-gray-800 rounded-full py-2.5 pl-4 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 transition"
+              className="w-full border border-gray-800 rounded-full py-2.5 pl-4 pr-14 text-sm focus:outline-hidden focus:ring-2 focus:ring-orange-300 transition"
               placeholder="Search for anything"
             />
             <button className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center text-white bg-[#f1641e] rounded-full hover:bg-orange-600 transition-colors">

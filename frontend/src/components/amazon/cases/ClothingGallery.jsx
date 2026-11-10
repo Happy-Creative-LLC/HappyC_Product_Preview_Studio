@@ -24,7 +24,7 @@ const ClothingGallery = ({ images = [], videos = [], onCommentClick }) => {
   return (
     <div className="flex gap-2.5">
       {/* ── Thumbnail rail ── */}
-      <div className="flex flex-col gap-1.5 flex-shrink-0">
+      <div className="flex flex-col gap-1.5 shrink-0">
         {/* 6 image slots (IMAGE zone comes from the page wrapper) */}
         {imageSlots.map((src, i) => {
           const sel = activeIdx === i;
@@ -69,7 +69,7 @@ const ClothingGallery = ({ images = [], videos = [], onCommentClick }) => {
       </div>
 
       {/* ── Main viewer ── */}
-      <div className="flex-grow min-w-0">
+      <div className="grow min-w-0">
         {/* Video active → nested VIDEO zone; image active → covered by page IMAGE zone */}
         {isVideoActive ? (
           <EditableZone zone="VIDEO" onCommentClick={onCommentClick}>
@@ -103,7 +103,7 @@ const ClothingGallery = ({ images = [], videos = [], onCommentClick }) => {
 // Fixed measured main-image box (369×362) — keeps aspect so upload doesn't jump.
 const MainFrame = ({ children }) => (
   <div
-    className="relative overflow-hidden bg-white rounded"
+    className="relative overflow-hidden bg-white rounded-sm"
     style={{ width: MAIN_W, maxWidth: '100%', aspectRatio: `${MAIN_W} / 362` }}
   >
     {children}
@@ -112,7 +112,7 @@ const MainFrame = ({ children }) => (
 
 const ShareBtn = () => (
   <button
-    className="absolute top-2 right-2 w-9 h-9 rounded-full bg-white border border-[#D5D9D9] shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 hover:shadow-md transition-all z-10"
+    className="absolute top-2 right-2 w-9 h-9 rounded-full bg-white border border-[#D5D9D9] shadow-xs flex items-center justify-center text-gray-500 hover:text-gray-800 hover:shadow-md transition-all z-10"
     aria-label="Share product"
   >
     <Share2 size={15} />

@@ -45,7 +45,7 @@ const AplusCarousel = ({ slides = [], onCommentClick }) => {
           {items.map((src, i) => (
             <div
               key={i}
-              className="h-full flex-shrink-0"
+              className="h-full shrink-0"
               style={{ width: `${100 / total}%` }}
               aria-hidden={i !== currentSlide}
             >

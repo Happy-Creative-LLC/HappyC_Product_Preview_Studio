@@ -12,10 +12,10 @@ const EtsyShopCard = ({ shopName = 'HappyCreative', products = [] }) => {
     <section className="border border-gray-200 rounded-lg p-6 mt-10">
       {/* Shop header */}
       <div className="flex flex-wrap items-start gap-4">
-        <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-black text-xl flex-shrink-0">
+        <div className="w-14 h-14 rounded-lg bg-linear-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-black text-xl shrink-0">
           {shopName.charAt(0)}
         </div>
-        <div className="flex-grow min-w-0">
+        <div className="grow min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-lg font-semibold text-gray-900">{shopName}</h3>
             <span className="text-sm text-gray-500">New York, United States</span>
@@ -30,7 +30,7 @@ const EtsyShopCard = ({ shopName = 'HappyCreative', products = [] }) => {
             <span>5 years on Etsy</span>
           </div>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex gap-2 shrink-0">
           <button className="border border-gray-900 text-gray-900 font-semibold px-4 py-2 rounded-full hover:bg-gray-50 text-sm">
             Follow shop
           </button>
@@ -43,14 +43,14 @@ const EtsyShopCard = ({ shopName = 'HappyCreative', products = [] }) => {
       {/* Signals */}
       <div className="grid sm:grid-cols-2 gap-4 mt-5 pt-5 border-t border-gray-100">
         <div className="flex items-start gap-2.5">
-          <Zap size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
+          <Zap size={18} className="text-gray-500 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-gray-800">Speedy replies</p>
             <p className="text-[13px] text-gray-500">Has a history of replying to messages quickly.</p>
           </div>
         </div>
         <div className="flex items-start gap-2.5">
-          <Star size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
+          <Star size={18} className="text-gray-500 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-gray-800">Rave reviews</p>
             <p className="text-[13px] text-gray-500">Average review rating is 4.8 or higher.</p>

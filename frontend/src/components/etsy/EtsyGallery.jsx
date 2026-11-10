@@ -30,7 +30,7 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
   return (
     <div className="flex gap-2 sm:gap-3">
       {/* Vertical thumbnail rail */}
-      <div className="flex flex-col gap-1.5 sm:gap-2 flex-shrink-0 w-12 sm:w-16">
+      <div className="flex flex-col gap-1.5 sm:gap-2 shrink-0 w-12 sm:w-16">
         {allMedia.map((media, idx) => (
           <button
             key={idx}
@@ -58,7 +58,7 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
       </div>
 
       {/* Main viewer */}
-      <div className="flex-grow min-w-0">
+      <div className="grow min-w-0">
         <div className="relative rounded-lg overflow-hidden bg-gray-50 aspect-square group">
           {active.type === 'video' ? (
             <video key={active.src} src={active.src} controls className="w-full h-full object-cover" />
@@ -73,13 +73,13 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
           )}
 
           {/* Bestseller badge — top left */}
-          <span className="absolute top-3 left-3 bg-white text-gray-900 text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
+          <span className="absolute top-3 left-3 bg-white text-gray-900 text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs">
             Bestseller
           </span>
 
           {/* Favorite — top right */}
           <button
-            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow text-gray-700 hover:text-red-500 active:text-red-500 transition-colors"
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-700 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Add to favorites"
           >
             <Heart size={18} />
@@ -90,14 +90,14 @@ const EtsyGallery = ({ images = [], videos = [] }) => {
             <>
               <button
                 onClick={() => go(-1)}
-                className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow text-gray-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity active:bg-white"
+                className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-sm text-gray-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity active:bg-white"
                 aria-label="Previous"
               >
                 <ChevronLeft size={20} />
               </button>
               <button
                 onClick={() => go(1)}
-                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow text-gray-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity active:bg-white"
+                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-sm text-gray-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity active:bg-white"
                 aria-label="Next"
               >
                 <ChevronRight size={20} />

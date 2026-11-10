@@ -55,10 +55,10 @@ const LoadingGrid = () => (
       <div key={index} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div className="aspect-square animate-pulse bg-gray-100" />
         <div className="space-y-3 p-4">
-          <div className="h-3 w-1/3 animate-pulse rounded bg-gray-100" />
-          <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
-          <div className="h-4 w-4/5 animate-pulse rounded bg-gray-200" />
-          <div className="h-7 w-1/2 animate-pulse rounded bg-gray-100" />
+          <div className="h-3 w-1/3 animate-pulse rounded-sm bg-gray-100" />
+          <div className="h-4 w-full animate-pulse rounded-sm bg-gray-200" />
+          <div className="h-4 w-4/5 animate-pulse rounded-sm bg-gray-200" />
+          <div className="h-7 w-1/2 animate-pulse rounded-sm bg-gray-100" />
         </div>
       </div>
     ))}
@@ -391,7 +391,7 @@ const AmazonSearchPage = () => {
           searchPlaceholder="Tìm sản phẩm đối thủ trên Amazon"
         />
 
-        <div className="border-b border-gray-200 bg-white px-4 py-3 shadow-sm sm:px-6">
+        <div className="border-b border-gray-200 bg-white px-4 py-3 shadow-xs sm:px-6">
           <div className="mx-auto flex max-w-[1600px] flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <p className="break-words text-sm text-[#0f1111]" aria-live="polite">{resultCountText}</p>
             {sourceProduct && (

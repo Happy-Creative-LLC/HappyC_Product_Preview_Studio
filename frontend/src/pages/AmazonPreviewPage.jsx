@@ -70,8 +70,8 @@ const devPlaceholderVideo = () =>
 
 /* ─── Reusable product card (recommendation carousels) ─── */
 const ProductCard = ({ image, title, price, rating, reviews, w = 'w-44' }) => (
-  <div className={`flex-shrink-0 ${w} cursor-pointer group`}>
-    <div className="w-full aspect-square bg-gray-100 overflow-hidden mb-2 rounded-sm">
+  <div className={`shrink-0 ${w} cursor-pointer group`}>
+    <div className="w-full aspect-square bg-gray-100 overflow-hidden mb-2 rounded-xs">
       {image
         ? <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
         : <div className="w-full h-full bg-gray-200" />}
@@ -97,7 +97,7 @@ const Carousel = ({ title, cards }) => {
         <h2 className="text-xl font-bold text-gray-900 mb-4">{title}</h2>
         <button
           onClick={() => scroll(-1)}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-14 bg-white border border-gray-300 rounded shadow-md flex items-center justify-center hover:bg-gray-50"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-14 bg-white border border-gray-300 rounded-sm shadow-md flex items-center justify-center hover:bg-gray-50"
         >
           <ChevronLeft size={20} />
         </button>
@@ -106,7 +106,7 @@ const Carousel = ({ title, cards }) => {
         </div>
         <button
           onClick={() => scroll(1)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-14 bg-white border border-gray-300 rounded shadow-md flex items-center justify-center hover:bg-gray-50"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-14 bg-white border border-gray-300 rounded-sm shadow-md flex items-center justify-center hover:bg-gray-50"
         >
           <ChevronRight size={20} />
         </button>
@@ -271,7 +271,7 @@ const AmazonPreviewPage = () => {
                   </div>
                 ))}
                 <div className="border-t border-gray-200 pt-3.5">
-                  <span className="inline-block border border-[#d5d9d9] rounded-lg px-3.5 py-2 text-[13px] cursor-pointer shadow-sm hover:bg-gray-50">
+                  <span className="inline-block border border-[#d5d9d9] rounded-lg px-3.5 py-2 text-[13px] cursor-pointer shadow-xs hover:bg-gray-50">
                     See all product specifications
                   </span>
                 </div>
@@ -335,12 +335,12 @@ const AmazonPreviewPage = () => {
               ['Date First Available',     'January 1, 2024'],
             ].map(([k, v], i) => (
               <div key={i} className={`flex py-2 px-4 text-sm ${i % 2 === 0 ? 'bg-[#F7F7F7]' : 'bg-white'}`}>
-                <span className="w-56 flex-shrink-0 font-bold text-gray-700">{k}</span>
+                <span className="w-56 shrink-0 font-bold text-gray-700">{k}</span>
                 <span className="text-gray-800">{v}</span>
               </div>
             ))}
             <div className="flex py-2 px-4 bg-[#F7F7F7] text-sm items-center">
-              <span className="w-56 flex-shrink-0 font-bold text-gray-700">Customer Reviews</span>
+              <span className="w-56 shrink-0 font-bold text-gray-700">Customer Reviews</span>
               <span className="flex items-center gap-2">
                 <Stars value={productData.rating || 4.5} size={13} />
                 <span className="font-bold">{Number(productData.rating || 4.5).toFixed(1)}</span>
@@ -350,7 +350,7 @@ const AmazonPreviewPage = () => {
               </span>
             </div>
             <div className="flex py-2 px-4 bg-white text-sm">
-              <span className="w-56 flex-shrink-0 font-bold text-gray-700">Best Sellers Rank</span>
+              <span className="w-56 shrink-0 font-bold text-gray-700">Best Sellers Rank</span>
               <span className="text-[#007185] leading-relaxed">
                 #1,024 in Clothing, Shoes &amp; Jewelry
                 <br />
@@ -373,10 +373,10 @@ const AmazonPreviewPage = () => {
                   <th className="w-32"></th>
                   {relatedCards.slice(0, 4).map((c, i) => (
                     <th key={i} className={`p-3 align-top text-left font-normal ${i === 0 ? 'bg-[#F7FAFA] ring-1 ring-[#D5D9D9]' : ''}`}>
-                      <div className="w-full aspect-square bg-gray-100 mb-2 overflow-hidden rounded">
+                      <div className="w-full aspect-square bg-gray-100 mb-2 overflow-hidden rounded-sm">
                         {c.image && <img src={c.image} alt="" className="w-full h-full object-cover" />}
                       </div>
-                      {i === 0 && <span className="inline-block text-[10px] font-bold text-white bg-[#007185] px-1.5 py-0.5 rounded mb-1">This item</span>}
+                      {i === 0 && <span className="inline-block text-[10px] font-bold text-white bg-[#007185] px-1.5 py-0.5 rounded-sm mb-1">This item</span>}
                       <p className="text-[#007185] line-clamp-2 leading-snug">{c.title}</p>
                     </th>
                   ))}
@@ -424,7 +424,7 @@ const AmazonPreviewPage = () => {
                       controls
                       className="w-full h-full object-contain"
                     />
-                    <div className="absolute top-3 left-4 text-white pointer-events-none drop-shadow">
+                    <div className="absolute top-3 left-4 text-white pointer-events-none drop-shadow-sm">
                       <div className="text-sm font-bold leading-tight">{productData.brand || 'HappyCreative'}</div>
                       <div className="text-xs opacity-90 leading-tight line-clamp-1 max-w-[240px]">
                         {productData.title || 'Product video'}
@@ -447,8 +447,8 @@ const AmazonPreviewPage = () => {
               <div className="relative mt-4">
                 <div ref={videoRowRef} className="flex gap-3 overflow-x-auto pb-1 pr-10" style={{ scrollbarWidth: 'none' }}>
                   {relatedCards.slice(0, 6).map((c, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-[300px] border border-[#d5d9d9] rounded-lg p-2.5 flex gap-3 cursor-pointer hover:shadow-md transition-shadow">
-                      <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                    <div key={idx} className="shrink-0 w-[300px] border border-[#d5d9d9] rounded-lg p-2.5 flex gap-3 cursor-pointer hover:shadow-md transition-shadow">
+                      <div className="w-16 h-16 shrink-0 rounded-sm overflow-hidden bg-gray-100">
                         {c.image && <img src={c.image} alt="" className="w-full h-full object-cover" />}
                       </div>
                       <div className="min-w-0">
@@ -465,7 +465,7 @@ const AmazonPreviewPage = () => {
                 {/* Scroll-right arrow */}
                 <button
                   onClick={() => videoRowRef.current?.scrollBy({ left: 320, behavior: 'smooth' })}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-16 bg-white border border-gray-300 rounded shadow-md flex items-center justify-center hover:bg-gray-50"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-16 bg-white border border-gray-300 rounded-sm shadow-md flex items-center justify-center hover:bg-gray-50"
                   aria-label="Scroll right"
                 >
                   <ChevronRight size={18} />
@@ -480,7 +480,7 @@ const AmazonPreviewPage = () => {
                     <button
                       key={idx}
                       onClick={() => setActiveVideo(idx)}
-                      className={`relative flex-shrink-0 rounded overflow-hidden bg-gray-900 transition-all
+                      className={`relative shrink-0 rounded-sm overflow-hidden bg-gray-900 transition-all
                         ${activeVideo === idx ? 'ring-2 ring-[#007185]' : 'opacity-60 hover:opacity-100'}`}
                       style={{ width: 120, height: 68 }}
                     >
@@ -512,7 +512,7 @@ const AmazonPreviewPage = () => {
               ['ASIN', 'B0CX4GFW4T'],
             ].map(([k, v]) => (
               <div key={k} className="flex gap-2">
-                <span className="font-bold text-gray-800 flex-shrink-0">{k}</span>
+                <span className="font-bold text-gray-800 shrink-0">{k}</span>
                 <span className="text-gray-500">:</span>
                 <span className="text-gray-700">{v}</span>
               </div>
@@ -520,7 +520,7 @@ const AmazonPreviewPage = () => {
 
             {/* Best Sellers Rank — with sub-categories */}
             <div className="flex gap-2">
-              <span className="font-bold text-gray-800 flex-shrink-0">Best Sellers Rank</span>
+              <span className="font-bold text-gray-800 shrink-0">Best Sellers Rank</span>
               <span className="text-gray-500">:</span>
               <div className="text-gray-700 leading-relaxed">
                 <span className="text-[#007185] cursor-pointer hover:underline">#307,526 in Clothing, Shoes &amp; Jewelry</span>
@@ -536,7 +536,7 @@ const AmazonPreviewPage = () => {
 
             {/* Customer Reviews row */}
             <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-800 flex-shrink-0">Customer Reviews</span>
+              <span className="font-bold text-gray-800 shrink-0">Customer Reviews</span>
               <span className="text-gray-500">:</span>
               <Stars value={productData.rating || 4.6} size={13} />
               <span className="text-sm font-medium">{Number(productData.rating || 4.6).toFixed(1)}</span>
@@ -581,8 +581,8 @@ const AmazonPreviewPage = () => {
                 {[[5, 84], [4, 6], [3, 3], [2, 6], [1, 1]].map(([s, p]) => (
                   <div key={s} className="flex items-center gap-2 text-xs">
                     <span className="text-[#007185] cursor-pointer hover:underline whitespace-nowrap w-12">{s} star</span>
-                    <div className="flex-1 h-4 bg-[#F0F2F2] border border-[#D5D9D9] rounded-sm overflow-hidden">
-                      <div className="h-full bg-[#FFA41C] rounded-sm" style={{ width: `${p}%` }} />
+                    <div className="flex-1 h-4 bg-[#F0F2F2] border border-[#D5D9D9] rounded-xs overflow-hidden">
+                      <div className="h-full bg-[#FFA41C] rounded-xs" style={{ width: `${p}%` }} />
                     </div>
                     <span className="text-[#007185] w-8 text-right">{p}%</span>
                   </div>
@@ -599,7 +599,7 @@ const AmazonPreviewPage = () => {
               <div className="border-t border-gray-200 pt-4">
                 <p className="font-bold text-sm mb-1">Review this product</p>
                 <p className="text-xs text-gray-500 mb-3">Share your thoughts with other customers</p>
-                <button className="w-full border border-[#D5D9D9] rounded-full px-5 py-2 text-sm bg-white hover:bg-gray-50 transition-colors shadow-sm">
+                <button className="w-full border border-[#D5D9D9] rounded-full px-5 py-2 text-sm bg-white hover:bg-gray-50 transition-colors shadow-xs">
                   Write a customer review
                 </button>
               </div>
@@ -652,17 +652,17 @@ const AmazonPreviewPage = () => {
                     <span className="text-xs text-[#007185] cursor-pointer hover:underline">See all photos »</span>
                   </div>
                   <div className="relative">
-                    <button className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center hover:bg-gray-50">
+                    <button className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full shadow-sm flex items-center justify-center hover:bg-gray-50">
                       <ChevronLeft size={16} />
                     </button>
                     <div className="flex gap-2 overflow-x-auto px-10 pb-1" style={{ scrollbarWidth: 'none' }}>
                       {images.concat(images).slice(0, 7).map((img, i) => (
-                        <div key={i} className="flex-shrink-0 w-[120px] h-[120px] rounded overflow-hidden border border-gray-200 cursor-pointer">
+                        <div key={i} className="shrink-0 w-[120px] h-[120px] rounded-sm overflow-hidden border border-gray-200 cursor-pointer">
                           <img src={img} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
                         </div>
                       ))}
                     </div>
-                    <button className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center hover:bg-gray-50">
+                    <button className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-300 rounded-full shadow-sm flex items-center justify-center hover:bg-gray-50">
                       <ChevronRight size={16} />
                     </button>
                   </div>
@@ -675,7 +675,7 @@ const AmazonPreviewPage = () => {
                 <div key={i} className="border-b border-gray-100 pb-6 mb-6 last:border-0">
                   {/* Reviewer name + avatar */}
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
                       {r.name[0]}
                     </div>
                     <span className="font-medium text-sm">{r.name}</span>
@@ -703,7 +703,7 @@ const AmazonPreviewPage = () => {
 
                   {/* Thumb image below body (first review only) */}
                   {i === 0 && images[0] && (
-                    <div className="mt-3 w-14 h-14 rounded overflow-hidden border border-gray-200 cursor-pointer">
+                    <div className="mt-3 w-14 h-14 rounded-sm overflow-hidden border border-gray-200 cursor-pointer">
                       <img src={images[0]} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
                     </div>
                   )}
@@ -720,7 +720,7 @@ const AmazonPreviewPage = () => {
                 </div>
               ))}
 
-              <button className="border border-[#D5D9D9] rounded-lg px-6 py-2.5 text-sm bg-white hover:bg-gray-50 transition-colors shadow-sm">
+              <button className="border border-[#D5D9D9] rounded-lg px-6 py-2.5 text-sm bg-white hover:bg-gray-50 transition-colors shadow-xs">
                 See more reviews →
               </button>
             </div>
@@ -810,7 +810,7 @@ const AmazonPreviewPage = () => {
             {/* Language & Country selectors */}
             <div className="flex flex-wrap justify-center gap-3">
               {/* Language */}
-              <div className="flex items-center gap-1.5 border border-gray-500 rounded px-3 py-1.5 cursor-pointer hover:border-gray-300 text-white text-[13px] select-none">
+              <div className="flex items-center gap-1.5 border border-gray-500 rounded-sm px-3 py-1.5 cursor-pointer hover:border-gray-300 text-white text-[13px] select-none">
                 <span className="text-[14px]">🌐</span>
                 <span>English</span>
                 <svg className="w-3 h-3 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -818,7 +818,7 @@ const AmazonPreviewPage = () => {
                 </svg>
               </div>
               {/* Country */}
-              <div className="flex items-center gap-1.5 border border-gray-500 rounded px-3 py-1.5 cursor-pointer hover:border-gray-300 text-white text-[13px] select-none">
+              <div className="flex items-center gap-1.5 border border-gray-500 rounded-sm px-3 py-1.5 cursor-pointer hover:border-gray-300 text-white text-[13px] select-none">
                 <span className="text-[14px]">🇺🇸</span>
                 <span>United States</span>
                 <svg className="w-3 h-3 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

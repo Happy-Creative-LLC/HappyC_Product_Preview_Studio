@@ -52,7 +52,7 @@ const HomeKitchenHorizontalGallery = ({ images = [], videos = [] }) => {
 
   if (validMedia.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96 bg-gray-100 rounded text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-96 bg-gray-100 rounded-sm text-gray-400 text-sm">
         Chưa có ảnh / video
       </div>
     );
@@ -109,7 +109,7 @@ const HomeKitchenHorizontalGallery = ({ images = [], videos = [] }) => {
               key={idx}
               onMouseEnter={() => setActiveIdx(idx)}
               onClick={() => setActiveIdx(idx)}
-              className={`flex-shrink-0 cursor-pointer rounded overflow-hidden flex items-center justify-center border
+              className={`shrink-0 cursor-pointer rounded-sm overflow-hidden flex items-center justify-center border
                 ${safeActiveIdx === idx
                   ? 'border-[#007185] ring-[1.5px] ring-[#007185]'
                   : 'border-gray-300 hover:border-[#007185]'}`}
@@ -135,7 +135,7 @@ const HomeKitchenHorizontalGallery = ({ images = [], videos = [] }) => {
       {/* Zoom panel */}
       {bg && canZoom && (
         <div
-          className="absolute top-0 border border-gray-200 bg-white shadow-xl rounded"
+          className="absolute top-0 border border-gray-200 bg-white shadow-xl rounded-sm"
           style={{
             left: 'calc(100% + 8px)',
             width: PANEL_W, height: PANEL_H,
