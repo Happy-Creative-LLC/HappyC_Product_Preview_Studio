@@ -10,7 +10,7 @@ Thiết kế UI/UX mới đang được triển khai theo [docs/ui-plan.md](docs
 
 | Layer | Công nghệ |
 |-------|-----------|
-| Frontend | React 19, Vite, TailwindCSS 3, Zustand, React Router 7, Axios |
+| Frontend | React 19, Vite, TailwindCSS 4, Zustand, React Router 7, Axios |
 | Backend | Spring Boot 4.0.6, Java 21, Spring Security + JWT (jjwt), Spring Data JPA |
 | Database | PostgreSQL 15, schema quản lý bằng Flyway |
 | File storage | `db` (mặc định, lưu vào Postgres), `r2` (Cloudflare R2), `local` (đĩa) |

@@ -4,7 +4,7 @@ Internal tool của Happy Creative: xem trước listing Amazon/Etsy, mỗi vai 
 
 ## Stack
 
-- Frontend: React 19, Vite, TailwindCSS 3, Zustand, React Router 7, Axios (`frontend/`, dev cổng 5173).
+- Frontend: React 19, Vite, TailwindCSS 4 (PostCSS qua `@tailwindcss/postcss`, cấu hình màu/font ở `frontend/tailwind.config.js` nạp bằng `@config`; `src/styles/hc-app.css` nằm trong layer `components`), Zustand, React Router 7, Axios (`frontend/`, dev cổng 5173).
 - Backend: Spring Boot 4.0.6, Java 21, Spring Security + JWT, Spring Data JPA (`backend/`, cổng 8081). Preview theo kiến trúc hexagonal (`domain/`, `application/`, `infrastructure/`), phần còn lại Controller → Service → Repository → Entity.
 - Database: PostgreSQL 15, schema do Flyway quản lý. Test dùng H2 (Flyway tắt, H2 dựng schema từ entity).
 - Role (backend trả viết hoa): `ADMIN`, `MARVEL`, `SELLER`, `PRODUCT_DESIGN`. Frontend so sánh đúng chuỗi này.
