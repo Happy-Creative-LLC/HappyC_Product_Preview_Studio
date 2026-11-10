@@ -288,7 +288,13 @@ const AmazonPreviewPage = () => {
             {/* Gallery — 🔴 IMAGE zone (sticky) */}
             <div data-amazon-gallery-column className="md:col-span-5 overflow-visible md:sticky md:top-2 self-start">
               <EditableZone zone="IMAGE">
-                <ProductGallery images={images} videos={videos} caseType={caseType} showUploadSlots={!isProductApiData} />
+                <ProductGallery
+                  key={`${productData.asin || taskId || 'preview'}:${images[0] || ''}`}
+                  images={images}
+                  videos={videos}
+                  caseType={caseType}
+                  showUploadSlots={!isProductApiData}
+                />
               </EditableZone>
             </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Play, Share2 } from 'lucide-react';
 import EditableZone from '../../shared/EditableZone';
 import UploadPlaceholder from '../UploadPlaceholder';
@@ -9,7 +9,6 @@ import UploadPlaceholder from '../UploadPlaceholder';
 const MAX_IMAGES = 6;
 const MAIN_W = 369;          // measured main image box
 const THUMB_SIZE = 48;    // square Amazon-style thumbnail
-const THUMB_R = 8;
 
 const ClothingGallery = ({ images = [], videos = [], showUploadSlots = true }) => {
   // Product API mode shows only the media that exists on the source listing.
@@ -22,24 +21,17 @@ const ClothingGallery = ({ images = [], videos = [], showUploadSlots = true }) =
   const videoIndex = imageSlots.length;
   const [activeIdx, setActiveIdx] = useState(0);
 
-  useEffect(() => {
-    const itemCount = imageSlots.length + (hasVideoSlot ? 1 : 0);
-    if (activeIdx >= itemCount) setActiveIdx(0);
-  }, [activeIdx, hasVideoSlot, imageSlots.length]);
-
-  useEffect(() => {
-    setActiveIdx(0);
-  }, [images[0]]);
-
-  const isVideoActive = hasVideoSlot && activeIdx === videoIndex;
-  const activeSrc = isVideoActive ? videoSlot : imageSlots[activeIdx] || null;
+  const itemCount = imageSlots.length + (hasVideoSlot ? 1 : 0);
+  const currentIdx = itemCount > 0 ? Math.min(activeIdx, itemCount - 1) : 0;
+  const isVideoActive = hasVideoSlot && currentIdx === videoIndex;
+  const activeSrc = isVideoActive ? videoSlot : imageSlots[currentIdx] || null;
   const thumbStyle = { width: THUMB_SIZE, height: THUMB_SIZE };
 
   return (
     <div className="flex items-start gap-2.5">
       <div className="flex max-h-[420px] shrink-0 flex-col gap-2 overflow-y-auto pr-1">
         {imageSlots.map((src, i) => {
-          const selected = !isVideoActive && activeIdx === i;
+          const selected = !isVideoActive && currentIdx === i;
           return (
             <button
               key={i}

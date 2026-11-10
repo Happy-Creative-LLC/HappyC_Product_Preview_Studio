@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Share2, ZoomIn, X } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
@@ -9,11 +9,6 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
   const [idx, setIdx] = useState(0);
   const [zoomSrc, setZoomSrc] = useState(null);
   const trackRef = useRef(null);
-
-  useEffect(() => {
-    setIdx(0);
-    trackRef.current?.scrollTo({ left: 0 });
-  }, [images[0]]);
 
   const mediaLimit = Number(caseType) === 1 ? 7 : 9;
   const allMedia = [
@@ -44,6 +39,8 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
       </div>
     );
   }
+
+  const currentIdx = Math.min(idx, validMedia.length - 1);
 
   return (
     <div>
@@ -87,7 +84,7 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
         {/* Counter — bottom right */}
         {validMedia.length > 1 && (
           <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
-            {idx + 1}/{validMedia.length}
+            {currentIdx + 1}/{validMedia.length}
           </div>
         )}
       </div>
@@ -100,7 +97,7 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
               key={i}
               onClick={() => scrollToIdx(i)}
               aria-label={`Go to image ${i + 1}`}
-              className={`h-2 rounded-full transition-all ${idx === i ? 'w-5 bg-[#E77600]' : 'w-2 bg-gray-300'}`}
+              className={`h-2 rounded-full transition-all ${currentIdx === i ? 'w-5 bg-[#E77600]' : 'w-2 bg-gray-300'}`}
             />
           ))}
         </div>
