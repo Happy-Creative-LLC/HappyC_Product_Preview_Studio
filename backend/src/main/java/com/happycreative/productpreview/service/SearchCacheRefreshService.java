@@ -12,15 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Làm mới dữ liệu Amazon Search theo lịch nền — không theo lượt search của người dùng.
- *
- * <p>Seller luôn được phục vụ từ cache ngay lập tức (xem
- * {@link AmazonScraperService#searchAmazon}, không bao giờ đợi RapidAPI giữa lúc đang
- * làm việc. Job này chạy mỗi Chủ nhật nhưng chỉ thực sự gọi lại RapidAPI cho những từ
- * khoá đã đủ {@code app.search-cache.max-age-days} ngày tuổi — nên nhịp làm mới thực tế
- * của một từ khoá là khoảng 15 ngày/lần dù job được kiểm tra hằng tuần.</p>
- */
+/** Làm mới nền chỉ khi Admin chủ động bật; mặc định tắt để giữ quota Free. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -32,9 +24,13 @@ public class SearchCacheRefreshService {
     @Value("${app.search-cache.max-age-days:15}")
     private int maxAgeDays;
 
+    @Value("${app.search-cache.refresh-enabled:false}")
+    private boolean refreshEnabled;
+
     // 03:00 sáng Chủ nhật — ít người dùng nhất, không tranh tài nguyên với giờ làm việc.
     @Scheduled(cron = "0 0 3 * * SUN")
     public void refreshStaleKeywords() {
+        if (!refreshEnabled) return;
         Instant threshold = Instant.now().minus(Duration.ofDays(maxAgeDays));
 
         List<String> due = searchCacheRepository.findAll().stream()

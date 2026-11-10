@@ -14,7 +14,7 @@ Thiết kế UI/UX mới đang được triển khai theo [docs/ui-plan.md](docs
 | Backend | Spring Boot 4.0.6, Java 21, Spring Security + JWT (jjwt), Spring Data JPA |
 | Database | PostgreSQL 15, schema quản lý bằng Flyway |
 | File storage | `db` (mặc định, lưu vào Postgres), `r2` (Cloudflare R2), `local` (đĩa) |
-| External API | RapidAPI "Real-Time Amazon Data" cho Amazon Search Preview |
+| External API | SerpApi Amazon Search + Product (mặc định gói Free) |
 | Container | Docker Compose (chỉ chạy Postgres khi dev) |
 
 ---
@@ -63,7 +63,7 @@ Cả hai job phải xanh trước khi merge PR vào `main`; đây là bản ch�
 
 Dependabot ([.github/dependabot.yml](.github/dependabot.yml)) mở PR cập nhật dependency hằng tuần cho `backend` (Maven), `frontend` (npm) và GitHub Actions, gom bản minor và patch thành một PR cho mỗi nhóm. PR của Dependabot cũng phải qua CI.
 
-Biến môi trường (xem [.env.example](.env.example)): `JWT_SECRET`, `DB_USER`, `DB_PASS`, `SPRING_DATASOURCE_URL`, `RAPIDAPI_AMAZON_KEY`, `RAPIDAPI_AMAZON_HOST`, `GOOGLE_CLIENT_ID`, `STORAGE_PROVIDER` và các biến `R2_*`. `.env` đã được Git bỏ qua.
+Biến môi trường (xem [.env.example](.env.example)): `JWT_SECRET`, `DB_USER`, `DB_PASS`, `SPRING_DATASOURCE_URL`, `SERPAPI_API_KEY`, `SERPAPI_FREE_ONLY`, `GOOGLE_CLIENT_ID`, `STORAGE_PROVIDER` và các biến `R2_*`. `.env` đã được Git bỏ qua.
 
 ### Database và migration
 
@@ -153,13 +153,25 @@ Amazon có 3 layout theo `category` của task: Case 1 Clothing (thumbnail dọc
 | GET | `/api/previews/{id}` | Lấy preview |
 | GET / POST | `/api/previews/{id}/comments` | Danh sách / thêm comment |
 | PUT | `/api/comments/{id}/resolve` | Đánh dấu comment đã xử lý |
-| GET | `/api/amazon/search?keyword=` | Tìm Amazon thật (cache, làm mới nền Chủ nhật) |
+| GET | `/api/amazon/search?keyword=` | Tìm Amazon thật qua SerpApi, ưu tiên cache và giữ quota Free |
 | GET / POST / PUT | `/api/admin/users`, `/api/admin/users/{id}` | Quản lý nhân sự (Admin) |
 | GET | `/uploads/**` | Phục vụ file media đã lưu |
 
 ### Amazon Search
 
-Backend chỉ trả dữ liệu thật từ RapidAPI. Kết quả luôn được phục vụ từ cache; job nền làm mới từ khoá cũ vào Chủ nhật (`SEARCH_CACHE_MAX_AGE_DAYS`, mặc định 15 ngày). Từ khoá chưa có cache hoặc bấm "Cập nhật từ Amazon" mới gọi RapidAPI. Thiếu `RAPIDAPI_AMAZON_KEY` thì API trả `503` bằng tiếng Việt; hệ thống không bao giờ chèn dữ liệu giả.
+Amazon Search dùng [SerpApi Amazon Search API](https://serpapi.com/amazon-search-api). Cấu hình mặc định dành cho giai đoạn thử nghiệm miễn phí:
+
+1. Tạo tài khoản [SerpApi Free](https://serpapi.com/pricing), lấy key ở dashboard và thêm `SERPAPI_API_KEY` vào `.env` phía backend. Không đưa key vào frontend hoặc commit Git.
+2. Giữ `SERPAPI_FREE_ONLY=true`. Trước mỗi truy vấn mới, backend gọi [Account API miễn phí](https://serpapi.com/account-api) để kiểm tra gói có giá $0 và số lượt trong gói còn lại. Không dùng extra credits khi đã hết lượt miễn phí. Việc nâng gói phải do người quản trị thực hiện riêng.
+3. Gói Free được công bố ngày 10/11/2026 có 250 lượt/tháng, 50 lượt/giờ. Quota dùng chung cho cả team/API key, không phải cho từng user. Số lượt thực tế theo tài khoản SerpApi.
+4. Mở Search Preview chỉ gợi ý từ khoá từ listing; bấm tìm kiếm/Enter mới gửi yêu cầu. Kết quả được lưu Postgres và dùng lại cho mọi role được phép, kể cả dữ liệu cũ. Từ khoá được chuẩn hoá chữ thường và khoảng trắng. Kết quả rỗng hợp lệ cũng được cache.
+5. Cập nhật cùng từ khoá cách nhau tối thiểu 60 phút (`SEARCH_CACHE_MIN_REFRESH_MINUTES`); request trùng từ khoá được gộp tại một backend instance. Mỗi instance chỉ xử lý một truy vấn provider tại một thời điểm để tránh tranh quota cuối cùng. Hết quota/lỗi provider khi refresh thì giữ kết quả cũ.
+6. Job tự làm mới nền mặc định tắt (`SEARCH_CACHE_REFRESH_ENABLED=false`). Ngưỡng `SEARCH_CACHE_MAX_AGE_DAYS=15` chỉ đánh dấu dữ liệu cũ; giao diện hiển thị thời điểm lấy dữ liệu thật, không cam kết cache 24 giờ.
+7. Search hiện lấy trang 1 của `amazon.com`, tiếng Anh, ZIP `10001`, dữ liệu desktop dùng chung cho bố cục desktop/mobile; không truy vấn thêm chỉ vì đổi kích thước màn hình. Giữ thứ tự thẻ của `organic_results` (bao gồm thẻ có cờ sponsored); chưa dựng các khối quảng cáo thương hiệu/video riêng.
+
+Contract `GET /api/amazon/search?keyword=&forceRefresh=false` vẫn trả mảng sản phẩm. Các trường tuỳ chọn mới: `position`, `promotion`, `deliveryTime`, `demo`. Metadata nằm ở header `X-Search-Source` (`cache`/`serpapi`/`demo`), `X-Search-Fetched-At` (UTC ISO-8601), `X-Search-Stale`, `X-Search-Notice` (`REFRESH_COOLDOWN`, `QUOTA_LIMIT`, `REFRESH_FAILED`, `EMPTY_REFRESH`). Khi hết quota hoặc API không khả dụng: ưu tiên cache thật; nếu chưa có cache, trả dữ liệu mẫu (`source=demo`, `notice=DEMO_QUOTA_LIMIT` hoặc `DEMO_UNAVAILABLE`) để tiếp tục thử bố cục. Dữ liệu mẫu không phải đối thủ theo từ khoá, được gắn nhãn trên banner/từng thẻ và không bao giờ lưu vào cache thật. Provider có cooldown 60 giây sau lỗi, tránh gọi lại liên tục; mọi thông báo bằng tiếng Việt.
+
+Test mặc định dùng HTTP giả lập, không gọi SerpApi và không tiêu quota. `SerpApiLiveSmokeTest` chỉ chạy khi bật `SERPAPI_LIVE_TEST=true` và truyền key qua môi trường; test này gửi đúng một truy vấn `cotton shirt`, kiểm tra lần tìm tiếp theo dùng cache, và lưu DTO không chứa key vào `.playwright-mcp/`. Để kiểm tra dữ liệu thật cần key Free hợp lệ trên máy. Tích hợp provider qua `AmazonSearchProvider`; tăng gói sau này bằng cấu hình có chủ đích, không cần đổi contract frontend. Import ASIN cũng dùng SerpApi (`engine=amazon_product`) và chia sẻ quota với Search. Nếu API không khả dụng, import trả lỗi rõ ràng và không tạo listing giả.
 
 ---
 
@@ -172,7 +184,7 @@ Checklist trước go-live:
 - [ ] CORS chỉ cho phép domain production (`app.cors.allowed-origin-patterns`)
 - [ ] HTTPS toàn bộ, HTTP redirect sang HTTPS
 - [ ] PostgreSQL backup tự động (cron + `pg_dump`)
-- [ ] `RAPIDAPI_AMAZON_KEY` và các secret khác trong biến môi trường
+- [ ] `SERPAPI_API_KEY` và các secret khác trong biến môi trường
 - [ ] R2 dùng token giới hạn đúng bucket và custom domain production khi bật `STORAGE_PROVIDER=r2`
 - [ ] Đổi hoặc vô hiệu hoá mọi tài khoản seed trước khi mở cho người dùng
 - [ ] Trang responsive từ 375px, test từng role trên desktop và mobile

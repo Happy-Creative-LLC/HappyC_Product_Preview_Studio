@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
  * DTO này được Jackson ghi/đọc lại từ bảng search_cache, nên BẮT BUỘC có constructor
  * mặc định. Nếu chỉ để @Data + @Builder, Lombok không sinh no-arg constructor và
  * Jackson ghi cache được nhưng không đọc lại được — cache trở nên vô dụng, mọi lượt
- * search đều gọi lại RapidAPI (tốn quota + chậm 2-3s).
+ * search đều gọi lại provider (tốn quota).
  */
 @Data
 @Builder
@@ -27,4 +27,8 @@ public class AmazonSearchResultDto {
     private String brand;
     private String salesVolume;
     private Double originalPrice;
+    private Integer position;
+    private boolean demo;
+    private String promotion;
+    private String deliveryTime;
 }

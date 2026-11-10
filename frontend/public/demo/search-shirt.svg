@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <rect width="400" height="400" fill="#f4f5f7"/>
+  <path d="m144 80-78 48 37 70 40-23v143h114V175l40 23 37-70-78-48c-12 31-100 31-112 0Z" fill="#fdfdfd" stroke="#b5bcc5" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M162 84c8 24 68 24 76 0" fill="none" stroke="#b5bcc5" stroke-width="5"/>
+  <circle cx="200" cy="189" r="32" fill="#17213d"/>
+  <path d="M187 187c10-20 29-13 26 0-1 9-13 19-13 19s-18-12-13-19Z" fill="#ffb52b"/>
+  <text x="200" y="254" text-anchor="middle" fill="#576172" font-family="Arial,sans-serif" font-size="16">DEMO</text>
+</svg>

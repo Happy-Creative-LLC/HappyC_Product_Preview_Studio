@@ -33,6 +33,16 @@ class SearchCacheRefreshServiceTest {
     void setUp() {
         service = new SearchCacheRefreshService(searchCacheRepository, amazonScraperService);
         ReflectionTestUtils.setField(service, "maxAgeDays", 15);
+        ReflectionTestUtils.setField(service, "refreshEnabled", true);
+    }
+
+    @Test
+    void defaultConfigurationDoesNotSpendFreeQuotaInBackground() {
+        service = new SearchCacheRefreshService(searchCacheRepository, amazonScraperService);
+
+        service.refreshStaleKeywords();
+
+        org.mockito.Mockito.verifyNoInteractions(searchCacheRepository, amazonScraperService);
     }
 
     @Test

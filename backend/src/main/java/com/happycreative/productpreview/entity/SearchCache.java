@@ -28,7 +28,7 @@ public class SearchCache {
     // Instant (mốc thời gian tuyệt đối, cột timestamptz) — KHÔNG dùng LocalDateTime:
     // JVM chạy giờ VN (+07:00) còn Postgres session TimeZone=UTC, LocalDateTime.now()
     // ghi lệch ~7h so với now() của Postgres, khiến check "cache còn hạn" luôn sai và
-    // mọi lượt search đều gọi lại RapidAPI dù cache vừa tạo xong.
+    // mọi lượt search đều gọi lại nhà cung cấp dù cache vừa tạo xong.
     @Column(nullable = false)
     private Instant lastUpdated;
 }
