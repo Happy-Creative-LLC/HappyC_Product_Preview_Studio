@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Share2, ZoomIn, X } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
@@ -9,6 +9,11 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
   const [idx, setIdx] = useState(0);
   const [zoomSrc, setZoomSrc] = useState(null);
   const trackRef = useRef(null);
+
+  useEffect(() => {
+    setIdx(0);
+    trackRef.current?.scrollTo({ left: 0 });
+  }, [images[0]]);
 
   const mediaLimit = Number(caseType) === 1 ? 7 : 9;
   const allMedia = [

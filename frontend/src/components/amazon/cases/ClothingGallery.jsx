@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Play, Share2 } from 'lucide-react';
 import EditableZone from '../../shared/EditableZone';
 import UploadPlaceholder from '../UploadPlaceholder';
@@ -8,89 +8,106 @@ import UploadPlaceholder from '../UploadPlaceholder';
 // at the exact measured size so swapping in real media never shifts layout.
 const MAX_IMAGES = 6;
 const MAIN_W = 369;          // measured main image box
-const THUMB_W = 38, THUMB_H = 50, THUMB_R = 11;   // measured thumbnail
+const THUMB_SIZE = 48;    // square Amazon-style thumbnail
+const THUMB_R = 8;
 
-const ClothingGallery = ({ images = [], videos = [] }) => {
-  const imageSlots = Array.from({ length: MAX_IMAGES }, (_, i) => images[i] || null);
+const ClothingGallery = ({ images = [], videos = [], showUploadSlots = true }) => {
+  // Product API mode shows only the media that exists on the source listing.
+  // Task mode keeps the upload scaffold so the gallery stays ready for editing.
+  const imageSlots = showUploadSlots
+    ? Array.from({ length: MAX_IMAGES }, (_, i) => images[i] || null)
+    : images;
   const videoSlot = videos[0] || null;
+  const hasVideoSlot = showUploadSlots || videos.length > 0;
+  const videoIndex = imageSlots.length;
+  const [activeIdx, setActiveIdx] = useState(0);
 
-  const [activeIdx, setActiveIdx] = useState(0); // 0..5 = images, 6 = video
+  useEffect(() => {
+    const itemCount = imageSlots.length + (hasVideoSlot ? 1 : 0);
+    if (activeIdx >= itemCount) setActiveIdx(0);
+  }, [activeIdx, hasVideoSlot, imageSlots.length]);
 
-  const isVideoActive = activeIdx === MAX_IMAGES;
-  const activeSrc = isVideoActive ? videoSlot : imageSlots[activeIdx];
+  useEffect(() => {
+    setActiveIdx(0);
+  }, [images[0]]);
 
-  const thumbStyle = { width: THUMB_W, height: THUMB_H };
+  const isVideoActive = hasVideoSlot && activeIdx === videoIndex;
+  const activeSrc = isVideoActive ? videoSlot : imageSlots[activeIdx] || null;
+  const thumbStyle = { width: THUMB_SIZE, height: THUMB_SIZE };
 
   return (
-    <div className="flex gap-2.5">
-      {/* ── Thumbnail rail ── */}
-      <div className="flex flex-col gap-1.5 shrink-0">
-        {/* 6 image slots (IMAGE zone comes from the page wrapper) */}
+    <div className="flex items-start gap-2.5">
+      <div className="flex max-h-[420px] shrink-0 flex-col gap-2 overflow-y-auto pr-1">
         {imageSlots.map((src, i) => {
-          const sel = activeIdx === i;
+          const selected = !isVideoActive && activeIdx === i;
           return (
             <button
               key={i}
+              type="button"
               onClick={() => setActiveIdx(i)}
               onMouseEnter={() => setActiveIdx(i)}
               aria-label={`Ảnh ${i + 1}`}
-              aria-pressed={sel}
-              className={`overflow-hidden border transition-colors ${sel ? 'border-[#E77600] ring-1 ring-[#E77600]' : 'border-[#D5D9D9] hover:border-[#E77600]'}`}
-              style={{ ...thumbStyle, borderRadius: THUMB_R }}
+              aria-pressed={selected}
+              className={`overflow-hidden rounded-lg border bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E77600] ${
+                selected
+                  ? 'border-[#2162A1] ring-1 ring-[#2162A1]'
+                  : 'border-[#D5D9D9] hover:border-[#007185]'
+              }`}
+              style={thumbStyle}
             >
               {src
-                ? <img src={src} alt="" className="w-full h-full" style={{ objectFit: 'fill' }} />
-                : <UploadPlaceholder zone="IMAGE" compact radius={THUMB_R} />}
+                ? <img src={src} alt="" className="h-full w-full object-cover" />
+                : <UploadPlaceholder zone="IMAGE" compact radius={8} />}
             </button>
           );
         })}
 
-        {/* Video slot */}
-        <EditableZone zone="VIDEO">
-          <button
-            onClick={() => setActiveIdx(MAX_IMAGES)}
-            onMouseEnter={() => setActiveIdx(MAX_IMAGES)}
-            aria-label="Video sản phẩm"
-            aria-pressed={isVideoActive}
-            className={`relative block overflow-hidden border transition-colors ${isVideoActive ? 'border-[#E77600] ring-1 ring-[#E77600]' : 'border-[#D5D9D9] hover:border-[#E77600]'}`}
-            style={{ ...thumbStyle, borderRadius: THUMB_R }}
-          >
-            {videoSlot
-              ? <video src={videoSlot} muted className="w-full h-full" style={{ objectFit: 'fill' }} />
-              : <UploadPlaceholder zone="VIDEO" compact radius={THUMB_R} />}
-            {/* Play overlay */}
-            <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="w-5 h-5 rounded-full bg-black/55 flex items-center justify-center">
-                <Play size={10} className="text-white fill-white ml-[1px]" />
-              </span>
-            </span>
-          </button>
-        </EditableZone>
+        {hasVideoSlot && (
+          <EditableZone zone="VIDEO">
+            <button
+              type="button"
+              onClick={() => setActiveIdx(videoIndex)}
+              onMouseEnter={() => setActiveIdx(videoIndex)}
+              aria-label={videoSlot ? 'Video sản phẩm' : 'Thêm video sản phẩm'}
+              aria-pressed={isVideoActive}
+              className={`relative block shrink-0 overflow-hidden rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E77600] ${
+                isVideoActive
+                  ? 'border-[#2162A1] ring-1 ring-[#2162A1]'
+                  : 'border-[#D5D9D9] hover:border-[#007185]'
+              }`}
+              style={thumbStyle}
+            >
+              {videoSlot
+                ? <video src={videoSlot} muted className="h-full w-full object-cover" />
+                : <UploadPlaceholder zone="VIDEO" compact radius={8} />}
+              {videoSlot && (
+                <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                  <span className="grid size-6 place-items-center rounded-full bg-black/60">
+                    <Play size={11} className="ml-0.5 fill-white text-white" />
+                  </span>
+                </span>
+              )}
+            </button>
+          </EditableZone>
+        )}
       </div>
 
-      {/* ── Main viewer ── */}
-      <div className="grow min-w-0">
-        {/* Video active → nested VIDEO zone; image active → covered by page IMAGE zone */}
+      <div className="min-w-0 grow">
         {isVideoActive ? (
           <EditableZone zone="VIDEO">
             <MainFrame>
               {activeSrc
-                ? <video src={activeSrc} controls className="w-full h-full" style={{ objectFit: 'fill' }} />
-                : <UploadPlaceholder zone="VIDEO" radius={8} label={`Upload video (${MAIN_W}×362)`} />}
+                ? <video src={activeSrc} controls className="h-full w-full object-contain" />
+                : <UploadPlaceholder zone="VIDEO" radius={8} label={`Upload video (${MAIN_W}×${MAIN_W})`} />}
               <ShareBtn />
             </MainFrame>
           </EditableZone>
         ) : (
           <MainFrame>
             {activeSrc ? (
-              <img
-                src={activeSrc}
-                alt="Main product view"
-                className="w-full h-full"
-                style={{ objectFit: 'fill' }}
-              />
+              <img src={activeSrc} alt="Main product view" className="h-full w-full object-contain" />
             ) : (
-              <UploadPlaceholder zone="IMAGE" radius={8} label={`Upload ảnh chính (${MAIN_W}×362)`} />
+              <UploadPlaceholder zone="IMAGE" radius={8} label={`Upload ảnh chính (${MAIN_W}×${MAIN_W})`} />
             )}
             <ShareBtn />
           </MainFrame>
@@ -104,7 +121,7 @@ const ClothingGallery = ({ images = [], videos = [] }) => {
 const MainFrame = ({ children }) => (
   <div
     className="relative overflow-hidden bg-white rounded-sm"
-    style={{ width: MAIN_W, maxWidth: '100%', aspectRatio: `${MAIN_W} / 362` }}
+    style={{ width: MAIN_W, maxWidth: '100%', aspectRatio: '1 / 1' }}
   >
     {children}
   </div>

@@ -10,14 +10,14 @@ import HomeKitchenHorizontalGallery from './cases/HomeKitchenHorizontalGallery';
 //     1 = Clothing (vertical thumbnails, no zoom)
 //     2 = Home & Kitchen Vertical (vertical thumbnails + hover zoom)
 //     3 = Home & Kitchen Horizontal (horizontal thumbnails + hover zoom)
-const ProductGallery = ({ images = [], videos = [], caseType = 1 }) => {
+const ProductGallery = ({ images = [], videos = [], caseType = 1, showUploadSlots = true }) => {
   const isMobile = useIsMobile();
   if (isMobile) return <MobileGallery images={images} videos={videos} caseType={caseType} />;
 
   const type = Number(caseType) || 1;
   if (type === 2) return <HomeKitchenVerticalGallery images={images} videos={videos} />;
   if (type === 3) return <HomeKitchenHorizontalGallery images={images} videos={videos} />;
-  return <ClothingGallery images={images} videos={videos} />;
+  return <ClothingGallery images={images} videos={videos} showUploadSlots={showUploadSlots} />;
 };
 
 export default ProductGallery;
