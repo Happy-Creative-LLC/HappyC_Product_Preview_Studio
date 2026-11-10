@@ -16,9 +16,15 @@ const loadGoogleIdentityServices = () => {
 
     const handleLoad = () => {
       if (window.google?.accounts?.id) resolve(window.google);
-      else reject(new Error('Google Identity Services không khả dụng.'));
+      else {
+        script.remove();
+        reject(new Error('Google Identity Services không khả dụng.'));
+      }
     };
-    const handleError = () => reject(new Error('Không thể tải Google Identity Services.'));
+    const handleError = () => {
+      script.remove();
+      reject(new Error('Không thể tải Google Identity Services.'));
+    };
 
     script.addEventListener('load', handleLoad, { once: true });
     script.addEventListener('error', handleError, { once: true });
@@ -39,7 +45,7 @@ const loadGoogleIdentityServices = () => {
 };
 
 const GoogleLogo = () => (
-  <svg aria-hidden="true" viewBox="0 0 18 18">
+  <svg aria-hidden="true" height="18" width="18" viewBox="0 0 18 18">
     <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.26-.16-1.86H9v3.53h4.84a4.14 4.14 0 0 1-1.8 2.71v2.29h2.91c1.7-1.57 2.69-3.88 2.69-6.67Z" />
     <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.13l-2.91-2.29c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.36A9 9 0 0 0 9 18Z" />
     <path fill="#FBBC05" d="M3.96 10.73A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.28-1.73V4.91H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.09l3-2.36Z" />
@@ -56,11 +62,16 @@ const GoogleSignInButton = ({
 }) => {
   const slotRef = useRef(null);
   const credentialHandlerRef = useRef(onCredential);
+  const unavailableHandlerRef = useRef(onUnavailable);
   const [status, setStatus] = useState(clientId ? 'idle' : 'unconfigured');
 
   useEffect(() => {
     credentialHandlerRef.current = onCredential;
   }, [onCredential]);
+
+  useEffect(() => {
+    unavailableHandlerRef.current = onUnavailable;
+  }, [onUnavailable]);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -69,9 +80,14 @@ const GoogleSignInButton = ({
     let cancelled = false;
     let resizeObserver;
     let renderedWidth = 0;
-    loadGoogleIdentityServices()
+    Promise.resolve()
+      .then(() => {
+        if (cancelled) return null;
+        setStatus('loading');
+        return loadGoogleIdentityServices();
+      })
       .then((googleApi) => {
-        if (cancelled || !slotRef.current) return;
+        if (cancelled || !googleApi || !slotRef.current) return;
 
         googleApi.accounts.id.initialize({
           client_id: clientId,
@@ -108,7 +124,10 @@ const GoogleSignInButton = ({
         resizeObserver.observe(slotRef.current);
       })
       .catch(() => {
-        if (!cancelled) setStatus('error');
+        if (!cancelled) {
+          setStatus('error');
+          unavailableHandlerRef.current?.('script');
+        }
       });
 
     return () => {
@@ -121,17 +140,17 @@ const GoogleSignInButton = ({
   const isLoading = status === 'loading';
 
   return (
-    <div className={`hc-google-button ${disabled ? 'hc-google-button--disabled' : ''}`}>
+    <div className={`relative h-12 w-full ${disabled ? 'pointer-events-none opacity-65' : ''}`}>
       <div
-        className="hc-google-button__slot"
+        className="absolute inset-0 flex w-full items-center justify-center overflow-hidden rounded-xl"
         ref={slotRef}
         aria-hidden={showFallback}
       />
       {showFallback && (
         <button
-          className="hc-google-button__fallback"
+          className="absolute inset-0 inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#d2d2ca] bg-white px-4 text-sm font-semibold text-[#101831] shadow-sm outline-none transition hover:bg-[#fcfcfa] focus-visible:ring-4 focus-visible:ring-[#3478f6]/20 disabled:cursor-not-allowed disabled:opacity-65"
           type="button"
-          onClick={onUnavailable}
+          onClick={() => onUnavailable?.(status === 'error' ? 'script' : 'unconfigured')}
           disabled={disabled || isLoading}
         >
           {isLoading ? (
@@ -139,7 +158,7 @@ const GoogleSignInButton = ({
           ) : (
             <GoogleLogo />
           )}
-          {isLoading ? 'Đang tải Google...' : 'Đăng nhập bằng Google'}
+          {isLoading ? 'Đang tải Google…' : 'Đăng nhập bằng Google'}
         </button>
       )}
     </div>
