@@ -122,19 +122,6 @@ const SidebarLayout = ({ children, breadcrumbs, previewPath = null }) => {
           )}
         </nav>
 
-        <div className="hc-sidebar__user">
-          <span
-            className="hc-avatar"
-            style={{ background: ROLE_COLORS[user?.role] || 'var(--hc-gray-500)' }}
-            aria-hidden="true"
-          >
-            {getInitials(displayName)}
-          </span>
-          <div className="hc-sidebar__user-copy">
-            <strong>{displayName}</strong>
-            <span>{roleLabel}</span>
-          </div>
-        </div>
       </aside>
 
       <div className="hc-shell__body">

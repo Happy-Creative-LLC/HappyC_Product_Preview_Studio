@@ -584,14 +584,12 @@
   color: var(--hc-orange-300);
 }
 
-.hc-sidebar__hint div,
-.hc-sidebar__user-copy {
+.hc-sidebar__hint div {
   min-width: 0;
   display: grid;
 }
 
-.hc-sidebar__hint strong,
-.hc-sidebar__user-copy strong {
+.hc-sidebar__hint strong {
   overflow: hidden;
   color: rgb(255 255 255 / 84%);
   font-size: 0.6875rem;
@@ -599,23 +597,9 @@
   white-space: nowrap;
 }
 
-.hc-sidebar__hint span,
-.hc-sidebar__user-copy span {
+.hc-sidebar__hint span {
   color: rgb(255 255 255 / 40%);
   font-size: 0.625rem;
-}
-
-.hc-sidebar__user {
-  min-height: 4rem;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem;
-  border-top: 1px solid rgb(255 255 255 / 7%);
-}
-
-.hc-sidebar__user-copy {
-  flex: 1;
 }
 
 .hc-avatar {
@@ -1058,6 +1042,7 @@
 .hc-dialog {
   width: min(calc(100% - 2rem), 30rem);
   max-height: calc(100dvh - 2rem);
+  margin: auto;
   padding: 0;
   overflow: auto;
   border: 0;
