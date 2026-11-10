@@ -9,7 +9,9 @@ WHERE p.id = c.preview_id
   AND p.task_id IS NOT NULL;
 
 ALTER TABLE public.comments
-    ALTER COLUMN preview_id DROP NOT NULL,
+    ALTER COLUMN preview_id DROP NOT NULL;
+
+ALTER TABLE public.comments
     RENAME COLUMN target_component TO audience;
 
 ALTER TABLE public.comments
