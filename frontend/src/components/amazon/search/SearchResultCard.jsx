@@ -83,6 +83,9 @@ const SearchResultCard = ({ item, position, eagerImage = false }) => {
       }`}
       aria-label={item.isInjected ? `Listing nội bộ ở vị trí ${position}` : undefined}
     >
+      {item.demo && (
+        <p className="bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-950">Dữ liệu mẫu</p>
+      )}
       {item.isInjected && (
         <div className="flex min-h-9 items-center justify-between gap-2 bg-emerald-700 px-3 py-2 text-xs font-bold text-white">
           <span>LISTING NỘI BỘ</span>
@@ -146,6 +149,13 @@ const SearchResultCard = ({ item, position, eagerImage = false }) => {
             </p>
           )}
         </div>
+
+        {!item.isInjected && (item.promotion || item.deliveryTime) && (
+          <div className="mt-3 space-y-1 text-xs leading-5">
+            {item.promotion && <p className="text-green-800">{item.promotion}</p>}
+            {item.deliveryTime && <p className="text-gray-700">{item.deliveryTime}</p>}
+          </div>
+        )}
 
         {item.isInjected && (
           <div className="mt-3 space-y-2 border-t border-emerald-100 pt-3 text-xs leading-5">

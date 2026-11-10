@@ -20,11 +20,12 @@ public class AmazonController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "false") boolean forceRefresh) {
         
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-        
-        List<AmazonSearchResultDto> results = amazonScraperService.searchAmazon(keyword, forceRefresh);
-        return ResponseEntity.ok(results);
+        AmazonScraperService.SearchOutcome result = amazonScraperService.searchDetailed(keyword, forceRefresh);
+        var response = ResponseEntity.ok()
+                .header("X-Search-Source", result.source())
+                .header("X-Search-Stale", String.valueOf(result.stale()));
+        if (result.fetchedAt() != null) response.header("X-Search-Fetched-At", result.fetchedAt().toString());
+        if (result.notice() != null) response.header("X-Search-Notice", result.notice());
+        return response.body(result.items());
     }
 }

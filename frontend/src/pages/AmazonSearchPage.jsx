@@ -44,8 +44,10 @@ const deriveKeyword = (title) => {
 const getSearchError = (error) => {
   if (!error.response) return 'Không thể kết nối máy chủ. Kiểm tra mạng rồi thử lại.';
   if (error.response.status === 403) return 'Chỉ Seller và Admin được dùng Search Preview.';
-  if (error.response.status === 503) return 'Dịch vụ tìm kiếm Amazon chưa được cấu hình. Hãy kiểm tra RapidAPI key.';
-  if (error.response.status === 502) return 'Amazon hoặc nhà cung cấp dữ liệu đang gián đoạn. Vui lòng thử lại sau.';
+  if (error.response.data?.message) return error.response.data.message;
+  if (error.response.status === 429) return 'Đã đạt giới hạn tìm kiếm. Hãy dùng dữ liệu đã lưu hoặc thử lại sau.';
+  if (error.response.status === 503) return 'Dịch vụ tìm kiếm Amazon chưa được cấu hình. Liên hệ Admin để kiểm tra SerpApi.';
+  if (error.response.status === 502) return 'Nhà cung cấp dữ liệu đang gián đoạn. Vui lòng thử lại sau.';
   return error.response.data?.message || 'Không lấy được dữ liệu Amazon. Vui lòng thử lại.';
 };
 
@@ -104,6 +106,7 @@ const AmazonSearchPage = () => {
   const projectId = searchParams.get('projectId');
   const taskId = searchParams.get('taskId');
   const hasUserSearched = useRef(false);
+  const searchPending = useRef(false);
 
   const [sourceState, setSourceState] = useState({
     loading: Boolean(taskId || previewId),
@@ -136,10 +139,7 @@ const AmazonSearchPage = () => {
         if (!hasUserSearched.current) {
           const initialKeyword = deriveKeyword(product.title);
           setSearchInput(initialKeyword);
-          if (initialKeyword) {
-            setSearchState((current) => ({ ...current, loading: true, error: '', results: [] }));
-            setSearchRequest({ keyword: initialKeyword, forceRefresh: false, requestId: 1 });
-          }
+          // Chỉ gợi ý từ khoá; người dùng gửi tìm kiếm để không tự tiêu quota Free.
         }
       })
       .catch((error) => {
@@ -178,16 +178,24 @@ const AmazonSearchPage = () => {
           results,
           error: '',
           loadedKeyword: searchRequest.keyword,
+          source: response.headers?.['x-search-source'] || 'cache',
+          fetchedAt: response.headers?.['x-search-fetched-at'] || null,
+          stale: response.headers?.['x-search-stale'] === 'true',
+          notice: response.headers?.['x-search-notice'] || '',
         });
       })
       .catch((error) => {
         if (!active || error.code === 'ERR_CANCELED') return;
-        setSearchState({
+        setSearchState((current) => ({
+          ...current,
           loading: false,
-          results: [],
+          results: current.loadedKeyword === searchRequest.keyword ? current.results : [],
           error: getSearchError(error),
           loadedKeyword: searchRequest.keyword,
-        });
+        }));
+      })
+      .finally(() => {
+        if (active) searchPending.current = false;
       });
 
     return () => {
@@ -224,10 +232,15 @@ const AmazonSearchPage = () => {
   }, [effectivePrice, effectiveTitle, injected, safePosition, searchState.results, sourceImages, sourceProduct]);
 
   const queueSearch = (keyword, forceRefresh) => {
+    if (searchPending.current) return;
+    searchPending.current = true;
     setSearchState((current) => ({
       ...current,
       loading: true,
-      results: forceRefresh ? current.results : [],
+      results: current.loadedKeyword === keyword ? current.results : [],
+      notice: '',
+      fetchedAt: current.loadedKeyword === keyword ? current.fetchedAt : null,
+      stale: current.loadedKeyword === keyword ? current.stale : false,
       error: '',
     }));
     setSearchRequest((current) => ({
@@ -257,13 +270,29 @@ const AmazonSearchPage = () => {
     if (keyword) queueSearch(keyword, true);
   };
 
+  const cacheNotices = {
+    DEMO_QUOTA_LIMIT: 'Đã đạt giới hạn tìm kiếm. Đang hiển thị dữ liệu mẫu để thử bố cục; đây không phải kết quả Amazon cho từ khoá này.',
+    DEMO_UNAVAILABLE: 'API chưa khả dụng. Đang hiển thị dữ liệu mẫu để thử bố cục; đây không phải kết quả Amazon cho từ khoá này.',
+    REFRESH_COOLDOWN: 'Dữ liệu vừa được cập nhật. Tiếp tục dùng bản đã lưu để tiết kiệm lượt tìm kiếm.',
+    QUOTA_LIMIT: 'Đã đạt giới hạn tìm kiếm. Đang hiển thị kết quả đã lưu.',
+    REFRESH_FAILED: 'Chưa cập nhật được dữ liệu mới. Đang hiển thị kết quả đã lưu.',
+    EMPTY_REFRESH: 'Lần cập nhật không có sản phẩm. Đang giữ kết quả đã lưu trước đó.',
+  };
+  const notice = cacheNotices[searchState.notice];
+  const fetchedDate = searchState.fetchedAt ? new Date(searchState.fetchedAt) : null;
+  const fetchedLabel = fetchedDate && !Number.isNaN(fetchedDate.getTime())
+    ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(fetchedDate)
+    : null;
+
   const updateInjected = (field) => (event) => {
     setInjected((current) => ({ ...current, [field]: event.target.value }));
   };
 
   const workspacePath = projectId && taskId ? `/projects/${projectId}/tasks/${taskId}` : '/projects';
   const resultCountText = searchState.loadedKeyword
-    ? `${searchState.results.length} kết quả đối thủ cho “${searchState.loadedKeyword}”`
+    ? searchState.source === 'demo'
+      ? `${searchState.results.length} sản phẩm mẫu · không phải kết quả Amazon cho “${searchState.loadedKeyword}”`
+      : `${searchState.results.length} kết quả đối thủ cho “${searchState.loadedKeyword}”`
     : 'Nhập từ khoá để lấy kết quả đối thủ từ Amazon';
 
   return (
@@ -299,7 +328,7 @@ const AmazonSearchPage = () => {
             <div className="grid w-full grid-cols-1 gap-2 text-xs text-[var(--hc-gray-600)] sm:flex sm:w-auto sm:flex-wrap sm:items-center">
               <span className="inline-flex min-h-9 w-fit max-w-full items-center gap-2 rounded-full border border-[var(--hc-color-border)] bg-white px-3">
                 <Database size={15} className="text-[var(--hc-color-focus)]" aria-hidden="true" />
-                Dữ liệu Amazon · cache tối đa 24 giờ
+                {searchState.source === 'demo' ? 'Dữ liệu mẫu · không phải Amazon thật' : fetchedLabel ? `Cập nhật ${fetchedLabel}${searchState.stale ? ' · dữ liệu cũ' : ''}` : 'Ưu tiên dữ liệu Amazon đã lưu'}
               </span>
               <span className={`inline-flex min-h-9 w-fit max-w-full items-center gap-2 rounded-full border px-3 ${
                 sourceProduct
@@ -375,7 +404,7 @@ const AmazonSearchPage = () => {
                 {searchState.loading
                   ? <Loader2 size={17} className="animate-spin" aria-hidden="true" />
                   : <RefreshCw size={17} aria-hidden="true" />}
-                Làm mới dữ liệu
+                Cập nhật từ Amazon
               </button>
             </div>
           </div>
@@ -401,6 +430,11 @@ const AmazonSearchPage = () => {
         </div>
 
         <main id="amazon-search-results" className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6" tabIndex="-1">
+          {notice && !searchState.loading && (
+            <p role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              {notice}
+            </p>
+          )}
           {searchState.error && (
             <div className="mb-5 flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between" role="alert">
               <span className="flex items-start gap-2">
@@ -444,7 +478,7 @@ const AmazonSearchPage = () => {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {comparisonResults.map((item, index) => (
                     <SearchResultCard
-                      key={item.id || `${item.title}-${index}`}
+                      key={`${item.id || item.title}-${index}`}
                       item={item}
                       position={index + 1}
                       eagerImage={index < 4}

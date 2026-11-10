@@ -32,7 +32,7 @@ Seed user dev: `SPRING_PROFILES_ACTIVE=dev` kèm `DEV_SEED_PASSWORD` trong `.env
 - **Nhánh:** `feat/...`, `fix/...`, `chore/...`, `docs/...` tách từ `main`. Mỗi phase trong [docs/ui-plan.md](docs/ui-plan.md) là một nhánh và một PR.
 - **Commit:** Conventional Commits (`type(scope): mô tả`), commit nhỏ, mô tả tiếng Việt.
 - **Không merge, không push lên `main`.** Push nhánh, người dùng tự mở PR.
-- Không commit log (`*.log`) và file thử API (`backend/rapidapi_*.json`).
+- Không commit log (`*.log`) và file thử API (`backend/*api*.json`).
 
 ## Thiết kế và kế hoạch
 

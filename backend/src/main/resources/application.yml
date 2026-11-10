@@ -6,7 +6,7 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
   datasource:
-    url: jdbc:postgresql://localhost:5432/productpreview
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/productpreview}
     username: ${DB_USER:dev}
     password: ${DB_PASS:dev123}
   flyway:
@@ -47,10 +47,10 @@ app:
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
   search-cache:
-    # Amazon Search luôn phục vụ từ cache ngay lập tức (không chờ RapidAPI theo lượt
-    # search); SearchCacheRefreshService làm mới nền vào Chủ nhật cho từ khoá đã quá
-    # số ngày này, để không gián đoạn công việc của Seller.
+    # Free: chỉ tìm mới/cập nhật khi người dùng yêu cầu, cache cũ vẫn đọc được.
     max-age-days: ${SEARCH_CACHE_MAX_AGE_DAYS:15}
+    min-refresh-minutes: ${SEARCH_CACHE_MIN_REFRESH_MINUTES:60}
+    refresh-enabled: ${SEARCH_CACHE_REFRESH_ENABLED:false}
   storage:
     # db    = lưu media vào Postgres (bảng stored_files) — mặc định giai đoạn test,
     #         data demo đi theo volume Docker / pg_dump thay vì backend/uploads/
@@ -69,10 +69,13 @@ app:
 
 
 
-# "Real-Time Amazon Data" (letscrape, RapidAPI) — verify bằng curl trước khi đổi
-# sang sản phẩm khác, response schema khác nhà cung cấp không tương thích nhau.
-# Không đặt default: thiếu cấu hình phải fail rõ ràng thay vì âm thầm gọi nhầm host.
-rapidapi:
-  amazon:
-    host: ${RAPIDAPI_AMAZON_HOST:}
-    key: ${RAPIDAPI_AMAZON_KEY:}
+serpapi:
+  api-key: ${SERPAPI_API_KEY:}
+  # Giữ true trong giai đoạn Free: kiểm tra gói $0 và lượt miễn phí còn lại.
+  free-only: ${SERPAPI_FREE_ONLY:true}
+
+# RestTemplate có thể ghi URI chứa api_key ở DEBUG; luôn tắt log request chi tiết.
+logging:
+  level:
+    org.springframework.web.client.RestTemplate: WARN
+    org.springframework.web.HttpLogging: WARN

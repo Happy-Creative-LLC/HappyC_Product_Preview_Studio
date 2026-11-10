@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * search_cache lưu danh sách DTO này dưới dạng JSON rồi đọc lại ở lần search sau.
  * Nếu round-trip hỏng, cache im lặng trở nên vô dụng: mỗi lượt search lại gọi
- * RapidAPI thật (chậm 2-3s + tốn quota) mà không có lỗi nào nổi lên UI.
+ * provider thật (tốn quota) mà không có lỗi nào nổi lên UI.
  */
 class AmazonSearchResultDtoTest {
 
