@@ -4,8 +4,12 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -20,8 +24,26 @@ public class Comment {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "preview_id", nullable = false)
+    @JoinColumn(name = "preview_id")
     private Preview preview;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Task task;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Comment parentComment;
+
+    @OneToMany(mappedBy = "parentComment")
+    @OrderBy("createdAt ASC")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Comment> replies = new LinkedHashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -34,9 +56,17 @@ public class Comment {
     @Column(nullable = false)
     private String authorRole;
 
-    // IMAGE=đỏ(Design) | VIDEO=tím(Marvel) | TEXT=xanh(Seller) | APLUS | GENERAL
+    // Tất cả comment thuộc cùng một luồng của task.
     @Column(nullable = false)
-    private String targetComponent = "GENERAL";
+    private String audience = "TASK";
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "comment_mentions",
+            joinColumns = @JoinColumn(name = "comment_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<User> mentions = new LinkedHashSet<>();
 
     @Column(nullable = false)
     private boolean isResolved = false;

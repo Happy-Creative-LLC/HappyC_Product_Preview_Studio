@@ -19,7 +19,7 @@ const VISIBLE_THUMB_LIMIT = 6;
 // productData.videos): 0 images renders 0 thumbs (just an upload prompt in
 // the main viewer), N images renders N thumbs (collapsing into "+N" past
 // VISIBLE_THUMB_LIMIT). No fixed image/video count is assumed anywhere.
-const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }) => {
+const HomeKitchenVerticalGallery = ({ images = [], videos = [] }) => {
   // activeIdx: 0..images.length-1 = image thumbs, images.length = video slot
   const [activeIdx, setActiveIdx] = useState(0);
   // Video nào đang phát trong slot video. Rail giữ MỘT ô gộp "N VIDEOS" đúng như
@@ -59,10 +59,9 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
 
           return (
             // marginBottom lives on this OUTER div (not passed as a `style`
-            // prop to EditableZone — EditableZone's contract only forwards
-            // zone/onCommentClick/className/children/id/group, no `style`).
+            // prop to EditableZone — keep the gallery sizing on the image itself.
             <div key={i} style={{ marginBottom: isLastRailItem ? 0 : thumbRail.gapBottom }}>
-              <EditableZone zone="IMAGE" onCommentClick={onCommentClick} className="rounded-none">
+              <EditableZone zone="IMAGE" className="rounded-none">
                 <button
                   type="button"
                   onClick={() => setActiveIdx(i)}
@@ -108,7 +107,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
             Play/overlay badge is expected baked into the uploaded thumbnail
             itself (no extra CSS overlay layer drawn here). */}
         {hasVideo && (
-          <EditableZone zone="VIDEO" onCommentClick={onCommentClick} className="rounded-none">
+          <EditableZone zone="VIDEO" className="rounded-none">
             <div className="flex flex-col items-center">
               <button
                 type="button"
@@ -152,7 +151,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
           at hover time, so the 2.5× mapping stays accurate regardless. */}
       <div className="grow min-w-0" style={{ maxWidth: 480 }}>
         {isVideoActive ? (
-          <EditableZone zone="VIDEO" onCommentClick={onCommentClick}>
+          <EditableZone zone="VIDEO">
             <div className="w-full overflow-hidden rounded-sm bg-black" style={{ aspectRatio: '1 / 1' }}>
               <video
                 key={activeVideoSrc}
@@ -187,7 +186,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
             )}
           </EditableZone>
         ) : (
-          <EditableZone zone="IMAGE" onCommentClick={onCommentClick}>
+          <EditableZone zone="IMAGE">
             <div className="relative w-full overflow-hidden rounded-sm bg-white" style={{ aspectRatio: '1 / 1' }}>
               <ZoomLens src={activeImageSrc}>
                 {activeImageSrc ? (

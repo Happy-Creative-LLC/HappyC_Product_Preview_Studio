@@ -8,6 +8,7 @@ import com.happycreative.productpreview.entity.Task;
 import com.happycreative.productpreview.entity.User;
 import com.happycreative.productpreview.repository.CommentRepository;
 import com.happycreative.productpreview.repository.PreviewRepository;
+import com.happycreative.productpreview.repository.TaskRepository;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ class PreviewAccessServiceTest {
 
     private PreviewRepository previewRepository;
     private CommentRepository commentRepository;
+    private TaskRepository taskRepository;
     private PreviewAccessService service;
     private Preview preview;
 
@@ -37,7 +39,8 @@ class PreviewAccessServiceTest {
     void setUp() {
         previewRepository = mock(PreviewRepository.class);
         commentRepository = mock(CommentRepository.class);
-        service = new PreviewAccessService(previewRepository, commentRepository, new AccessControlService());
+        taskRepository = mock(TaskRepository.class);
+        service = new PreviewAccessService(previewRepository, taskRepository, commentRepository, new AccessControlService());
 
         preview = new Preview();
         preview.setId(previewId);

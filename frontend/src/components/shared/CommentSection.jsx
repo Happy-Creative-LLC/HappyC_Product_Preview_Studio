@@ -1,263 +1,327 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send, X, CheckCircle, Loader2, MessageCircle, Image as ImageIcon, Video, FileText, PanelsTopLeft, LayoutList } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CheckCircle, CornerDownRight, Loader2, MessageCircle, Reply, Send, X } from 'lucide-react';
 import axiosInstance from '../../api/axiosConfig';
 import { useAppStore } from '../../stores/appStore';
 
-const COMPONENT_TABS = [
-  { key: null,      label: 'Tất cả', icon: LayoutList },
-  { key: 'IMAGE',   label: 'Ảnh', icon: ImageIcon },
-  { key: 'VIDEO',   label: 'Video', icon: Video },
-  { key: 'TEXT',    label: 'Text', icon: FileText },
-  { key: 'APLUS',   label: 'A+', icon: PanelsTopLeft },
-  { key: 'GENERAL', label: 'Chung', icon: MessageCircle },
-];
-
-const ROLE_STYLES = {
-  ADMIN:          'bg-purple-100 text-purple-700',
-  MARVEL:         'bg-indigo-100 text-indigo-700',
-  SELLER:         'bg-green-100 text-green-700',
-  PRODUCT_DESIGN: 'bg-red-100 text-red-700',
-};
-
 const ROLE_LABELS = {
-  ADMIN:          'Admin',
-  MARVEL:         'Marvel',
-  SELLER:         'Seller',
-  PRODUCT_DESIGN: 'Design',
+  ADMIN: 'Admin',
+  MARVEL: 'Marvel',
+  SELLER: 'Seller',
+  PRODUCT_DESIGN: 'Product Design',
 };
 
-const COMPONENT_LABELS = {
-  IMAGE:   { text: 'Ảnh',   cls: 'bg-red-50 text-red-600' },
-  VIDEO:   { text: 'Video', cls: 'bg-purple-50 text-purple-600' },
-  TEXT:    { text: 'Text',  cls: 'bg-green-50 text-green-600' },
-  APLUS:   { text: 'A+',    cls: 'bg-orange-50 text-orange-600' },
-  GENERAL: { text: 'Chung', cls: 'bg-gray-100 text-gray-500' },
-};
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+const formatDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 };
 
-// Props:
-//   previewId   — UUID của preview (required)
-//   defaultComponent — tab mặc định ('IMAGE' | 'VIDEO' | 'TEXT' | etc.)
-//   onClose     — callback đóng panel
-const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
+const makeTree = (comments) => {
+  const nodes = new Map(comments.map((comment) => [comment.id, { ...comment, replies: [] }]));
+  const roots = [];
+  comments.forEach((comment) => {
+    const node = nodes.get(comment.id);
+    const parent = comment.parentCommentId ? nodes.get(comment.parentCommentId) : null;
+    if (parent) parent.replies.push(node);
+    else roots.push(node);
+  });
+  return roots;
+};
+
+const getMentionContext = (value, cursor) => {
+  const start = value.lastIndexOf('@', cursor - 1);
+  if (start < 0 || (start > 0 && /[\w@]/u.test(value[start - 1]))) return null;
+  const query = value.slice(start + 1, cursor);
+  if (/\s/u.test(query) || value.slice(cursor).match(/^\S/u)) return null;
+  return { start, end: cursor, query };
+};
+
+const renderContent = (comment) => {
+  const mentions = new Map((comment.mentions || []).map((mention) => [`@${mention.username}`, mention]));
+  const parts = comment.content.split(/(@[\w.+-]+)/gu);
+  return parts.map((part, index) => {
+    const mention = mentions.get(part);
+    return mention ? (
+      <strong className="font-semibold text-blue-700" key={`${part}-${index}`}>{part}</strong>
+    ) : part;
+  });
+};
+
+const CommentSection = ({ taskId, onClose }) => {
   const { user } = useAppStore();
-  const [activeComponent, setActiveComponent] = useState(defaultComponent);
-  // Kết quả tải gắn với khoá (preview + tab) đã tải; khác khoá hiện tại nghĩa là đang tải.
-  const [fetched, setFetched] = useState({ key: null, comments: [], error: '' });
-  const [actionError, setActionError] = useState('');
-  const [newContent, setNewContent] = useState('');
-  const [newComponent, setNewComponent] = useState(defaultComponent || 'GENERAL');
+  const [comments, setComments] = useState([]);
+  const [mentionableUsers, setMentionableUsers] = useState([]);
+  const [draft, setDraft] = useState('');
+  const [mentionIds, setMentionIds] = useState([]);
+  const [mentionContext, setMentionContext] = useState(null);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [prevDefaultComponent, setPrevDefaultComponent] = useState(defaultComponent);
+  const [actionError, setActionError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [activeSuggestion, setActiveSuggestion] = useState(0);
+  const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  const fetchKey = previewId ? `${previewId}|${activeComponent ?? ''}` : null;
-  const loading = fetchKey !== null && fetched.key !== fetchKey;
-  const comments = fetched.comments;
-  const error = fetched.error || actionError;
+  useEffect(() => {
+    if (!taskId) return undefined;
+    let cancelled = false;
+    Promise.all([
+      axiosInstance.get(`/api/tasks/${taskId}/comments`),
+      axiosInstance.get(`/api/tasks/${taskId}/comment-users`),
+    ])
+      .then(([commentsResponse, usersResponse]) => {
+        if (cancelled) return;
+        setComments(commentsResponse.data || []);
+        setMentionableUsers(usersResponse.data || []);
+        setLoadError('');
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError('Không thể tải trao đổi của task. Vui lòng thử lại.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [taskId]);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [comments, replyTarget]);
+
+  useEffect(() => {
+    if (!replyTarget) return;
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, [replyTarget]);
+
+  const suggestions = useMemo(() => {
+    if (!mentionContext) return [];
+    const query = mentionContext.query.toLocaleLowerCase('vi');
+    return mentionableUsers
+      .filter((person) => person.id !== user?.userId)
+      .filter((person) => `${person.fullName} ${person.username} ${ROLE_LABELS[person.role] || person.role}`
+        .toLocaleLowerCase('vi').includes(query))
+      .slice(0, 6);
+  }, [mentionContext, mentionableUsers, user?.userId]);
+
+  const commentThreads = useMemo(() => makeTree(comments), [comments]);
 
   const canResolve = user?.role === 'ADMIN' || user?.role === 'SELLER';
 
-  useEffect(() => {
-    if (!fetchKey) return undefined;
-    let cancelled = false;
-    const params = activeComponent ? `?component=${activeComponent}` : '';
-    axiosInstance.get(`/api/previews/${previewId}/comments${params}`)
-      .then((res) => {
-        if (!cancelled) setFetched({ key: fetchKey, comments: res.data || [], error: '' });
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setFetched({ key: fetchKey, comments: [], error: 'Không thể tải comments. Vui lòng thử lại.' });
-        }
-      });
-    return () => { cancelled = true; };
-  }, [fetchKey, previewId, activeComponent]);
+  const selectMention = (person) => {
+    if (!mentionContext || !inputRef.current) return;
+    const token = `@${person.username}`;
+    const nextDraft = `${draft.slice(0, mentionContext.start)}${token} ${draft.slice(mentionContext.end)}`;
+    const nextCaret = mentionContext.start + token.length + 1;
+    setDraft(nextDraft);
+    setMentionIds((current) => current.includes(person.id) ? current : [...current, person.id]);
+    setMentionContext(null);
+    setActiveSuggestion(0);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(nextCaret, nextCaret);
+    });
+  };
 
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [comments]);
+  const handleDraftChange = (event) => {
+    const value = event.target.value;
+    setDraft(value);
+    setMentionContext(getMentionContext(value, event.target.selectionStart));
+    setActiveSuggestion(0);
+  };
 
-  // Đồng bộ tab với defaultComponent từ parent: điều chỉnh state ngay trong lúc render
-  // (không dùng effect) khi prop đổi.
-  if (defaultComponent !== prevDefaultComponent) {
-    setPrevDefaultComponent(defaultComponent);
-    setActiveComponent(defaultComponent);
-    setNewComponent(defaultComponent || 'GENERAL');
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!newContent.trim() || !previewId) return;
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || !taskId || submitting) return;
     setSubmitting(true);
+    setActionError('');
+    const validMentionIds = mentionIds.filter((id) => {
+      const person = mentionableUsers.find((item) => item.id === id);
+      return person && content.includes(`@${person.username}`);
+    });
     try {
-      const res = await axiosInstance.post(`/api/previews/${previewId}/comments`, {
-        content: newContent.trim(),
-        targetComponent: newComponent,
+      const { data } = await axiosInstance.post(`/api/tasks/${taskId}/comments`, {
+        content,
+        audience: 'TASK',
+        parentCommentId: replyTarget?.id || null,
+        mentionIds: validMentionIds,
       });
-      setFetched(prev => ({ ...prev, comments: [...prev.comments, res.data] }));
-      setNewContent('');
-    } catch {
-      setActionError('Gửi comment thất bại. Vui lòng thử lại.');
+      setComments((current) => [...current, data]);
+      setDraft('');
+      setMentionIds([]);
+      setMentionContext(null);
+      setReplyTarget(null);
+    } catch (error) {
+      setActionError(error.response?.data?.message || 'Gửi comment thất bại. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleResolve = async (commentId) => {
+    setActionError('');
     try {
-      const res = await axiosInstance.put(`/api/comments/${commentId}/resolve`);
-      setFetched(prev => ({ ...prev, comments: prev.comments.map(c => c.id === commentId ? res.data : c) }));
+      const { data } = await axiosInstance.put(`/api/comments/${commentId}/resolve`);
+      setComments((current) => current.map((comment) => comment.id === commentId ? data : comment));
     } catch {
-      setActionError('Không thể resolve comment.');
+      setActionError('Không thể cập nhật trạng thái comment.');
     }
   };
 
-  if (!previewId) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400">
-        <MessageCircle size={40} className="mb-3 opacity-40" />
-        <p className="text-sm">Lưu preview trước để xem và thêm comments.</p>
+  const handleComposerKeyDown = (event) => {
+    if (suggestions.length && event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSuggestion((current) => (current + 1) % suggestions.length);
+    } else if (suggestions.length && event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSuggestion((current) => (current - 1 + suggestions.length) % suggestions.length);
+    } else if (suggestions.length && event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      selectMention(suggestions[activeSuggestion]);
+    } else if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  };
+
+  const renderComposer = (parent = null) => (
+    <form onSubmit={handleSubmit} className="relative space-y-2">
+      {parent && (
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <CornerDownRight size={14} aria-hidden="true" />
+          <span>Trả lời {parent.authorName}</span>
+          <button type="button" className="ml-auto rounded p-1 hover:bg-slate-100" onClick={() => setReplyTarget(null)} aria-label="Hủy trả lời">
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      {mentionContext && suggestions.length > 0 && (
+        <div className="absolute bottom-full left-0 z-10 mb-2 max-h-52 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl" role="listbox" aria-label="Chọn người được tag">
+          {suggestions.map((person, index) => (
+            <button
+              key={person.id}
+              type="button"
+              role="option"
+              aria-selected={index === activeSuggestion}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => selectMention(person)}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left ${index === activeSuggestion ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+            >
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">
+                {(person.fullName || person.username || '?').slice(0, 1).toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block truncate text-xs text-slate-800">{person.fullName}</strong>
+                <span className="block truncate text-[11px] text-slate-500">@{person.username} · {ROLE_LABELS[person.role] || person.role}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex items-end gap-2">
+        <label className="sr-only" htmlFor="task-comment-input">Viết comment</label>
+        <textarea
+          ref={inputRef}
+          id="task-comment-input"
+          rows={2}
+          value={draft}
+          onChange={handleDraftChange}
+          onKeyDown={handleComposerKeyDown}
+          onClick={(event) => setMentionContext(getMentionContext(event.target.value, event.target.selectionStart))}
+          placeholder="Viết comment… gõ @ để tag đồng nghiệp"
+          maxLength={5000}
+          className="min-h-11 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          aria-label="Viết comment"
+        />
+        <button
+          type="submit"
+          disabled={submitting || !draft.trim()}
+          className="grid size-11 shrink-0 place-items-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label={parent ? 'Gửi trả lời' : 'Gửi comment'}
+        >
+          {submitting ? <Loader2 size={17} className="animate-spin" aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}
+        </button>
       </div>
-    );
+      <div className="flex items-center justify-between text-[10px] text-slate-400">
+        <span>Enter để chọn tag · Ctrl/⌘ + Enter để gửi · Shift + Enter để xuống dòng</span>
+        <span>{draft.length}/5000</span>
+      </div>
+    </form>
+  );
+
+  const renderComment = (comment, depth = 0) => (
+    <article key={comment.id} className={`${depth ? 'ml-3 border-l-2 border-slate-100 pl-3 sm:ml-5 sm:pl-4' : ''}`}>
+      <div className={`rounded-xl px-3 py-3 ${comment.resolved ? 'bg-slate-50' : 'bg-white'}`}>
+        <div className="mb-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          <strong className="text-xs font-semibold text-slate-800">{comment.authorName}</strong>
+          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+            {ROLE_LABELS[comment.authorRole] || comment.authorRole}
+          </span>
+          <time className="ml-auto text-[10px] text-slate-400" dateTime={comment.createdAt}>{formatDate(comment.createdAt)}</time>
+        </div>
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">{renderContent(comment)}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={() => { setReplyTarget(comment); setDraft(''); setMentionIds([]); setMentionContext(null); inputRef.current?.focus(); }} className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-blue-700">
+            <Reply size={13} aria-hidden="true" /> Trả lời
+          </button>
+          {comment.resolved ? (
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700">
+              <CheckCircle size={12} aria-hidden="true" /> Đã hoàn tất{comment.resolvedByName ? ` · ${comment.resolvedByName}` : ''}
+            </span>
+          ) : canResolve && depth === 0 ? (
+            <button type="button" onClick={() => handleResolve(comment.id)} className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-emerald-700">
+              <CheckCircle size={12} aria-hidden="true" /> Đánh dấu hoàn tất
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {replyTarget?.id === comment.id && <div className="mb-3 ml-3 pl-3 sm:ml-5 sm:pl-4">{renderComposer(replyTarget)}</div>}
+      {comment.replies.map((reply) => renderComment(reply, depth + 1))}
+    </article>
+  );
+
+  if (!taskId) {
+    return <div className="flex h-full items-center justify-center p-8 text-center text-sm text-slate-500">Comment chỉ khả dụng trong preview gắn với task.</div>;
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
-        <div className="flex items-center gap-2">
-          <MessageCircle size={18} className="text-blue-600" />
-          <span className="font-semibold text-gray-800 text-sm">Comments</span>
-          {comments.length > 0 && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
-              {comments.length}
-            </span>
-          )}
+    <div className="flex h-full min-h-0 flex-col bg-white text-slate-900">
+      <header className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-9 place-items-center rounded-xl bg-blue-50 text-blue-700"><MessageCircle size={18} aria-hidden="true" /></span>
+          <div>
+            <h2 className="text-sm font-semibold">Trao đổi trong task</h2>
+            <p className="text-[11px] text-slate-500">Thảo luận chung cho listing này</p>
+          </div>
         </div>
         {onClose && (
-          <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-lg transition-colors">
-            <X size={16} className="text-gray-500" />
+          <button type="button" onClick={onClose} className="grid size-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label="Đóng phần trao đổi">
+            <X size={17} aria-hidden="true" />
           </button>
         )}
-      </div>
+      </header>
 
-      {/* Component filter tabs */}
-      <div className="flex overflow-x-auto border-b border-gray-100 bg-white">
-        {COMPONENT_TABS.map(tab => (
-          <button
-            key={tab.key ?? 'all'}
-            onClick={() => { setActiveComponent(tab.key); setActionError(''); }}
-            className={`flex min-h-11 shrink-0 items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap
-              ${activeComponent === tab.key
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            <tab.icon size={14} aria-hidden="true" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Comment list */}
-      <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-slate-50/70 p-3" aria-live="polite">
         {loading ? (
-          <div className="flex justify-center pt-8">
-            <Loader2 size={24} className="animate-spin text-blue-500" />
+          <div className="flex justify-center pt-10"><Loader2 size={22} className="animate-spin text-blue-600" aria-label="Đang tải comment" /></div>
+        ) : loadError ? (
+          <p className="pt-8 text-center text-xs text-rose-600" role="alert">{loadError}</p>
+        ) : commentThreads.length === 0 ? (
+          <div className="px-4 pt-10 text-center">
+            <MessageCircle size={26} className="mx-auto mb-2 text-slate-300" aria-hidden="true" />
+            <p className="text-xs font-medium text-slate-600">Chưa có trao đổi trong mục này.</p>
+            <p className="mt-1 text-[11px] text-slate-400">Viết comment đầu tiên hoặc dùng @ để tag đồng nghiệp.</p>
           </div>
-        ) : error ? (
-          <p className="text-xs text-red-500 text-center pt-4">{error}</p>
-        ) : comments.length === 0 ? (
-          <div className="text-center pt-8 text-gray-400 text-xs">
-            Chưa có comment nào.
-          </div>
-        ) : (
-          comments.map(comment => {
-            const compMeta = COMPONENT_LABELS[comment.targetComponent] || COMPONENT_LABELS.GENERAL;
-            return (
-              <div
-                key={comment.id}
-                className={`rounded-xl p-3 border text-sm ${comment.resolved ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-100 shadow-xs'}`}
-              >
-                {/* Meta row */}
-                <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                  <span className="font-semibold text-gray-800 text-xs">{comment.authorName}</span>
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${ROLE_STYLES[comment.authorRole] || 'bg-gray-100 text-gray-500'}`}>
-                    {ROLE_LABELS[comment.authorRole] || comment.authorRole}
-                  </span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${compMeta.cls}`}>
-                    {compMeta.text}
-                  </span>
-                  <span className="text-[10px] text-gray-400 ml-auto">{formatDate(comment.createdAt)}</span>
-                </div>
-
-                {/* Content */}
-                <p className="text-gray-700 leading-relaxed">{comment.content}</p>
-
-                {/* Resolved indicator */}
-                {comment.resolved ? (
-                  <div className="flex items-center gap-1 mt-1.5 text-[10px] text-green-600">
-                    <CheckCircle size={11} />
-                    Đã resolve{comment.resolvedByName ? ` bởi ${comment.resolvedByName}` : ''}
-                  </div>
-                ) : canResolve ? (
-                  <button
-                    onClick={() => handleResolve(comment.id)}
-                    className="mt-1.5 text-[10px] text-gray-400 hover:text-green-600 flex items-center gap-1 transition-colors"
-                  >
-                    <CheckCircle size={11} />
-                    Đánh dấu resolve
-                  </button>
-                ) : null}
-              </div>
-            );
-          })
-        )}
+        ) : commentThreads.map((comment) => renderComment(comment))}
       </div>
 
-      {/* Post new comment */}
-      <div className="border-t border-gray-100 p-3 bg-white">
-        <form onSubmit={handleSubmit} className="space-y-2">
-          <select
-            value={newComponent}
-            onChange={e => setNewComponent(e.target.value)}
-            className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-hidden focus:ring-1 focus:ring-blue-400 bg-gray-50"
-          >
-            <option value="GENERAL">Chung</option>
-            <option value="IMAGE">Ảnh</option>
-            <option value="VIDEO">Video</option>
-            <option value="TEXT">Text</option>
-            <option value="APLUS">A+ Content</option>
-          </select>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newContent}
-              onChange={e => setNewContent(e.target.value)}
-              placeholder="Nhập comment..."
-              className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-400"
-              maxLength={500}
-            />
-            <button
-              type="submit"
-              disabled={submitting || !newContent.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors disabled:opacity-50 shrink-0"
-            >
-              {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-            </button>
-          </div>
-        </form>
-      </div>
+      <footer className="border-t border-slate-100 bg-white p-3">
+        {actionError && <p className="mb-2 text-xs text-rose-600" role="alert">{actionError}</p>}
+        {!replyTarget && renderComposer()}
+      </footer>
     </div>
   );
 };

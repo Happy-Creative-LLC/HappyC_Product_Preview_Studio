@@ -142,7 +142,6 @@ const AmazonPreviewPage = () => {
   const [activeVideo, setActiveVideo] = useState(0);
   const videoRowRef = React.useRef(null);
   const [commentPanelOpen, setCommentPanelOpen]     = useState(false);
-  const [commentDefaultZone, setCommentDefaultZone] = useState(null);
 
   useEffect(() => {
     if (!taskId && !previewIdParam) return;
@@ -152,16 +151,10 @@ const AmazonPreviewPage = () => {
       .finally(() => setIsLoading(false));
   }, [taskId, previewIdParam]);
 
-  const loadedPreviewId = loadedPreview?.id || (taskId ? null : previewIdParam);
   const previewData = (() => {
     try { return loadedPreview?.productData ? JSON.parse(loadedPreview.productData) : null; }
     catch { return null; }
   })();
-
-  const handleZoneComment = (zone) => {
-    setCommentDefaultZone(zone);
-    setCommentPanelOpen(true);
-  };
 
   const productData = taskProductData || previewData || storeData;
 
@@ -222,7 +215,7 @@ const AmazonPreviewPage = () => {
         <div className="max-w-[1500px] mx-auto px-4 py-5">
           {/* Mobile: title / store / rating above the gallery (real Amazon mobile order) */}
           <div className="md:hidden mb-3">
-            <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+            <EditableZone zone="TEXT">
               <ProductTitleBlock {...productData} />
             </EditableZone>
           </div>
@@ -231,20 +224,20 @@ const AmazonPreviewPage = () => {
 
             {/* Gallery — 🔴 IMAGE zone (sticky) */}
             <div className="md:col-span-5 overflow-visible md:sticky md:top-2 self-start">
-              <EditableZone zone="IMAGE" onCommentClick={handleZoneComment}>
-                <ProductGallery images={images} videos={videos} caseType={caseType} onCommentClick={handleZoneComment} />
+              <EditableZone zone="IMAGE">
+                <ProductGallery images={images} videos={videos} caseType={caseType} />
               </EditableZone>
             </div>
 
             {/* Info — 🟢 TEXT zone (title + details) + About this item */}
             <div className="md:col-span-4 space-y-4">
-              <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+              <EditableZone zone="TEXT">
                 <ProductInfo {...productData} caseType={caseType} />
               </EditableZone>
 
               {/* About this item — 🟢 separate TEXT zone (uploadable bullets) */}
               {productData.bulletPoints && productData.bulletPoints.length > 0 && (
-                <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+                <EditableZone zone="TEXT">
                   <div className="px-1 pt-2 border-t border-gray-200">
                     <h3 className="text-base font-bold mb-2">About this item</h3>
                     <ul className="list-disc pl-5 space-y-2 text-[13px] text-gray-900">
@@ -298,12 +291,12 @@ const AmazonPreviewPage = () => {
         <div className="max-w-[1500px] mx-auto px-4 py-5">
           <h2 className="text-xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Product description</h2>
           {productData.description && (
-            <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+            <EditableZone zone="TEXT">
               <p className="mb-5 whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{productData.description}</p>
             </EditableZone>
           )}
-          <AplusCarousel slides={productData.aPlusSlides || []} onCommentClick={handleZoneComment} />
-          <AplusContent banners={productData.aPlusBanners || []} onCommentClick={handleZoneComment} />
+          <AplusCarousel slides={productData.aPlusSlides || []} />
+          <AplusContent banners={productData.aPlusBanners || []} />
         </div>
       </div>
 
@@ -410,7 +403,7 @@ const AmazonPreviewPage = () => {
       {/* Always shown as a scaffold — video slot or upload placeholder (VIDEO zone) */}
       <div className="bg-white mt-3">
           <div className="max-w-[1500px] mx-auto px-4 py-5">
-            <EditableZone zone="VIDEO" onCommentClick={handleZoneComment}>
+            <EditableZone zone="VIDEO">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Product Videos</h2>
 
               {/* Large 16:9 player — video or upload placeholder */}
@@ -845,32 +838,41 @@ const AmazonPreviewPage = () => {
       <MobileStickyCTA price={basePrice} />
 
       {/* ── Floating Comment FAB (sits above the sticky CTA on mobile) ── */}
-      <button
-        onClick={() => setCommentPanelOpen(prev => !prev)}
-        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-full shadow-xl transition-all"
-      >
-        <MessageCircle size={18} />
-        Comments
-      </button>
+      {taskId && (
+        <>
+          <button
+            type="button"
+            onClick={() => setCommentPanelOpen((open) => !open)}
+            aria-expanded={commentPanelOpen}
+            aria-controls="task-comments-panel"
+            className="fixed bottom-20 right-4 z-40 flex min-h-11 items-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 md:bottom-6 md:right-6"
+          >
+            <MessageCircle size={18} aria-hidden="true" />
+            Comments
+          </button>
 
-      {/* ── Comment slide-in panel ── */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Comments"
-        className={`fixed top-0 right-0 h-full w-full sm:w-[400px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${
-          commentPanelOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <CommentSection
-          previewId={loadedPreviewId}
-          defaultComponent={commentDefaultZone}
-          onClose={() => setCommentPanelOpen(false)}
-        />
-      </div>
+          <div
+            id="task-comments-panel"
+            role="dialog"
+            aria-modal={commentPanelOpen}
+            aria-hidden={!commentPanelOpen}
+            aria-label="Trao đổi trong task"
+            className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-full flex-col bg-white shadow-2xl transition-transform duration-300 sm:w-[400px] ${
+              commentPanelOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            <CommentSection taskId={taskId} onClose={() => setCommentPanelOpen(false)} />
+          </div>
 
-      {commentPanelOpen && (
-        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setCommentPanelOpen(false)} />
+          {commentPanelOpen && (
+            <button
+              type="button"
+              aria-label="Đóng phần trao đổi"
+              className="fixed inset-0 z-40 cursor-default bg-black/20"
+              onClick={() => setCommentPanelOpen(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );

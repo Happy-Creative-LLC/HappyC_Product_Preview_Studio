@@ -6,6 +6,7 @@ import com.happycreative.productpreview.entity.Role;
 import com.happycreative.productpreview.entity.Task;
 import com.happycreative.productpreview.repository.CommentRepository;
 import com.happycreative.productpreview.repository.PreviewRepository;
+import com.happycreative.productpreview.repository.TaskRepository;
 import com.happycreative.productpreview.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class PreviewAccessService {
 
     private final PreviewRepository previewRepository;
+    private final TaskRepository taskRepository;
     private final CommentRepository commentRepository;
     private final AccessControlService accessControlService;
 
@@ -37,10 +39,22 @@ public class PreviewAccessService {
     }
 
     @Transactional(readOnly = true)
+    public void requireReadableTask(CustomUserDetails userDetails, UUID taskId) {
+        var task = taskRepository.findById(taskId)
+                .orElseThrow(() -> notFound("Không tìm thấy task."));
+        if (!canRead(userDetails, task)) {
+            throw notFound("Không tìm thấy task.");
+        }
+    }
+
+    @Transactional(readOnly = true)
     public void requireReadableComment(CustomUserDetails userDetails, UUID commentId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> notFound("Không tìm thấy comment."));
-        if (!canRead(userDetails, comment.getPreview().getTask())) {
+        var task = comment.getTask() != null
+                ? comment.getTask()
+                : (comment.getPreview() != null ? comment.getPreview().getTask() : null);
+        if (!canRead(userDetails, task)) {
             throw notFound("Không tìm thấy comment.");
         }
     }
