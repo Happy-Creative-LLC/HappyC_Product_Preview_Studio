@@ -4,7 +4,7 @@ import UploadPlaceholder from './UploadPlaceholder';
 // A+ static banners (Banner 2–5) stacked vertically below the carousel.
 // Count is DATA-DRIVEN (productData.aPlusBanners); empty → 4 default upload
 // slots. Each banner is its own IMAGE (red) EditableZone, measured 1293×530.
-const AplusContent = ({ banners = [], onCommentClick }) => {
+const AplusContent = ({ banners = [] }) => {
   const items = banners.length > 0 ? banners : [null, null, null, null]; // default 4 (Banner 2–5)
 
   return (
@@ -17,7 +17,6 @@ const AplusContent = ({ banners = [], onCommentClick }) => {
             zone="IMAGE"
             group="red"
             id={`aplus-banner-${n}`}
-            onCommentClick={onCommentClick}
             className="w-full max-w-[1293px]"
           >
             <div className="w-full overflow-hidden bg-white" style={{ aspectRatio: '1293 / 530' }}>

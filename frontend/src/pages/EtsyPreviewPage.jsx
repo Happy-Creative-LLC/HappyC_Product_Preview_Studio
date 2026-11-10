@@ -32,7 +32,6 @@ const EtsyPreviewPage = () => {
   const [isLoading, setIsLoading] = useState(Boolean(taskId || previewIdParam));
 
   const [commentPanelOpen, setCommentPanelOpen] = useState(false);
-  const [commentDefaultZone, setCommentDefaultZone] = useState(null);
 
   useEffect(() => {
     if (!taskId && !previewIdParam) return;
@@ -42,16 +41,10 @@ const EtsyPreviewPage = () => {
       .finally(() => setIsLoading(false));
   }, [taskId, previewIdParam]);
 
-  const loadedPreviewId = loadedPreview?.id || (taskId ? null : previewIdParam);
   const previewData = (() => {
     try { return loadedPreview?.productData ? JSON.parse(loadedPreview.productData) : null; }
     catch { return null; }
   })();
-
-  const handleZoneComment = (zone) => {
-    setCommentDefaultZone(zone);
-    setCommentPanelOpen(true);
-  };
 
   if (isLoading) {
     return (
@@ -88,13 +81,13 @@ const EtsyPreviewPage = () => {
           {/* Left column */}
           <div className="lg:col-span-7">
             {videos.length > 0 ? (
-              <EditableZone zone="VIDEO" onCommentClick={handleZoneComment}>
-                <EditableZone zone="IMAGE" onCommentClick={handleZoneComment}>
+              <EditableZone zone="VIDEO">
+                <EditableZone zone="IMAGE">
                   <EtsyGallery images={images} videos={videos} />
                 </EditableZone>
               </EditableZone>
             ) : (
-              <EditableZone zone="IMAGE" onCommentClick={handleZoneComment}>
+              <EditableZone zone="IMAGE">
                 <EtsyGallery images={images} videos={videos} />
               </EditableZone>
             )}
@@ -106,7 +99,7 @@ const EtsyPreviewPage = () => {
           {/* Right column — sticky buy box */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-4">
-              <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+              <EditableZone zone="TEXT">
                 <EtsyBuyBox
                   title={pd.title}
                   shopName={shopName}
@@ -120,7 +113,7 @@ const EtsyPreviewPage = () => {
                 />
               </EditableZone>
               {(pd.description || pd.materials?.length || pd.tags?.length || pd.whoMade || pd.whenMade || pd.taxonomyPath || pd.quantity != null) && (
-                <EditableZone zone="TEXT" onCommentClick={handleZoneComment}>
+                <EditableZone zone="TEXT">
                   <section className="mt-5 space-y-2 rounded-xl border p-4 text-sm" aria-label="Chi tiết listing Etsy">
                     {pd.description && <p className="whitespace-pre-wrap">{pd.description}</p>}
                     {pd.materials?.length > 0 && <p><strong>Materials:</strong> {pd.materials.join(', ')}</p>}
@@ -142,35 +135,42 @@ const EtsyPreviewPage = () => {
 
       <EtsyFooter />
 
-      {/* Floating Comment FAB */}
-      <button
-        onClick={() => setCommentPanelOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-full shadow-xl transition-all"
-        title="Xem / thêm comments"
-      >
-        <MessageCircle size={18} />
-        Comments
-      </button>
+      {taskId && (
+        <>
+          <button
+            type="button"
+            onClick={() => setCommentPanelOpen((open) => !open)}
+            aria-expanded={commentPanelOpen}
+            aria-controls="task-comments-panel"
+            className="fixed bottom-6 right-6 z-40 flex min-h-11 items-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+            title="Xem / thêm comment"
+          >
+            <MessageCircle size={18} aria-hidden="true" />
+            Comments
+          </button>
 
-      {/* Right-side Comment Panel */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Comments"
-        className={`fixed top-0 right-0 h-full w-full sm:w-[400px] max-w-full bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ${
-          commentPanelOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        <CommentSection
-          previewId={loadedPreviewId}
-          defaultComponent={commentDefaultZone}
-          onClose={() => setCommentPanelOpen(false)}
-        />
-      </div>
+          <div
+            id="task-comments-panel"
+            role="dialog"
+            aria-modal={commentPanelOpen}
+            aria-hidden={!commentPanelOpen}
+            aria-label="Trao đổi trong task"
+            className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-full flex-col bg-white shadow-2xl transition-transform duration-300 sm:w-[400px] ${
+              commentPanelOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            <CommentSection taskId={taskId} onClose={() => setCommentPanelOpen(false)} />
+          </div>
 
-      {/* Backdrop */}
-      {commentPanelOpen && (
-        <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setCommentPanelOpen(false)} />
+          {commentPanelOpen && (
+            <button
+              type="button"
+              aria-label="Đóng phần trao đổi"
+              className="fixed inset-0 z-40 cursor-default bg-black/20"
+              onClick={() => setCommentPanelOpen(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );

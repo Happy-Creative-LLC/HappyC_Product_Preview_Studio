@@ -13,7 +13,7 @@ import UploadPlaceholder from './UploadPlaceholder';
 //
 // Slides are DATA-DRIVEN (productData.aPlusSlides). Empty → one default upload
 // slot. Each slide is its own IMAGE (red) EditableZone with id `aplus-slide-N`.
-const AplusCarousel = ({ slides = [], onCommentClick }) => {
+const AplusCarousel = ({ slides = [] }) => {
   const items = slides.length > 0 ? slides : [null]; // empty → 1 default placeholder slide
   const total = items.length;
 
@@ -53,7 +53,6 @@ const AplusCarousel = ({ slides = [], onCommentClick }) => {
                 zone="IMAGE"
                 group="red"
                 id={`aplus-slide-${i + 1}`}
-                onCommentClick={onCommentClick}
                 className="w-full h-full"
               >
                 <div className="w-full h-full overflow-hidden" style={{ borderRadius: 0 }}>

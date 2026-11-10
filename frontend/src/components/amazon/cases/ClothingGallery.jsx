@@ -10,7 +10,7 @@ const MAX_IMAGES = 6;
 const MAIN_W = 369;          // measured main image box
 const THUMB_W = 38, THUMB_H = 50, THUMB_R = 11;   // measured thumbnail
 
-const ClothingGallery = ({ images = [], videos = [], onCommentClick }) => {
+const ClothingGallery = ({ images = [], videos = [] }) => {
   const imageSlots = Array.from({ length: MAX_IMAGES }, (_, i) => images[i] || null);
   const videoSlot = videos[0] || null;
 
@@ -45,14 +45,14 @@ const ClothingGallery = ({ images = [], videos = [], onCommentClick }) => {
           );
         })}
 
-        {/* Video slot — its own VIDEO zone (purple), separated from image slots */}
-        <EditableZone zone="VIDEO" onCommentClick={onCommentClick}>
+        {/* Video slot */}
+        <EditableZone zone="VIDEO">
           <button
             onClick={() => setActiveIdx(MAX_IMAGES)}
             onMouseEnter={() => setActiveIdx(MAX_IMAGES)}
             aria-label="Video sản phẩm"
             aria-pressed={isVideoActive}
-            className={`relative block overflow-hidden border transition-colors ${isVideoActive ? 'border-[#A855F7] ring-1 ring-[#A855F7]' : 'border-[#D5B8F5] hover:border-[#A855F7]'}`}
+            className={`relative block overflow-hidden border transition-colors ${isVideoActive ? 'border-[#E77600] ring-1 ring-[#E77600]' : 'border-[#D5D9D9] hover:border-[#E77600]'}`}
             style={{ ...thumbStyle, borderRadius: THUMB_R }}
           >
             {videoSlot
@@ -72,7 +72,7 @@ const ClothingGallery = ({ images = [], videos = [], onCommentClick }) => {
       <div className="grow min-w-0">
         {/* Video active → nested VIDEO zone; image active → covered by page IMAGE zone */}
         {isVideoActive ? (
-          <EditableZone zone="VIDEO" onCommentClick={onCommentClick}>
+          <EditableZone zone="VIDEO">
             <MainFrame>
               {activeSrc
                 ? <video src={activeSrc} controls className="w-full h-full" style={{ objectFit: 'fill' }} />
