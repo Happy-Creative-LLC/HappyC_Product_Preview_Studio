@@ -36,3 +36,6 @@ docs/uiux-v1/
 
 # Serena local project metadata
 .serena/
+
+# Local Windows Maven wrapper changes
+backend/mvnw.cmd
