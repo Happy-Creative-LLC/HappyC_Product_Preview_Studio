@@ -6,7 +6,7 @@ import UploadPlaceholder from './UploadPlaceholder';
 const ProductInfo = ({
   title, brand, price, rating, reviewsCount,
   boughtRecently, salesStat, badges, colors, sizes,
-  fabricType, careInstructions, origin, caseType,
+  fabricType, careInstructions, origin, caseType, categoryLabel,
   variationLabel = 'Color',
 }) => {
   const isClothing     = Number(caseType) === 1;
@@ -41,6 +41,7 @@ const ProductInfo = ({
         <ProductTitleBlock
           title={title} brand={brand} rating={rating} reviewsCount={reviewsCount}
           boughtRecently={boughtRecently} salesStat={salesStat} badges={badges}
+          categoryLabel={categoryLabel}
         />
         <div className="border-t border-[#E7E7E7] my-2" />
       </div>

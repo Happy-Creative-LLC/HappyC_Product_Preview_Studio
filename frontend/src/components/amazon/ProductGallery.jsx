@@ -12,7 +12,7 @@ import HomeKitchenHorizontalGallery from './cases/HomeKitchenHorizontalGallery';
 //     3 = Home & Kitchen Horizontal (horizontal thumbnails + hover zoom)
 const ProductGallery = ({ images = [], videos = [], caseType = 1 }) => {
   const isMobile = useIsMobile();
-  if (isMobile) return <MobileGallery images={images} videos={videos} />;
+  if (isMobile) return <MobileGallery images={images} videos={videos} caseType={caseType} />;
 
   const type = Number(caseType) || 1;
   if (type === 2) return <HomeKitchenVerticalGallery images={images} videos={videos} />;

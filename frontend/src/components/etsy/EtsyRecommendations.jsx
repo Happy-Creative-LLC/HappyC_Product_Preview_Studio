@@ -1,17 +1,14 @@
 import { Star } from 'lucide-react';
 
 // Build a product grid card list by cycling the available gallery images.
-const buildProducts = (images, count) => {
+const buildProducts = (images, count, productTitle = 'Handmade gift') => {
   const titles = [
-    'Comfort Colors Custom Dog Shirt', 'Custom Vintage Bootleg Pet Tee',
-    'Custom Bootleg Pet Co Shirt', 'Comfort Colors Custom Vintage Tee',
-    'Custom Pet Portrait Bootleg Shirt', 'Comfort Colors Custom Bootleg Tee',
-    'Custom Dog Photo Bootleg Shirt', 'Personalized Pet Retro Graphic Tee',
-    'Custom Cat Portrait Bootleg Shirt', 'Vintage Custom Pet Comfort Colors',
-    'Custom Pet Memorial Shirt Gift', 'Retro Bootleg Dog Lover Tee',
+    `${productTitle} · handmade gift`, `Personalized ${productTitle.toLowerCase()}`,
+    `Custom ${productTitle.toLowerCase()} for family`, `${productTitle} · unique design`,
+    `Personalized gift inspired by ${productTitle.toLowerCase()}`,
   ];
-  const prices = [13.99, 9.8, 9.07, 6.9, 6.4, 10.0, 5.25, 13.99, 21.6, 8.35, 8.99, 10.99];
-  const list = [27.98, 19.6, 18.14, 13.8, 12.8, 20.0];
+  const prices = [13.99, 9.8, 9.07, 6.9, 10.0];
+  const list = [27.98, 19.6, 18.14, 13.8, 20.0];
   const src = images.length ? images : [''];
   return Array.from({ length: count }).map((_, i) => ({
     src: src[i % src.length],
@@ -48,24 +45,18 @@ const ProductCard = ({ p }) => (
 );
 
 const INTEREST_CARDS = [
-  { label: 'The Pet Parent', bg: 'from-emerald-200 to-emerald-300' },
-  { label: 'The Pet', bg: 'from-amber-200 to-amber-300' },
-  { label: 'The Dog Lover', bg: 'from-rose-200 to-rose-300' },
-  { label: 'The Cat Lover', bg: 'from-sky-200 to-sky-300' },
-  { label: 'The 90s Kid', bg: 'from-violet-200 to-violet-300' },
+  { label: 'Handmade gifts', bg: 'from-emerald-100 to-emerald-200' },
+  { label: 'Personalized finds', bg: 'from-amber-100 to-amber-200' },
+  { label: 'Gifts for family', bg: 'from-rose-100 to-rose-200' },
+  { label: 'Home favorites', bg: 'from-sky-100 to-sky-200' },
+  { label: 'Everyday keepsakes', bg: 'from-violet-100 to-violet-200' },
 ];
 
-const RELATED_SEARCHES = [
-  'Custom Gift With Cat Photo', 'Put Your Dogs Face On', 'Pet Custom for Men',
-  'Custom Animal Lover Gift', 'Custom Dog Gift Birthday', 'Personalized Pet Gifts',
-  'Gifts for Dog Owner Personalized', 'Custom Two Cat Crew Neck', 'Dog Memorial Gift Tshirt',
-  'My Dog Shirt', 'Men Custom Dog',
-];
-
-const EtsyRecommendations = ({ images = [], tags = [] }) => {
-  const alsoLike = buildProducts(images, 12);
-  const similar = buildProducts([...images].reverse(), 12);
-  const searchChips = (tags.length ? tags : RELATED_SEARCHES).slice(0, 12);
+const EtsyRecommendations = ({ images = [], tags = [], productTitle = '' }) => {
+  const recommendationTitle = productTitle?.trim() || 'Handmade gift';
+  const alsoLike = buildProducts(images, 12, recommendationTitle);
+  const similar = buildProducts([...images].reverse(), 12, recommendationTitle);
+  const searchChips = tags.slice(0, 12);
 
   return (
     <div className="space-y-12 mt-12">

@@ -57,6 +57,7 @@ const EtsyPreviewPage = () => {
   const pd = taskProductData || previewData || storeData;
 
   const shopName     = pd.brand || 'HappyCreative';
+  const categoryCrumbs = String(pd.taxonomyPath || 'Home & Living').split('>').slice(0, 2).map((crumb) => crumb.trim());
   const images       = pd.images || [];
   const videos       = pd.videos || [];
   const bulletPoints = pd.bulletPoints || [];
@@ -72,7 +73,7 @@ const EtsyPreviewPage = () => {
         <nav className="text-[13px] text-gray-500 mb-4 flex items-center gap-1.5">
           <a href="#" className="hover:underline">Homepage</a>
           <span>/</span>
-          <span className="text-gray-700">Clothing</span>
+          {categoryCrumbs.map((crumb) => <span key={crumb} className="text-gray-700">{crumb}</span>)}
         </nav>
 
         {/* ── Two-column: gallery (left) + buy box (right) ── */}
@@ -130,7 +131,7 @@ const EtsyPreviewPage = () => {
         </div>
 
         {/* ── Full-width recommendations ── */}
-        <EtsyRecommendations images={images} tags={pd.tags || []} />
+        <EtsyRecommendations images={images} tags={pd.tags || []} productTitle={pd.title} />
       </main>
 
       <EtsyFooter />
@@ -142,11 +143,13 @@ const EtsyPreviewPage = () => {
             onClick={() => setCommentPanelOpen((open) => !open)}
             aria-expanded={commentPanelOpen}
             aria-controls="task-comments-panel"
-            className="fixed bottom-6 right-6 z-40 flex min-h-11 items-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+            aria-label="Mở trao đổi trong task"
+            className="fixed bottom-4 right-4 z-40 flex size-11 items-center justify-center rounded-full bg-blue-600 p-0 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 md:bottom-6 md:right-6 md:h-11 md:w-auto md:gap-2 md:px-4 md:py-3"
             title="Xem / thêm comment"
           >
             <MessageCircle size={18} aria-hidden="true" />
-            Comments
+            <span className="sr-only md:hidden">Comments</span>
+            <span className="hidden md:inline">Comments</span>
           </button>
 
           <div
