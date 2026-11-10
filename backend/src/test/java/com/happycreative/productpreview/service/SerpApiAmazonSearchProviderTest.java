@@ -177,6 +177,7 @@ class SerpApiAmazonSearchProviderTest {
         server.expect(requestTo(startsWith("https://serpapi.com/search.json?")))
                 .andExpect(queryParam("engine", "amazon_product"))
                 .andExpect(queryParam("asin", "B012345678"))
+                .andExpect(queryParam("device", "desktop"))
                 .andRespond(withSuccess("""
                     {"product_results":{"title":"Family &amp; Friends","brand":"Happy",
                       "purchase_options":{"buy_new":{"extracted_price":29.99}},

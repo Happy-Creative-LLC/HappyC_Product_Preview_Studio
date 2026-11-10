@@ -37,6 +37,9 @@ public class AmazonScraperService {
     @Value("${app.search-cache.max-age-days:15}")
     private int maxAgeDays;
 
+    @Value("${app.product-cache.max-age-hours:24}")
+    private int productCacheHours = 24;
+
     public List<AmazonSearchResultDto> searchAmazon(String keyword, boolean forceRefresh) {
         return searchDetailed(keyword, forceRefresh).items();
     }
@@ -140,6 +143,42 @@ public class AmazonScraperService {
     }
 
     public ObjectNode scrapeProductByAsin(String asinOrUrl) {
+        return getProductByAsin(asinOrUrl, "desktop").product();
+    }
+
+    public record ProductOutcome(ObjectNode product, Instant fetchedAt, String source, boolean stale) {}
+
+    public ProductOutcome getProductByAsin(String asinOrUrl, String device) {
+        String asin = normalizeAsin(asinOrUrl);
+        String normalizedDevice = device == null ? "desktop" : device.strip().toLowerCase(Locale.ROOT);
+        if (!List.of("desktop", "mobile", "tablet").contains(normalizedDevice)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Thiết bị phải là desktop, tablet hoặc mobile.");
+        }
+
+        String cacheKey = "amazon_product:" + asin + ":" + normalizedDevice;
+        synchronized (searchLocks[Math.floorMod(cacheKey.hashCode(), searchLocks.length)]) {
+            Optional<SearchCache> cachedEntity = searchCacheRepository.findByKeywordIgnoreCase(cacheKey);
+            ObjectNode cachedProduct = cachedEntity.map(this::readProductCache).orElse(null);
+            Instant updatedAt = cachedEntity.map(SearchCache::getLastUpdated).orElse(null);
+            if (cachedProduct != null && updatedAt != null
+                    && updatedAt.isAfter(Instant.now().minus(Duration.ofHours(productCacheHours)))) {
+                return new ProductOutcome(cachedProduct, updatedAt, "cache", false);
+            }
+
+            try {
+                ObjectNode product = searchProvider.product(asin, normalizedDevice);
+                Instant fetchedAt = Instant.now();
+                saveProductCache(cacheKey, product, cachedEntity);
+                return new ProductOutcome(product, fetchedAt, "serpapi", false);
+            } catch (ResponseStatusException exception) {
+                if (cachedProduct != null) return new ProductOutcome(cachedProduct, updatedAt, "cache", true);
+                throw exception;
+            }
+        }
+    }
+
+    private String normalizeAsin(String asinOrUrl) {
         String input = asinOrUrl == null ? "" : asinOrUrl.strip();
         String asin = input.toUpperCase(Locale.ROOT);
         if (input.startsWith("https://")) {
@@ -159,6 +198,27 @@ public class AmazonScraperService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Vui lòng nhập ASIN gồm 10 ký tự hoặc URL sản phẩm amazon.com hợp lệ.");
         }
-        return searchProvider.product(asin);
+        return asin;
+    }
+
+    private ObjectNode readProductCache(SearchCache cache) {
+        try {
+            var parsed = objectMapper.readTree(cache.getResultsJson());
+            return parsed != null && parsed.isObject() ? (ObjectNode) parsed : null;
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    private void saveProductCache(String cacheKey, ObjectNode product, Optional<SearchCache> existing) {
+        try {
+            SearchCache cache = existing.orElseGet(SearchCache::new);
+            cache.setKeyword(cacheKey);
+            cache.setResultsJson(objectMapper.writeValueAsString(product));
+            cache.setLastUpdated(Instant.now());
+            searchCacheRepository.save(cache);
+        } catch (Exception exception) {
+            log.warn("Không thể lưu cache Amazon Product API.");
+        }
     }
 }

@@ -9,14 +9,14 @@ const amazonCase2Tokens = {
   mutedText:          amazonTokens.mutedText,          // #565959
 
   // ── ZoomLens (đo) ──
-  // magnification CỐ ĐỊNH 2.5× — không phải prop có thể override.
+  // Magnification mặc định 2× như hành vi zoom trên Amazon.
   zoomLens: {
-    lensWidth:     254,
-    lensHeight:    268,
-    panelWidth:    636,
-    panelHeight:   669,
-    panelGap:      75,   // khoảng cách panel phóng to với ảnh gốc, bên phải
-    magnification: 2.5,
+    lensWidth:     240,
+    lensHeight:    240,
+    panelWidth:    720,
+    panelHeight:   540,
+    panelGap:      56,   // panel lớn, cách ảnh một khoảng như Amazon thật
+    magnification: 2,
   },
 
   // ── Rail thumbnail dọc (đo) ──

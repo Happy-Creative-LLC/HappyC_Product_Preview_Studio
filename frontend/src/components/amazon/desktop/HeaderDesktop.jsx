@@ -1,35 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Search, ShoppingCart, MapPin, Menu, ChevronDown, Globe2, Loader2 } from 'lucide-react';
 import AmazonLogo from '../AmazonLogo';
+import { getAmazonCategoryNavigation, getAmazonSeasonalNavigation } from '../seasonalNavigation';
 
-/* ── Sub-nav items in exact real-Amazon order ── */
-const NAV_ITEMS = [
-  { label: 'Health AI' },
-  { label: 'Amazon Haul' },
-  { label: 'Medical Care', hasChevron: true },
-  { label: 'Whole Foods' },
-  { label: 'Amazon Basics' },
-  { label: 'Best Sellers' },
-  { label: 'Prime', hasChevron: true },
-  { label: "Today's Deals" },
-  { label: 'New Releases' },
-  { label: 'Books' },
-  { label: 'Groceries' },
-  { label: 'Gift Cards' },
-  { label: 'Sell' },
-  { label: 'Music' },
-  { label: 'Registry' },
-  { label: 'Fashion' },
-  { label: 'Amazon Home' },
-  { label: 'Automotive' },
-  { label: 'Toys & Games', hasChevron: true },
-];
-
-/* ── Fashion bar categories (real Amazon order) ── */
-const FASHION_CATS = [
-  'Women', 'Men', 'Kids', 'Luggage', 'Sales & Deals',
-  'New Arrivals', 'Amazon Brands', 'Amazon Luxury',
-];
-
+/* Seasonal and department navigation modeled for the internal preview. */
 const HeaderDesktop = ({
   caseType = 1,
   searchValue,
@@ -37,8 +11,25 @@ const HeaderDesktop = ({
   onSearchSubmit,
   searchLoading = false,
   searchPlaceholder = 'Search Amazon',
+  previewDate,
 }) => {
-  const showFashionBar = Number(caseType) === 1;
+  const [today, setToday] = useState(() => new Date());
+  const queryPreviewDate = new URLSearchParams(window.location.search).get('previewDate');
+  const selectedPreviewDate = previewDate || queryPreviewDate;
+  const parsedPreviewDate = selectedPreviewDate ? new Date(`${selectedPreviewDate}T12:00:00`) : null;
+  const seasonalDate = parsedPreviewDate && !Number.isNaN(parsedPreviewDate.getTime()) ? parsedPreviewDate : today;
+
+  useEffect(() => {
+    if (selectedPreviewDate) return undefined;
+
+    const now = new Date();
+    const untilNextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime() + 50;
+    const timer = window.setTimeout(() => setToday(new Date()), untilNextDay);
+    return () => window.clearTimeout(timer);
+  }, [selectedPreviewDate]);
+
+  const { campaign, items: navItems } = getAmazonSeasonalNavigation(seasonalDate);
+  const categoryNavigation = getAmazonCategoryNavigation(caseType);
   const controlledSearchProps = onSearchChange
     ? { value: searchValue ?? '', onChange: onSearchChange }
     : {};
@@ -138,7 +129,7 @@ const HeaderDesktop = ({
         <div className="flex items-center font-bold cursor-pointer border border-transparent hover:border-white rounded-xs px-2 py-1 shrink-0 gap-1">
           <Menu size={18} /> All
         </div>
-        {NAV_ITEMS.map(item => (
+        {navItems.map(item => (
           <span
             key={item.label}
             className="cursor-pointer border border-transparent hover:border-white rounded-xs px-2 py-1 shrink-0 flex items-center gap-0.5"
@@ -147,29 +138,32 @@ const HeaderDesktop = ({
             {item.hasChevron && <ChevronDown size={11} className="text-[#CCCCCC] ml-0.5" />}
           </span>
         ))}
+        {campaign.announcement && (
+          <span className="ml-auto shrink-0 px-3 text-[12px] font-bold">
+            {campaign.announcement}
+          </span>
+        )}
       </div>
 
-      {/* Fashion Sub-Nav (Case 1 only) */}
-      {showFashionBar && (
-        <div
-          className="bg-white border-b border-gray-200 px-4 h-[36px] flex items-center shadow-xs overflow-x-auto gap-0"
-          style={{ scrollbarWidth: 'none' }}
-        >
-          <span className="font-bold text-[15px] text-gray-900 whitespace-nowrap mr-6 shrink-0">
-            Amazon Fashion
-          </span>
-          <div className="flex flex-1 items-center justify-between">
-            {FASHION_CATS.map(cat => (
-              <span
-                key={cat}
-                className="cursor-pointer hover:underline hover:text-orange-500 whitespace-nowrap text-[13px] text-gray-700"
-              >
-                {cat}
-              </span>
-            ))}
-          </div>
+      {/* Category sub-nav mirrors the selected Amazon department. */}
+      <div
+        className="bg-white border-b border-gray-200 px-4 h-[36px] flex items-center shadow-xs overflow-x-auto gap-0"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        <span className="font-bold text-[15px] text-gray-900 whitespace-nowrap mr-6 shrink-0">
+          {categoryNavigation.title}
+        </span>
+        <div className="flex flex-1 items-center justify-between gap-6">
+          {categoryNavigation.categories.map((category) => (
+            <span
+              key={category}
+              className="cursor-pointer hover:underline hover:text-orange-500 whitespace-nowrap text-[13px] text-gray-700"
+            >
+              {category}
+            </span>
+          ))}
         </div>
-      )}
+      </div>
     </header>
   );
 };
