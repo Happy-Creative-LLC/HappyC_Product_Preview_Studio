@@ -1042,6 +1042,7 @@
 .hc-dialog {
   width: min(calc(100% - 2rem), 30rem);
   max-height: calc(100dvh - 2rem);
+  margin: auto;
   padding: 0;
   overflow: auto;
   border: 0;
