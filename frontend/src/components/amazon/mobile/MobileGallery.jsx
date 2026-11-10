@@ -4,16 +4,17 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 // MobileGallery — full-width swipe carousel + dot indicators, shared by every
 // Amazon case on mobile (real Amazon shows a single swipeable image carousel).
-const MobileGallery = ({ images = [], videos = [] }) => {
+const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
   const [broken, setBroken] = useState(new Set());
   const [idx, setIdx] = useState(0);
   const [zoomSrc, setZoomSrc] = useState(null);
   const trackRef = useRef(null);
 
+  const mediaLimit = Number(caseType) === 1 ? 7 : 9;
   const allMedia = [
     ...images.map(src => ({ src, type: 'image' })),
     ...(videos || []).map(src => ({ src, type: 'video' })),
-  ].slice(0, 7);
+  ].slice(0, mediaLimit);
   const validMedia = allMedia.filter((_, i) => !broken.has(i));
 
   const handleError = useCallback((media) => {

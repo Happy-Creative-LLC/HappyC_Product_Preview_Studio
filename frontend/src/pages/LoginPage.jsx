@@ -87,39 +87,39 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="grid min-h-screen bg-[#fffbf5] font-['Inter',system-ui,sans-serif] text-[#101831] lg:grid-cols-[1.05fr_0.95fr]">
+    <main className="grid min-h-screen bg-[#f5f6fa] font-['Inter',system-ui,sans-serif] text-[#101831] lg:grid-cols-[1.05fr_0.95fr]">
       <section
         aria-label="Giới thiệu Happy Creative"
-        className="flex min-h-[38vh] flex-col justify-between gap-9 bg-[#101831] px-7 py-8 text-white sm:px-10 sm:py-10 lg:min-h-screen lg:px-14 lg:py-12"
+        className="flex min-h-[300px] flex-col justify-between gap-6 bg-[#101831] px-6 py-6 text-white sm:gap-9 sm:px-10 sm:py-10 lg:min-h-screen lg:px-14 lg:py-12"
       >
         <BrandMark compact inverse className="self-start" />
 
         <div className="max-w-xl space-y-5">
           <p className="text-sm font-semibold tracking-wide text-[#ffc963]">Không gian nội bộ</p>
-          <h1 className="font-['Roboto_Slab',Georgia,serif] text-[2.25rem] font-bold leading-[1.15] tracking-tight sm:text-5xl">
+          <h1 className="font-['Roboto_Slab',Georgia,serif] text-[1.875rem] font-bold leading-[1.12] tracking-tight sm:text-5xl">
             Xem trước listing.
             <br />
             Hoàn thiện cùng team.
           </h1>
-          <p className="max-w-lg text-base leading-7 text-[#d7dcea] sm:text-lg">
+          <p className="max-w-lg text-sm leading-6 text-[#d7dcea] sm:text-lg sm:leading-7">
             Review sản phẩm Amazon và Etsy trước khi đăng.
           </p>
         </div>
 
-        <p className="text-xs text-[#b8bfd6]">
+        <p className="hidden text-xs text-[#b8bfd6] sm:block">
           © 2026 Happy Creative · Product Preview Studio
         </p>
       </section>
 
       <section
         aria-labelledby="login-title"
-        className="flex items-center justify-center px-6 py-10 sm:px-10 sm:py-14 lg:min-h-screen lg:px-12"
+        className="flex items-center justify-center bg-[radial-gradient(ellipse_at_top_right,_#fffdf9,_#f3f5fa)] px-5 py-8 sm:px-10 sm:py-14 lg:min-h-screen lg:px-12"
       >
-        <div className="w-full max-w-[420px] space-y-6">
+        <div className="w-full max-w-[440px] space-y-6 rounded-[24px] border border-[#e6e8ed] bg-white p-6 shadow-[0_24px_70px_-40px_rgba(16,24,49,0.34)] sm:p-9 lg:p-10">
           <header className="space-y-2">
             <h2
               id="login-title"
-              className="font-['Roboto_Slab',Georgia,serif] text-3xl font-bold tracking-tight"
+              className="font-['Inter',system-ui,sans-serif] text-[1.875rem] font-bold leading-9 tracking-[-0.035em] text-[#101831]"
             >
               Đăng nhập
             </h2>

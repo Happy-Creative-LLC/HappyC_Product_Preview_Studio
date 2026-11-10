@@ -8,14 +8,14 @@ const parseCount = (v) => {
 // Store link + Amazon's Choice + title + rating.
 // Shared: desktop renders it inside ProductInfo; mobile renders it above the
 // gallery (real Amazon mobile shows the title before the product image).
-const ProductTitleBlock = ({ title, brand, rating, reviewsCount, boughtRecently, salesStat, badges }) => (
+const ProductTitleBlock = ({ title, brand, rating, reviewsCount, boughtRecently, salesStat, badges, categoryLabel = 'Product' }) => (
   <div className="text-[13px] text-gray-900">
     {/* Amazon's Choice badge */}
     <div className="mb-1.5">
       <span className="inline-flex items-center bg-[#232F3E] text-white text-[11px] font-bold px-2 py-0.5 rounded-xs">
         Amazon's <span className="text-[#FF9900] ml-1">Choice</span>
       </span>
-      <span className="text-[12px] text-[#565959] ml-2">in Men's Casual Button-Down Shirts</span>
+      <span className="text-[12px] text-[#565959] ml-2">in {categoryLabel}</span>
     </div>
 
     {/* Store link */}

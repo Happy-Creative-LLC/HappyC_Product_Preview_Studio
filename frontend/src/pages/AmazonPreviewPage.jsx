@@ -65,8 +65,6 @@ const devPlaceholderImages = (n) => Array.from({ length: n }, (_, i) => {
     + `</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 });
-const devPlaceholderVideo = () =>
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
 
 /* ─── Reusable product card (recommendation carousels) ─── */
 const ProductCard = ({ image, title, price, rating, reviews, w = 'w-44' }) => (
@@ -118,6 +116,23 @@ const Carousel = ({ title, cards }) => {
 /* ══════════════════════════════════════════════════════════════
    MAIN PAGE
    ══════════════════════════════════════════════════════════════ */
+const DEV_CASE_FIXTURES = {
+  2: {
+    title: 'Hộp đựng thực phẩm thủy tinh có nắp kín, bộ hộp bảo quản đồ ăn dùng cho tủ lạnh và lò vi sóng',
+    brand: 'Happy Creative Kitchen', rating: '4.7', reviewsCount: '1,284', price: 29.95,
+    variationLabel: 'Set Size', colors: ['3-Piece Set', '5-Piece Set', '10-Piece Set'], sizes: [],
+    fabricType: 'Borosilicate glass', careInstructions: 'Dishwasher safe; remove lid before microwaving', origin: 'Designed for everyday kitchen use',
+    bulletPoints: ['Durable borosilicate glass containers for meal prep and leftovers.', 'Airtight lids help keep food fresh in the refrigerator.', 'Use in the microwave without lids and clean in the dishwasher.'],
+  },
+  3: {
+    title: 'Expandable bamboo kitchen drawer organizer, adjustable utensil tray with multiple compartments',
+    brand: 'Happy Creative Home', rating: '4.8', reviewsCount: '2,031', price: 34.95,
+    variationLabel: 'Finish', colors: ['Natural Bamboo', 'Walnut'], sizes: [],
+    fabricType: 'Bamboo', careInstructions: 'Wipe clean with a damp cloth', origin: 'Designed for kitchen organization',
+    bulletPoints: ['Expandable sides fit a range of standard kitchen drawers.', 'Separate compartments keep utensils organized and easy to reach.', 'Smooth bamboo finish brings a natural look to your kitchen.'],
+  },
+};
+
 const AmazonPreviewPage = () => {
   const [searchParams] = useSearchParams();
   const previewIdParam = searchParams.get('previewId');
@@ -156,18 +171,15 @@ const AmazonPreviewPage = () => {
     catch { return null; }
   })();
 
-  const productData = taskProductData || previewData || storeData;
-
-  // Dev-only: when previewing via ?case=2|3 with no real task/media, inject a
-  // handful of NEUTRAL synthetic placeholders (flat SVG squares — not real
-  // photos, not Unsplash) so the thumbnail rail + zoom lens are actually
-  // exercisable during QA. Only fires for the dev override path with zero
-  // real images; a real task's media (or the production empty scaffold on
-  // plain /amazon) is never touched.
-  const isDevCaseOverride = !task && [2, 3].includes(caseType) && (productData.images || []).length === 0;
+  // Case override routes are QA fixtures; keep sample product copy aligned with the selected Home & Kitchen layout.
+  const isDevCaseOverride = !task && [2, 3].includes(caseType) && (storeData.images || []).length === 0;
+  const productData = isDevCaseOverride
+    ? { ...storeData, ...DEV_CASE_FIXTURES[caseType] }
+    : taskProductData || previewData || storeData;
   const images = isDevCaseOverride ? devPlaceholderImages(8) : (productData.images || []);
-  const videos = isDevCaseOverride ? [devPlaceholderVideo()] : (productData.videos || []);
+  const videos = productData.videos || [];
   const basePrice = Number(productData.price) || 24.99;
+  const titleCategory = caseType === 1 ? 'Casual T-Shirts' : caseType === 2 ? 'Food Storage' : 'Kitchen Storage & Organization';
 
   // Amazon "you might also like" recommendation blocks are just filler for a
   // pre-publish preview — hidden for now, decision pending.
@@ -186,7 +198,7 @@ const AmazonPreviewPage = () => {
   }
 
   const breadcrumb = caseType === 1
-    ? ['Clothing, Shoes & Jewelry', 'Men', 'Clothing', 'Shirts', 'Casual Button-Down Shirts']
+    ? ['Clothing, Shoes & Jewelry', 'Clothing', 'Shirts & Tees', 'T-Shirts']
     : ['Home & Kitchen', 'Kitchen & Dining', 'Storage & Organization'];
 
   return (
@@ -216,7 +228,7 @@ const AmazonPreviewPage = () => {
           {/* Mobile: title / store / rating above the gallery (real Amazon mobile order) */}
           <div className="md:hidden mb-3">
             <EditableZone zone="TEXT">
-              <ProductTitleBlock {...productData} />
+              <ProductTitleBlock {...productData} categoryLabel={titleCategory} />
             </EditableZone>
           </div>
 
@@ -232,7 +244,7 @@ const AmazonPreviewPage = () => {
             {/* Info — 🟢 TEXT zone (title + details) + About this item */}
             <div className="md:col-span-4 space-y-4">
               <EditableZone zone="TEXT">
-                <ProductInfo {...productData} caseType={caseType} />
+                <ProductInfo {...productData} caseType={caseType} categoryLabel={titleCategory} />
               </EditableZone>
 
               {/* About this item — 🟢 separate TEXT zone (uploadable bullets) */}
@@ -327,13 +339,13 @@ const AmazonPreviewPage = () => {
               ['ASIN',                     'B0CX52S9B1'],
               ['Date First Available',     'January 1, 2024'],
             ].map(([k, v], i) => (
-              <div key={i} className={`flex py-2 px-4 text-sm ${i % 2 === 0 ? 'bg-[#F7F7F7]' : 'bg-white'}`}>
-                <span className="w-56 shrink-0 font-bold text-gray-700">{k}</span>
+              <div key={i} className={`flex flex-col gap-1 py-2 px-4 text-sm sm:flex-row sm:gap-0 ${i % 2 === 0 ? 'bg-[#F7F7F7]' : 'bg-white'}`}>
+                <span className="w-full shrink-0 font-bold text-gray-700 sm:w-56">{k}</span>
                 <span className="text-gray-800">{v}</span>
               </div>
             ))}
-            <div className="flex py-2 px-4 bg-[#F7F7F7] text-sm items-center">
-              <span className="w-56 shrink-0 font-bold text-gray-700">Customer Reviews</span>
+            <div className="flex flex-col gap-1 py-2 px-4 bg-[#F7F7F7] text-sm sm:flex-row sm:items-center">
+              <span className="w-full shrink-0 font-bold text-gray-700 sm:w-56">Customer Reviews</span>
               <span className="flex items-center gap-2">
                 <Stars value={productData.rating || 4.5} size={13} />
                 <span className="font-bold">{Number(productData.rating || 4.5).toFixed(1)}</span>
@@ -342,8 +354,8 @@ const AmazonPreviewPage = () => {
                 </span>
               </span>
             </div>
-            <div className="flex py-2 px-4 bg-white text-sm">
-              <span className="w-56 shrink-0 font-bold text-gray-700">Best Sellers Rank</span>
+            <div className="flex flex-col gap-1 py-2 px-4 bg-white text-sm sm:flex-row">
+              <span className="w-full shrink-0 font-bold text-gray-700 sm:w-56">Best Sellers Rank</span>
               <span className="text-[#007185] leading-relaxed">
                 #1,024 in Clothing, Shoes &amp; Jewelry
                 <br />
@@ -845,10 +857,12 @@ const AmazonPreviewPage = () => {
             onClick={() => setCommentPanelOpen((open) => !open)}
             aria-expanded={commentPanelOpen}
             aria-controls="task-comments-panel"
-            className="fixed bottom-20 right-4 z-40 flex min-h-11 items-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 md:bottom-6 md:right-6"
+            aria-label="Mở trao đổi trong task"
+            className="fixed bottom-20 right-4 z-40 flex size-11 items-center justify-center rounded-full bg-blue-600 p-0 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 md:bottom-6 md:right-6 md:h-11 md:w-auto md:gap-2 md:px-4 md:py-3"
           >
             <MessageCircle size={18} aria-hidden="true" />
-            Comments
+            <span className="sr-only md:hidden">Comments</span>
+            <span className="hidden md:inline">Comments</span>
           </button>
 
           <div
