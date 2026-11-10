@@ -2,7 +2,7 @@ import { MapPin } from 'lucide-react';
 
 // Right-hand purchase column — matches the real Amazon "Customize now" flow
 // for made-to-order / personalized products (reference: image 2).
-const BuyBox = ({ price, brand }) => {
+const BuyBox = ({ price, brand, isApiProduct = false, seller, deliveryText }) => {
   const currentPrice = Number(price) || 0;
   const whole = Math.floor(currentPrice);
   const cents = (currentPrice % 1).toFixed(2).substring(2); // "95"
@@ -26,10 +26,14 @@ const BuyBox = ({ price, brand }) => {
         </div>
 
         {/* Delivery */}
-        <div className="leading-snug">
-          ${(6.95).toFixed(2)} delivery <strong>{deliveryRange}</strong>.
-        </div>
-        <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">Details</a>
+        {isApiProduct ? (
+          deliveryText && <div className="leading-snug">{deliveryText}</div>
+        ) : (
+          <>
+            <div className="leading-snug">${(6.95).toFixed(2)} delivery <strong>{deliveryRange}</strong>.</div>
+            <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">Details</a>
+          </>
+        )}
 
         {/* Deliver to */}
         <div className="flex items-start gap-1 text-[#007185] mt-3 mb-3 text-[12px] cursor-pointer leading-tight">
@@ -38,26 +42,24 @@ const BuyBox = ({ price, brand }) => {
         </div>
 
         {/* Ships within (red) */}
-        <div className="text-[#B12704] font-bold text-[15px] mb-2 leading-snug">
-          Usually ships within 6 to 7 days
-        </div>
-        <div className="mb-3 leading-snug">
-          This product needs to be customized before adding to cart.
-        </div>
+        {!isApiProduct && <>
+          <div className="text-[#B12704] font-bold text-[15px] mb-2 leading-snug">Usually ships within 6 to 7 days</div>
+          <div className="mb-3 leading-snug">This product needs to be customized before adding to cart.</div>
+        </>}
 
         {/* Customize now */}
-        <button className="w-full min-h-[44px] py-2.5 bg-[#FFD814] hover:bg-[#F7CA00] active:bg-[#DDB100] border border-[#FCD200] rounded-full text-[13px] shadow-[0_1px_2px_rgba(15,17,17,0.15)] transition-colors cursor-pointer mb-2">
+        {!isApiProduct && <button className="w-full min-h-[44px] py-2.5 bg-[#FFD814] hover:bg-[#F7CA00] active:bg-[#DDB100] border border-[#FCD200] rounded-full text-[13px] shadow-[0_1px_2px_rgba(15,17,17,0.15)] transition-colors cursor-pointer mb-2">
           Customize now
-        </button>
-        <div className="text-[12px] text-[#565959] leading-snug mb-4">
+        </button>}
+        {!isApiProduct && <div className="text-[12px] text-[#565959] leading-snug mb-4">
           By clicking "Customize now", you agree to these{' '}
           <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">Terms and Conditions.</a>
-        </div>
+        </div>}
 
         {/* Seller info grid */}
         <div className="grid grid-cols-[86px_1fr] gap-y-2 text-[12px] text-[#565959]">
           <span>Shipper / Seller</span>
-          <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">{brand || 'HappyCreative'}</a>
+          <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">{seller || brand || 'HappyCreative'}</a>
           <span>Returns</span>
           <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">This item is non-returnable</a>
           <span>Payment</span>

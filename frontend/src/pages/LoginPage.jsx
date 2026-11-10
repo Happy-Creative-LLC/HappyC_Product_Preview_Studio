@@ -87,15 +87,16 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="grid min-h-screen bg-[#f5f6fa] font-['Inter',system-ui,sans-serif] text-[#101831] lg:grid-cols-[1.05fr_0.95fr]">
+    <main className="grid min-h-screen bg-[#f4f6f9] font-sans text-[#101831] lg:grid-cols-[0.92fr_1.08fr]">
       <section
         aria-label="Giới thiệu Happy Creative"
-        className="flex min-h-[300px] flex-col justify-between gap-6 bg-[#101831] px-6 py-6 text-white sm:gap-9 sm:px-10 sm:py-10 lg:min-h-screen lg:px-14 lg:py-12"
+        className="relative isolate flex min-h-[280px] flex-col justify-between gap-6 overflow-hidden bg-[#101831] px-6 py-6 text-white sm:gap-9 sm:px-10 sm:py-10 lg:min-h-screen lg:px-14 lg:py-12"
       >
-        <BrandMark compact inverse className="self-start" />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-28 top-[28%] size-[28rem] rounded-full border border-white/[0.06] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.07),transparent_68%)]" />
+        <BrandMark compact inverse className="relative z-10 self-start" />
 
-        <div className="max-w-xl space-y-5">
-          <p className="text-sm font-semibold tracking-wide text-[#ffc963]">Không gian nội bộ</p>
+        <div className="relative z-10 max-w-xl space-y-5">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#ffc963]">Không gian nội bộ</p>
           <h1 className="font-['Roboto_Slab',Georgia,serif] text-[1.875rem] font-bold leading-[1.12] tracking-tight sm:text-5xl">
             Xem trước listing.
             <br />
@@ -106,20 +107,20 @@ const LoginPage = () => {
           </p>
         </div>
 
-        <p className="hidden text-xs text-[#b8bfd6] sm:block">
+        <p className="relative z-10 hidden text-xs tracking-wide text-[#b8bfd6] sm:block">
           © 2026 Happy Creative · Product Preview Studio
         </p>
       </section>
 
       <section
         aria-labelledby="login-title"
-        className="flex items-center justify-center bg-[radial-gradient(ellipse_at_top_right,_#fffdf9,_#f3f5fa)] px-5 py-8 sm:px-10 sm:py-14 lg:min-h-screen lg:px-12"
+        className="flex items-center justify-center bg-[#f4f6f9] px-5 py-8 sm:px-10 sm:py-14 lg:min-h-screen lg:px-12"
       >
-        <div className="w-full max-w-[440px] space-y-6 rounded-[24px] border border-[#e6e8ed] bg-white p-6 shadow-[0_24px_70px_-40px_rgba(16,24,49,0.34)] sm:p-9 lg:p-10">
+        <div className="w-full max-w-[424px] space-y-6 rounded-[22px] border border-[#e1e6ee] bg-white p-6 shadow-[0_20px_55px_-34px_rgba(16,24,49,0.28)] sm:p-9 lg:p-9">
           <header className="space-y-2">
             <h2
               id="login-title"
-              className="font-['Inter',system-ui,sans-serif] text-[1.875rem] font-bold leading-9 tracking-[-0.035em] text-[#101831]"
+              className="font-sans text-[2rem] font-bold leading-[1.1] tracking-[-0.04em] text-[#101831]"
             >
               Đăng nhập
             </h2>
@@ -169,7 +170,7 @@ const LoginPage = () => {
                 />
                 <input
                   autoComplete="username"
-                  className="h-12 w-full rounded-xl border border-[#d2d2ca] bg-white py-2 pl-11 pr-3.5 text-[15px] font-normal outline-none transition focus-visible:border-[#3478f6] focus-visible:ring-4 focus-visible:ring-[#3478f6]/20 disabled:cursor-not-allowed disabled:bg-[#f1f1ec]"
+                  className="h-12 w-full rounded-xl border border-[#d7dce5] bg-[#fbfcfe] py-2 pl-11 pr-3.5 text-[15px] font-normal outline-none transition hover:border-[#b8c1d1] focus-visible:border-[#3478f6] focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-[#3478f6]/15 disabled:cursor-not-allowed disabled:bg-[#f1f1ec]"
                   id="login-username"
                   onChange={(event) => setUsername(event.target.value)}
                   placeholder="Nhập tên đăng nhập"
@@ -192,7 +193,7 @@ const LoginPage = () => {
                 />
                 <input
                   autoComplete="current-password"
-                  className="h-12 w-full rounded-xl border border-[#d2d2ca] bg-white py-2 pl-11 pr-12 text-[15px] font-normal outline-none transition focus-visible:border-[#3478f6] focus-visible:ring-4 focus-visible:ring-[#3478f6]/20 disabled:cursor-not-allowed disabled:bg-[#f1f1ec]"
+                  className="h-12 w-full rounded-xl border border-[#d7dce5] bg-[#fbfcfe] py-2 pl-11 pr-12 text-[15px] font-normal outline-none transition hover:border-[#b8c1d1] focus-visible:border-[#3478f6] focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-[#3478f6]/15 disabled:cursor-not-allowed disabled:bg-[#f1f1ec]"
                   id="login-password"
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Nhập mật khẩu"

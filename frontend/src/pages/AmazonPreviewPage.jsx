@@ -162,6 +162,8 @@ const AmazonPreviewPage = () => {
   const [apiProductData, setApiProductData] = useState(null);
   const [useApiProduct, setUseApiProduct] = useState(false);
   const [applyingApiProduct, setApplyingApiProduct] = useState(false);
+  const [selectedVariantImage, setSelectedVariantImage] = useState(null);
+  const [selectedVariantPrice, setSelectedVariantPrice] = useState(null);
 
   const applyApiProductToTask = async (asin) => {
     if (!taskId) return;
@@ -201,10 +203,16 @@ const AmazonPreviewPage = () => {
     : isDevCaseOverride
       ? { ...storeData, ...DEV_CASE_FIXTURES[caseType] }
       : savedProductData;
-  const images = isDevCaseOverride ? devPlaceholderImages(8) : (productData.images || []);
+  const isProductApiData = useApiProduct || Boolean(productData.asin);
+  const sourceImages = isDevCaseOverride ? devPlaceholderImages(8) : (productData.images || []);
+  const images = isProductApiData && selectedVariantImage
+    ? [selectedVariantImage, ...sourceImages.filter((image) => image !== selectedVariantImage)]
+    : sourceImages;
   const videos = productData.videos || [];
-  const basePrice = Number(productData.price) || 24.99;
-  const titleCategory = caseType === 1 ? 'Casual T-Shirts' : caseType === 2 ? 'Food Storage' : 'Kitchen Storage & Organization';
+  const basePrice = Number(selectedVariantPrice) || Number(productData.price) || 24.99;
+  const titleCategory = isProductApiData && productData.categories?.length
+    ? productData.categories[productData.categories.length - 1]
+    : caseType === 1 ? 'Casual T-Shirts' : caseType === 2 ? 'Food Storage' : 'Kitchen Storage & Organization';
 
   // Amazon "you might also like" recommendation blocks are just filler for a
   // pre-publish preview — hidden for now, decision pending.
@@ -222,9 +230,11 @@ const AmazonPreviewPage = () => {
     return <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm">Loading Preview...</div>;
   }
 
-  const breadcrumb = caseType === 1
-    ? ['Clothing, Shoes & Jewelry', 'Clothing', 'Shirts & Tees', 'T-Shirts']
-    : ['Home & Kitchen', 'Kitchen & Dining', 'Storage & Organization'];
+  const breadcrumb = isProductApiData && productData.categories?.length
+    ? productData.categories
+    : caseType === 1
+      ? ['Clothing, Shoes & Jewelry', 'Clothing', 'Shirts & Tees', 'T-Shirts']
+      : ['Home & Kitchen', 'Kitchen & Dining', 'Storage & Organization'];
 
   return (
     <div className="font-amazon min-h-screen bg-[#EAEDED] text-[#111] text-[13px] relative">
@@ -235,9 +245,14 @@ const AmazonPreviewPage = () => {
           product={apiProductData}
           previewing={useApiProduct}
           applying={applyingApiProduct}
-          onPreview={(data, activate = true) => { setApiProductData(data); if (activate) setUseApiProduct(true); }}
+          onPreview={(data, activate = true) => {
+            setApiProductData(data);
+            setSelectedVariantImage(null);
+            setSelectedVariantPrice(null);
+            if (activate) setUseApiProduct(true);
+          }}
           onApply={applyApiProductToTask}
-          onClear={() => { setApiProductData(null); setUseApiProduct(false); }}
+          onClear={() => { setApiProductData(null); setUseApiProduct(false); setSelectedVariantImage(null); setSelectedVariantPrice(null); }}
         />
       )}
 
@@ -273,14 +288,29 @@ const AmazonPreviewPage = () => {
             {/* Gallery — 🔴 IMAGE zone (sticky) */}
             <div data-amazon-gallery-column className="md:col-span-5 overflow-visible md:sticky md:top-2 self-start">
               <EditableZone zone="IMAGE">
-                <ProductGallery images={images} videos={videos} caseType={caseType} />
+                <ProductGallery
+                  key={`${productData.asin || taskId || 'preview'}:${images[0] || ''}`}
+                  images={images}
+                  videos={videos}
+                  caseType={caseType}
+                  showUploadSlots={!isProductApiData}
+                />
               </EditableZone>
             </div>
 
             {/* Info — 🟢 TEXT zone (title + details) + About this item */}
             <div className="md:col-span-4 space-y-4">
               <EditableZone zone="TEXT">
-                <ProductInfo {...productData} caseType={caseType} categoryLabel={titleCategory} />
+                <ProductInfo
+                  {...productData}
+                  caseType={caseType}
+                  categoryLabel={titleCategory}
+                  isApiProduct={isProductApiData}
+                  onVariationChange={(item) => {
+                    if (item.image) setSelectedVariantImage(item.image);
+                    if (item.price) setSelectedVariantPrice(item.price);
+                  }}
+                />
               </EditableZone>
 
               {/* About this item — 🟢 separate TEXT zone (uploadable bullets) */}
@@ -321,7 +351,13 @@ const AmazonPreviewPage = () => {
 
             {/* BuyBox — sticky */}
             <div className="md:col-span-3 flex md:justify-end md:sticky md:top-2 self-start">
-              <BuyBox price={basePrice} brand={productData.brand} />
+              <BuyBox
+                price={basePrice}
+                brand={productData.brand}
+                seller={productData.seller}
+                deliveryText={productData.deliveryText}
+                isApiProduct={isProductApiData}
+              />
             </div>
           </div>
         </div>

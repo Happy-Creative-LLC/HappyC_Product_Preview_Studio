@@ -148,7 +148,7 @@ const GoogleSignInButton = ({
       />
       {showFallback && (
         <button
-          className="absolute inset-0 inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#d2d2ca] bg-white px-4 text-sm font-semibold text-[#101831] shadow-sm outline-none transition hover:bg-[#fcfcfa] focus-visible:ring-4 focus-visible:ring-[#3478f6]/20 disabled:cursor-not-allowed disabled:opacity-65"
+          className="absolute inset-0 inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-[#d7dce5] bg-white px-4 text-sm font-semibold text-[#101831] shadow-[0_1px_2px_rgba(16,24,49,0.06)] outline-none transition hover:border-[#b8c1d1] hover:bg-[#fbfcfe] focus-visible:ring-4 focus-visible:ring-[#3478f6]/15 disabled:cursor-not-allowed disabled:opacity-65"
           type="button"
           onClick={() => onUnavailable?.(status === 'error' ? 'script' : 'unconfigured')}
           disabled={disabled || isLoading}

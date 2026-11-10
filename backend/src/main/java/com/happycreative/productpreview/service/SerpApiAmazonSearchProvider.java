@@ -188,6 +188,14 @@ public class SerpApiAmazonSearchProvider implements AmazonSearchProvider {
 
             var badges = result.putArray("badges");
             appendTextArray(product.path("badges"), badges);
+            var categories = result.putArray("categories");
+            JsonNode productCategories = product.path("categories");
+            if (productCategories.isArray()) {
+                for (JsonNode category : productCategories) {
+                    String name = text(category, "name");
+                    if (name != null) categories.add(name);
+                }
+            }
             var bullets = result.putArray("bulletPoints");
             JsonNode about = product.path("about_item");
             if (!about.isArray()) about = product.path("product_features");
@@ -262,22 +270,33 @@ public class SerpApiAmazonSearchProvider implements AmazonSearchProvider {
     private static void mapVariants(JsonNode product, com.fasterxml.jackson.databind.node.ObjectNode target) {
         JsonNode variants = product.path("variants");
         if (!variants.isArray()) return;
+        var groups = target.putArray("variationGroups");
         for (JsonNode group : variants) {
             String title = text(group, "title");
             JsonNode items = group.path("items");
             if (title == null || !items.isArray()) continue;
+            var mappedGroup = groups.addObject();
+            mappedGroup.put("title", title);
+            var mappedItems = mappedGroup.putArray("items");
             if (target.path("variationLabel").isMissingNode()) target.put("variationLabel", title);
             if (title.toLowerCase(Locale.ROOT).matches(".*(size|length).*")) {
                 var sizes = target.withArray("sizes");
                 for (JsonNode item : items) {
                     String name = text(item, "name");
-                    if (name != null && !sizes.toString().contains(name)) sizes.add(name);
+                    if (name == null) continue;
+                    if (!sizes.toString().contains(name)) sizes.add(name);
+                    var mappedItem = mappedItems.addObject();
+                    mappedItem.put("name", name);
+                    copyVariantFields(item, mappedItem);
                 }
             } else {
                 var colors = target.withArray("colors");
                 for (JsonNode item : items) {
                     String name = text(item, "name");
                     if (name == null) continue;
+                    var mappedItem = mappedItems.addObject();
+                    mappedItem.put("name", name);
+                    copyVariantFields(item, mappedItem);
                     var color = colors.addObject();
                     color.put("name", name);
                     String image = text(item, "image");
@@ -287,6 +306,30 @@ public class SerpApiAmazonSearchProvider implements AmazonSearchProvider {
                 }
             }
         }
+        JsonNode combinations = product.path("variant_combinations");
+        if (combinations.isArray()) {
+            var mappedCombinations = target.putArray("variantCombinations");
+            for (JsonNode combination : combinations) {
+                var mapped = mappedCombinations.addObject();
+                JsonNode dimensions = combination.path("dimensions");
+                if (dimensions.isObject()) mapped.set("dimensions", dimensions.deepCopy());
+                String asin = text(combination, "asin");
+                if (asin != null) mapped.put("asin", asin);
+                if (combination.path("unavailable").isBoolean()) {
+                    mapped.put("unavailable", combination.path("unavailable").asBoolean());
+                }
+            }
+        }
+    }
+
+    private static void copyVariantFields(JsonNode source, com.fasterxml.jackson.databind.node.ObjectNode target) {
+        String image = text(source, "image");
+        if (image != null && isHttps(image)) target.put("image", image);
+        String asin = text(source, "asin");
+        if (asin != null) target.put("asin", asin);
+        if (source.path("selected").isBoolean()) target.put("selected", source.path("selected").asBoolean());
+        Double price = amount(source, "extracted_price", "price");
+        if (price != null) target.put("price", price);
     }
 
     private void checkFreeAllowance() {

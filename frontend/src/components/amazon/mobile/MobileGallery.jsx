@@ -40,6 +40,8 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
     );
   }
 
+  const currentIdx = Math.min(idx, validMedia.length - 1);
+
   return (
     <div>
       <div className="relative">
@@ -82,7 +84,7 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
         {/* Counter — bottom right */}
         {validMedia.length > 1 && (
           <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
-            {idx + 1}/{validMedia.length}
+            {currentIdx + 1}/{validMedia.length}
           </div>
         )}
       </div>
@@ -95,7 +97,7 @@ const MobileGallery = ({ images = [], videos = [], caseType = 1 }) => {
               key={i}
               onClick={() => scrollToIdx(i)}
               aria-label={`Go to image ${i + 1}`}
-              className={`h-2 rounded-full transition-all ${idx === i ? 'w-5 bg-[#E77600]' : 'w-2 bg-gray-300'}`}
+              className={`h-2 rounded-full transition-all ${currentIdx === i ? 'w-5 bg-[#E77600]' : 'w-2 bg-gray-300'}`}
             />
           ))}
         </div>

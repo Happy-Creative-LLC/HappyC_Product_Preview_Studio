@@ -7,13 +7,18 @@ const ProductInfo = ({
   title, brand, price, rating, reviewsCount,
   boughtRecently, salesStat, badges, colors, sizes,
   fabricType, careInstructions, origin, caseType, categoryLabel,
-  variationLabel = 'Color',
+  variationLabel = 'Color', variationGroups = [], variantCombinations = [], isApiProduct = false, promotion, onVariationChange,
 }) => {
   const isClothing     = Number(caseType) === 1;
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize,  setSelectedSize]  = useState(0);
   const [highlightsOpen, setHighlightsOpen] = useState(true);
   const [showAllColors, setShowAllColors] = useState(false);
+  const [selectedVariants, setSelectedVariants] = useState(() => variationGroups.map((group) => {
+    const selected = group.items?.findIndex((item) => item.selected);
+    return selected >= 0 ? selected : 0;
+  }));
+  const [variantPages, setVariantPages] = useState({});
 
   const currentPrice = Number(price) || 0;
   const cents        = (currentPrice % 1).toFixed(2).substring(1); // ".99"
@@ -54,7 +59,7 @@ const ProductInfo = ({
       </div>
 
       {/* Coupon */}
-      <div className="flex items-center gap-2 my-1.5 flex-wrap">
+      {!isApiProduct && <div className="flex items-center gap-2 my-1.5 flex-wrap">
         <label className="flex items-center gap-1.5 cursor-pointer select-none">
           <input type="checkbox" className="w-[14px] h-[14px] accent-[#007185] cursor-pointer" />
           <span>
@@ -65,10 +70,14 @@ const ProductInfo = ({
         <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">Shop items</a>
         <span className="text-gray-300">|</span>
         <a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">Terms</a>
-      </div>
+      </div>}
+
+      {isApiProduct && promotion && (
+        <p className="my-1.5 text-[13px] text-[#0F1111]">{promotion}</p>
+      )}
 
       {/* Savings tiers */}
-      <div className="flex flex-col gap-1 mb-2">
+      {!isApiProduct && <div className="flex flex-col gap-1 mb-2">
         {savings.map((s, i) => (
           <div key={i} className="leading-snug">
             <span className="inline-block bg-[#007600] text-white font-bold px-1.5 py-[1px] rounded-[3px] text-[11px] mr-1.5">{s.tag}</span>
@@ -76,12 +85,88 @@ const ProductInfo = ({
             {' '}<a href="#" className="text-[#007185] hover:text-[#C45500] hover:underline">Shop items ›</a>
           </div>
         ))}
-      </div>
+      </div>}
 
       <div className="border-t border-[#E7E7E7] my-2" />
 
       {/* Color grid */}
-      {colors && colors.length > 0 && (() => {
+      {isApiProduct && variationGroups.length > 0 && variationGroups.map((group, groupIndex) => {
+        const items = group.items || [];
+        if (!items.length) return null;
+        const pageSize = 14;
+        const page = variantPages[groupIndex] || 0;
+        const pageCount = Math.ceil(items.length / pageSize);
+        const apiSelectedIndex = items.findIndex((item) => item.selected);
+        const selectedIndex = selectedVariants[groupIndex] ?? Math.max(0, apiSelectedIndex);
+        const visibleItems = items.slice(page * pageSize, (page + 1) * pageSize);
+        const isSizeGroup = /size|length/i.test(group.title);
+        const dimensionKey = (name) => String(name).toLowerCase().replace(/[^a-z]/g, '');
+        const isUnavailable = (itemIndex) => {
+          if (variationGroups.length < 2 || !variantCombinations.length) return false;
+          const wanted = {};
+          variationGroups.forEach((otherGroup, otherIndex) => {
+            const activeIndex = otherIndex === groupIndex ? itemIndex : (selectedVariants[otherIndex] ?? Math.max(0, otherGroup.items?.findIndex((entry) => entry.selected) ?? 0));
+            const dimension = Object.keys(variantCombinations[0]?.dimensions || {}).find((key) => dimensionKey(otherGroup.title).includes(dimensionKey(key)));
+            if (dimension && otherGroup.items?.[activeIndex]) wanted[dimension] = otherGroup.items[activeIndex].name;
+          });
+          const matches = variantCombinations.filter(({ dimensions = {} }) =>
+            Object.entries(wanted).every(([key, value]) => dimensions[key] === value));
+          return matches.length > 0 && matches.every((combination) => combination.unavailable);
+        };
+        return (
+          <section key={`${group.title}-${groupIndex}`} className="mb-3" aria-label={`${group.title} variations`}>
+            <div className="mb-1.5"><strong>{group.title}:</strong>{' '}<span>{items[selectedIndex]?.name}</span></div>
+            <div className={isSizeGroup ? 'flex flex-wrap gap-1.5' : 'grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5'}>
+              {visibleItems.map((item, itemIndex) => {
+                const index = page * pageSize + itemIndex;
+                const selected = selectedIndex === index;
+                const itemPrice = Number(item.price) || currentPrice;
+                const unavailable = isUnavailable(index);
+                return (
+                  <button
+                    key={`${item.asin || item.name}-${index}`}
+                    type="button"
+                    onClick={() => {
+                      setSelectedVariants((current) => {
+                        const next = [...current];
+                        next[groupIndex] = index;
+                        return next;
+                      });
+                      onVariationChange?.(item);
+                    }}
+                    title={item.name}
+                    aria-label={`${group.title}: ${item.name}`}
+                    aria-pressed={selected}
+                    disabled={unavailable}
+                    className={`${isSizeGroup ? 'min-h-9 min-w-12 px-3 py-1.5' : 'min-w-0 overflow-hidden p-1'} rounded-md border bg-white text-left transition-colors ${selected ? 'border-2 border-[#2162A1] shadow-sm' : 'border-[#D5D9D9] hover:border-[#888C8C]'} ${unavailable ? 'cursor-not-allowed opacity-40 line-through' : ''}`}
+                  >
+                    {isSizeGroup ? <span className="text-[12px]">{item.name}</span> : <>
+                      <span className="block aspect-square overflow-hidden rounded-sm bg-[#F7F8F8]">
+                        {item.image
+                          ? <img src={item.image} alt="" className="h-full w-full object-contain" loading="lazy" />
+                          : <span className="grid h-full place-items-center px-1 text-center text-[10px] leading-tight text-[#565959]">{item.name}</span>}
+                      </span>
+                      <span className="mt-1 block truncate text-[10px] leading-tight text-[#565959]">{item.name}</span>
+                      {itemPrice > 0 && <span className="block text-[11px] text-[#0F1111]">${itemPrice.toFixed(2)}</span>}
+                    </>}
+                  </button>
+                );
+              })}
+            </div>
+            {pageCount > 1 && (
+              <nav className="mt-2 flex items-center justify-center gap-1.5" aria-label={`${group.title} pages`}>
+                <button type="button" onClick={() => setVariantPages((current) => ({ ...current, [groupIndex]: Math.max(0, page - 1) }))} disabled={page === 0} className="size-8 rounded-md border border-[#D5D9D9] disabled:opacity-40" aria-label="Previous variation page">‹</button>
+                {Array.from({ length: pageCount }, (_, pageIndex) => (
+                  <button key={pageIndex} type="button" onClick={() => setVariantPages((current) => ({ ...current, [groupIndex]: pageIndex }))} aria-current={pageIndex === page ? 'page' : undefined} className={`size-8 rounded-md border ${pageIndex === page ? 'border-[#2162A1] bg-[#EFF6FC] text-[#0F1111]' : 'border-[#D5D9D9]'}`}>{pageIndex + 1}</button>
+                ))}
+                <button type="button" onClick={() => setVariantPages((current) => ({ ...current, [groupIndex]: Math.min(pageCount - 1, page + 1) }))} disabled={page === pageCount - 1} className="size-8 rounded-md border border-[#D5D9D9] disabled:opacity-40" aria-label="Next variation page">›</button>
+              </nav>
+            )}
+          </section>
+        );
+      })}
+
+      {(!isApiProduct || variationGroups.length === 0) && colors && colors.length > 0 && (() => {
         const PER_PAGE = 14;
         const shown = showAllColors ? colors : colors.slice(0, PER_PAGE);
         const hasMore = colors.length > PER_PAGE;
@@ -112,8 +197,10 @@ const ProductInfo = ({
                       }}
                     >
                       {c.image
-                        ? <img src={c.image} alt={colorName(c)} className="w-full h-full" style={{ objectFit: 'fill' }} />
-                        : <UploadPlaceholder zone="IMAGE" compact radius={4} />}
+                        ? <img src={c.image} alt={colorName(c)} className="w-full h-full object-contain" />
+                        : isApiProduct
+                          ? <span className="grid h-full place-items-center px-1 text-center text-[10px] text-[#565959]">{colorName(c)}</span>
+                          : <UploadPlaceholder zone="IMAGE" compact radius={4} />}
                     </div>
                     <span className="text-[10px] leading-none text-gray-600 mt-1">${price.toFixed(2)}</span>
                   </button>
@@ -133,7 +220,7 @@ const ProductInfo = ({
       })()}
 
       {/* Size (clothing only) */}
-      {isClothing && sizes && sizes.length > 0 && (
+      {!isApiProduct && isClothing && sizes && sizes.length > 0 && (
         <div className="mb-2">
           <div className="mb-1.5">
             <strong>Size:</strong>{' '}
@@ -161,7 +248,7 @@ const ProductInfo = ({
       )}
 
       {/* Customizations count */}
-      {colors && colors.length > 0 && (
+      {!isApiProduct && colors && colors.length > 0 && (
         <div className="mb-2">
           <strong>Customizations:</strong> {colors.length} image{colors.length !== 1 ? 's' : ''} available
         </div>
