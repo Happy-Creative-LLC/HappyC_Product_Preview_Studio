@@ -86,7 +86,7 @@ const EtsyReviews = ({ rating = '4.9', reviewCount = '8,512', photos = [] }) => 
       <div className="space-y-6">
         {REVIEWS.map((r, i) => (
           <div key={i} className="flex items-start gap-3">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0 ${r.color}`}>
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 ${r.color}`}>
               {r.initial}
             </div>
             <div className="min-w-0">
@@ -116,7 +116,7 @@ const EtsyReviews = ({ rating = '4.9', reviewCount = '8,512', photos = [] }) => 
                 src={src}
                 alt={`Review photo ${i + 1}`}
                 loading="lazy"
-                className="w-32 h-32 rounded-lg object-cover flex-shrink-0 border border-gray-200"
+                className="w-32 h-32 rounded-lg object-cover shrink-0 border border-gray-200"
               />
             ))}
           </div>

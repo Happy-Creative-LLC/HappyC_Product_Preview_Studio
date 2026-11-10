@@ -158,7 +158,7 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
           <button
             key={tab.key ?? 'all'}
             onClick={() => { setActiveComponent(tab.key); setActionError(''); }}
-            className={`flex min-h-11 flex-shrink-0 items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap
+            className={`flex min-h-11 shrink-0 items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap
               ${activeComponent === tab.key
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'}`}
@@ -187,7 +187,7 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
             return (
               <div
                 key={comment.id}
-                className={`rounded-xl p-3 border text-sm ${comment.resolved ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-100 shadow-sm'}`}
+                className={`rounded-xl p-3 border text-sm ${comment.resolved ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-100 shadow-xs'}`}
               >
                 {/* Meta row */}
                 <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
@@ -231,7 +231,7 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
           <select
             value={newComponent}
             onChange={e => setNewComponent(e.target.value)}
-            className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-gray-50"
+            className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-hidden focus:ring-1 focus:ring-blue-400 bg-gray-50"
           >
             <option value="GENERAL">Chung</option>
             <option value="IMAGE">Ảnh</option>
@@ -245,13 +245,13 @@ const CommentSection = ({ previewId, defaultComponent = null, onClose }) => {
               value={newContent}
               onChange={e => setNewContent(e.target.value)}
               placeholder="Nhập comment..."
-              className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:ring-1 focus:ring-blue-400"
               maxLength={500}
             />
             <button
               type="submit"
               disabled={submitting || !newContent.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors disabled:opacity-50 shrink-0"
             >
               {submitting ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
             </button>

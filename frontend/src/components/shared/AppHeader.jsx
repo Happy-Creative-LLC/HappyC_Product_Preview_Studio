@@ -31,17 +31,17 @@ const AppHeader = ({ breadcrumbs = [] }) => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-40">
+    <header className="bg-white border-b border-gray-100 shadow-xs sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Logo + Breadcrumbs */}
         <div className="flex items-center gap-2 min-w-0">
-          <Link to="/projects" className="flex-shrink-0">
+          <Link to="/projects" className="shrink-0">
             <BrandMark compact />
           </Link>
 
           {breadcrumbs.length > 0 && (
             <>
-              <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />
+              <ChevronRight size={16} className="text-gray-300 shrink-0" />
               <nav className="flex items-center gap-1 min-w-0">
                 {breadcrumbs.map((crumb, idx) => {
                   const isLast = idx === breadcrumbs.length - 1;
@@ -59,7 +59,7 @@ const AppHeader = ({ breadcrumbs = [] }) => {
                           >
                             {crumb.label}
                           </Link>
-                          <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                          <ChevronRight size={14} className="text-gray-300 shrink-0" />
                         </>
                       )}
                     </React.Fragment>
@@ -72,7 +72,7 @@ const AppHeader = ({ breadcrumbs = [] }) => {
 
         {/* User info + Logout */}
         {user && (
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="hidden sm:flex items-center gap-2">
               <div className="text-right">
                 <p className="text-sm font-semibold text-gray-800 leading-none">

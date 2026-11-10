@@ -33,7 +33,7 @@ const BuyBox = ({ price, brand }) => {
 
         {/* Deliver to */}
         <div className="flex items-start gap-1 text-[#007185] mt-3 mb-3 text-[12px] cursor-pointer leading-tight">
-          <MapPin size={14} className="text-black flex-shrink-0 mt-px" />
+          <MapPin size={14} className="text-black shrink-0 mt-px" />
           <span className="hover:underline">Deliver to New York<br />10001</span>
         </div>
 
@@ -66,7 +66,7 @@ const BuyBox = ({ price, brand }) => {
 
         {/* Divider + Add to List */}
         <div className="border-t border-[#E7E7E7] mt-4 pt-4">
-          <button className="w-full min-h-[40px] bg-white hover:bg-[#F7FAFA] border border-[#D5D9D9] py-2 rounded-lg shadow-sm text-[13px] transition-colors cursor-pointer">
+          <button className="w-full min-h-[40px] bg-white hover:bg-[#F7FAFA] border border-[#D5D9D9] py-2 rounded-lg shadow-xs text-[13px] transition-colors cursor-pointer">
             Add to List
           </button>
         </div>

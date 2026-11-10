@@ -33,7 +33,7 @@ const MobileGallery = ({ images = [], videos = [] }) => {
 
   if (validMedia.length === 0) {
     return (
-      <div className="flex items-center justify-center h-80 bg-gray-100 rounded text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-80 bg-gray-100 rounded-sm text-gray-400 text-sm">
         No images / video yet
       </div>
     );
@@ -49,7 +49,7 @@ const MobileGallery = ({ images = [], videos = [] }) => {
           style={{ scrollbarWidth: 'none' }}
         >
           {validMedia.map((media, i) => (
-            <div key={i} className="snap-center flex-shrink-0 w-full aspect-square flex items-center justify-center bg-white">
+            <div key={i} className="snap-center shrink-0 w-full aspect-square flex items-center justify-center bg-white">
               {media.type === 'video' ? (
                 <video src={media.src} controls className="max-h-full w-full object-contain" />
               ) : (
@@ -67,7 +67,7 @@ const MobileGallery = ({ images = [], videos = [] }) => {
 
         {/* Share — top right */}
         <button
-          className="absolute top-2 right-2 w-9 h-9 rounded-full bg-white border border-[#D5D9D9] shadow-sm flex items-center justify-center text-gray-600 active:bg-gray-100"
+          className="absolute top-2 right-2 w-9 h-9 rounded-full bg-white border border-[#D5D9D9] shadow-xs flex items-center justify-center text-gray-600 active:bg-gray-100"
           aria-label="Share product"
         >
           <Share2 size={16} />

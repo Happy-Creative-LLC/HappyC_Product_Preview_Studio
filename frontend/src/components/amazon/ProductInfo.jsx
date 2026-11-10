@@ -104,7 +104,7 @@ const ProductInfo = ({
                     style={{ width: 72 }}
                   >
                     <div
-                      className="overflow-hidden rounded"
+                      className="overflow-hidden rounded-sm"
                       style={{
                         width: 72, height: 72,
                         border: selected ? '2px solid #2162A1' : '1px solid #D5D9D9',
@@ -143,7 +143,7 @@ const ProductInfo = ({
               <button
                 key={i}
                 onClick={() => setSelectedSize(i)}
-                className={`rounded border px-3 py-1.5 text-[12px] transition-colors min-w-[42px] ${
+                className={`rounded-sm border px-3 py-1.5 text-[12px] transition-colors min-w-[42px] ${
                   selectedSize === i
                     ? 'border-[#E77600] ring-1 ring-[#E77600] bg-orange-50 font-medium'
                     : 'border-[#D5D9D9] hover:border-[#999]'
@@ -172,19 +172,19 @@ const ProductInfo = ({
           <h2 className="text-[18px] font-bold text-gray-900 mb-1">Product details</h2>
           <button
             onClick={() => setHighlightsOpen(o => !o)}
-            className="w-full border-t border-gray-200 py-3 flex items-center justify-between text-left hover:bg-gray-50 px-1 -mx-1 rounded"
+            className="w-full border-t border-gray-200 py-3 flex items-center justify-between text-left hover:bg-gray-50 px-1 -mx-1 rounded-sm"
           >
             <span className="font-bold text-[15px]">Top highlights</span>
             {highlightsOpen
-              ? <ChevronUp size={18} className="text-gray-500 flex-shrink-0" />
-              : <ChevronDown size={18} className="text-gray-500 flex-shrink-0" />
+              ? <ChevronUp size={18} className="text-gray-500 shrink-0" />
+              : <ChevronDown size={18} className="text-gray-500 shrink-0" />
             }
           </button>
           {highlightsOpen && (
             <div className="flex flex-col gap-1.5 pb-3 text-[13px]">
               {detailRows.map(([k, v], i) => (
                 <div key={i} className="flex gap-3">
-                  <span className="w-40 flex-shrink-0 font-bold text-gray-700">{k}</span>
+                  <span className="w-40 shrink-0 font-bold text-gray-700">{k}</span>
                   <span className="flex-1 text-gray-800">{v}</span>
                 </div>
               ))}

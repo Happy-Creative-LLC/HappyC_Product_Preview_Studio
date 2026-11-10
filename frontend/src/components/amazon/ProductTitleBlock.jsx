@@ -12,7 +12,7 @@ const ProductTitleBlock = ({ title, brand, rating, reviewsCount, boughtRecently,
   <div className="text-[13px] text-gray-900">
     {/* Amazon's Choice badge */}
     <div className="mb-1.5">
-      <span className="inline-flex items-center bg-[#232F3E] text-white text-[11px] font-bold px-2 py-0.5 rounded-sm">
+      <span className="inline-flex items-center bg-[#232F3E] text-white text-[11px] font-bold px-2 py-0.5 rounded-xs">
         Amazon's <span className="text-[#FF9900] ml-1">Choice</span>
       </span>
       <span className="text-[12px] text-[#565959] ml-2">in Men's Casual Button-Down Shirts</span>
@@ -46,7 +46,7 @@ const ProductTitleBlock = ({ title, brand, rating, reviewsCount, boughtRecently,
     {badges && badges.length > 0 && (
       <div className="flex flex-wrap gap-1 mb-2">
         {badges.map((b, i) => (
-          <span key={i} className="text-xs bg-blue-50 border border-blue-200 text-blue-800 px-2 py-0.5 rounded font-medium">
+          <span key={i} className="text-xs bg-blue-50 border border-blue-200 text-blue-800 px-2 py-0.5 rounded-sm font-medium">
             {b}
           </span>
         ))}

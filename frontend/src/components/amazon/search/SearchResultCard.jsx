@@ -105,7 +105,7 @@ const SearchResultCard = ({ item, position, eagerImage = false }) => {
         )}
 
         {!item.isInjected && item.badge && (
-          <span className="mb-2 w-fit rounded-sm bg-[#232f3e] px-2 py-1 text-[11px] font-bold text-white">
+          <span className="mb-2 w-fit rounded-xs bg-[#232f3e] px-2 py-1 text-[11px] font-bold text-white">
             {item.badge}
           </span>
         )}

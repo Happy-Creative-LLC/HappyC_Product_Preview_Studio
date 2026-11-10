@@ -8,7 +8,7 @@ const Field = ({ label, hint, children }) => (
   </label>
 );
 
-const inputClassName = 'min-h-11 w-full rounded-lg border border-[var(--hc-input-border)] bg-white px-3 text-sm text-[var(--hc-navy-900)] placeholder:text-[var(--hc-gray-400)] focus:border-[var(--hc-color-focus)] focus:outline-none';
+const inputClassName = 'min-h-11 w-full rounded-lg border border-[var(--hc-input-border)] bg-white px-3 text-sm text-[var(--hc-navy-900)] placeholder:text-[var(--hc-gray-400)] focus:border-[var(--hc-color-focus)] focus:outline-hidden';
 
 const SearchListingEditor = ({
   sourceLoading,

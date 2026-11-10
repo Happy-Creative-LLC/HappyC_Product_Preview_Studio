@@ -50,7 +50,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
   return (
     <div className="flex flex-row gap-3">
       {/* ── Vertical thumbnail rail — width = thumbRail.containerWidth ── */}
-      <div className="flex flex-col flex-shrink-0" style={{ width: thumbRail.containerWidth }}>
+      <div className="flex flex-col shrink-0" style={{ width: thumbRail.containerWidth }}>
         {visibleThumbs.map((src, i) => {
           const isLastVisible = i === visibleThumbs.length - 1;
           const showMoreBadge = isLastVisible && hiddenCount > 0;
@@ -150,10 +150,10 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
           Case 2's main-image box size isn't in the measured token set — kept
           fluid (square) here; ZoomLens self-measures the real rendered size
           at hover time, so the 2.5× mapping stays accurate regardless. */}
-      <div className="flex-grow min-w-0" style={{ maxWidth: 480 }}>
+      <div className="grow min-w-0" style={{ maxWidth: 480 }}>
         {isVideoActive ? (
           <EditableZone zone="VIDEO" onCommentClick={onCommentClick}>
-            <div className="w-full overflow-hidden rounded bg-black" style={{ aspectRatio: '1 / 1' }}>
+            <div className="w-full overflow-hidden rounded-sm bg-black" style={{ aspectRatio: '1 / 1' }}>
               <video
                 key={activeVideoSrc}
                 src={activeVideoSrc}
@@ -174,7 +174,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
                     type="button"
                     onClick={() => setActiveVideoIdx(idx)}
                     aria-pressed={safeVideoIdx === idx}
-                    className={`rounded border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    className={`rounded-sm border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                       safeVideoIdx === idx
                         ? 'border-[#007185] bg-[#e7f3f5] text-[#007185]'
                         : 'border-[#D5D9D9] text-gray-600 hover:border-[#007185]'
@@ -188,7 +188,7 @@ const HomeKitchenVerticalGallery = ({ images = [], videos = [], onCommentClick }
           </EditableZone>
         ) : (
           <EditableZone zone="IMAGE" onCommentClick={onCommentClick}>
-            <div className="relative w-full overflow-hidden rounded bg-white" style={{ aspectRatio: '1 / 1' }}>
+            <div className="relative w-full overflow-hidden rounded-sm bg-white" style={{ aspectRatio: '1 / 1' }}>
               <ZoomLens src={activeImageSrc}>
                 {activeImageSrc ? (
                   <img

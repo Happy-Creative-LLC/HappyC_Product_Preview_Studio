@@ -82,7 +82,7 @@ const EtsyInfo = ({
             <>
               <span className="text-base text-gray-400 line-through mb-0.5">${listPriceNum.toFixed(2)}</span>
               {pctOff > 0 && (
-                <span className="mb-0.5 rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+                <span className="mb-0.5 rounded-sm bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
                   {pctOff}% off
                 </span>
               )}
@@ -153,7 +153,7 @@ const EtsyInfo = ({
           <select
             value={selectedSize}
             onChange={e => setSelectedSize(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-gray-900 bg-white"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-hidden focus:border-gray-900 bg-white"
           >
             <option value="">Select a size</option>
             {sizes.map((s, idx) => <option key={idx} value={s}>{s}</option>)}
@@ -167,7 +167,7 @@ const EtsyInfo = ({
         <select
           value={qty}
           onChange={e => setQty(Number(e.target.value))}
-          className="rounded-lg border border-gray-400 px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-gray-900"
+          className="rounded-lg border border-gray-400 px-3 py-1.5 text-sm bg-white focus:outline-hidden focus:border-gray-900"
         >
           {[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}
         </select>
@@ -240,7 +240,7 @@ const EtsyInfo = ({
           <ul className="space-y-1.5">
             {displayHighlights.filter(b => b?.trim()).map((h, idx) => (
               <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0" />
                 {h}
               </li>
             ))}
@@ -263,13 +263,13 @@ const EtsyInfo = ({
           <dl className="space-y-1.5 text-sm">
             {careInstructions && (
               <div className="flex gap-2">
-                <dt className="text-gray-500 w-32 flex-shrink-0">Care</dt>
+                <dt className="text-gray-500 w-32 shrink-0">Care</dt>
                 <dd className="text-gray-800">{careInstructions}</dd>
               </div>
             )}
             {origin && (
               <div className="flex gap-2">
-                <dt className="text-gray-500 w-32 flex-shrink-0">Origin</dt>
+                <dt className="text-gray-500 w-32 shrink-0">Origin</dt>
                 <dd className="text-gray-800">{origin}</dd>
               </div>
             )}

@@ -86,7 +86,7 @@ const EtsyBuyBox = ({
         <select
           value={size}
           onChange={(e) => setSize(e.target.value)}
-          className="w-full border border-gray-400 rounded-md px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-gray-900"
+          className="w-full border border-gray-400 rounded-md px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-hidden focus:border-gray-900"
         >
           <option value="">Select an option</option>
           {['S', 'M', 'L', 'XL', 'XXL'].map((s) => <option key={s}>{s}</option>)}
@@ -99,7 +99,7 @@ const EtsyBuyBox = ({
         <select
           value={color}
           onChange={(e) => setColor(e.target.value)}
-          className="w-full border border-gray-400 rounded-md px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:border-gray-900"
+          className="w-full border border-gray-400 rounded-md px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-hidden focus:border-gray-900"
         >
           <option value="">Select an option</option>
           {['Black', 'White', 'Sand', 'Navy'].map((c) => <option key={c}>{c}</option>)}
@@ -116,7 +116,7 @@ const EtsyBuyBox = ({
         <select
           value={qty}
           onChange={(e) => setQty(Number(e.target.value))}
-          className="w-24 border border-gray-400 rounded-md px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-gray-900"
+          className="w-24 border border-gray-400 rounded-md px-3 py-2.5 text-sm bg-white focus:outline-hidden focus:border-gray-900"
         >
           {[1, 2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}
         </select>
@@ -142,7 +142,7 @@ const EtsyBuyBox = ({
           <div className="space-y-2.5 mb-3">
             {bundle.map((b, i) => (
               <div key={i} className="flex items-center gap-3">
-                <img src={b.src} alt="" className="w-11 h-11 rounded object-cover border border-gray-200" />
+                <img src={b.src} alt="" className="w-11 h-11 rounded-sm object-cover border border-gray-200" />
                 <span className="text-sm text-gray-800">${b.price.toFixed(2)}</span>
               </div>
             ))}
@@ -169,16 +169,16 @@ const EtsyBuyBox = ({
             <p className="text-sm font-semibold text-gray-900 mb-2">Highlights</p>
             <ul className="space-y-1.5 mb-3">
               <li className="flex items-start gap-2 text-[13px] text-gray-700">
-                <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-500 flex-shrink-0" />
+                <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-500 shrink-0" />
                 Designed by {shopName}
               </li>
               <li className="flex items-start gap-2 text-[13px] text-gray-700">
-                <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-500 flex-shrink-0" />
+                <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-500 shrink-0" />
                 Materials: {mats.join(', ')}
               </li>
               {highlights.slice(0, 4).map((h, i) => (
                 <li key={i} className="flex items-start gap-2 text-[13px] text-gray-700">
-                  <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-500 flex-shrink-0" />
+                  <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-500 shrink-0" />
                   {h}
                 </li>
               ))}
@@ -195,19 +195,19 @@ const EtsyBuyBox = ({
         <p className="text-base font-semibold text-gray-900 mb-3">Shipping and return policies</p>
         <ul className="space-y-2.5 text-[13px] text-gray-700">
           <li className="flex items-center gap-2.5">
-            <Package size={16} className="text-gray-500 flex-shrink-0" />
+            <Package size={16} className="text-gray-500 shrink-0" />
             Order today to get by <strong className="font-semibold">Mar 30–Apr 10</strong>
           </li>
           <li className="flex items-center gap-2.5">
-            <RotateCcw size={16} className="text-gray-500 flex-shrink-0" />
+            <RotateCcw size={16} className="text-gray-500 shrink-0" />
             Returns accepted within 14 days
           </li>
           <li className="flex items-center gap-2.5">
-            <Truck size={16} className="text-gray-500 flex-shrink-0" />
+            <Truck size={16} className="text-gray-500 shrink-0" />
             Cost to ship: <strong className="font-semibold">$7.00</strong>
           </li>
           <li className="flex items-center gap-2.5">
-            <MapPin size={16} className="text-gray-500 flex-shrink-0" />
+            <MapPin size={16} className="text-gray-500 shrink-0" />
             Ships from United States
           </li>
         </ul>
@@ -217,14 +217,14 @@ const EtsyBuyBox = ({
       <div className="border-t border-gray-200 pt-4 mt-4">
         <p className="text-base font-semibold text-gray-900 mb-3">Did you know?</p>
         <div className="flex items-start gap-2.5 mb-3">
-          <ShieldCheck size={18} className="text-gray-500 flex-shrink-0 mt-0.5" />
+          <ShieldCheck size={18} className="text-gray-500 shrink-0 mt-0.5" />
           <p className="text-[13px] text-gray-700 leading-relaxed">
             <strong className="font-semibold">Etsy Purchase Protection:</strong> Shop confidently on Etsy
             knowing if something goes wrong with an order, we've got your back for all eligible purchases.
           </p>
         </div>
         <div className="flex items-start gap-2.5">
-          <Leaf size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
+          <Leaf size={18} className="text-green-600 shrink-0 mt-0.5" />
           <p className="text-[13px] text-gray-700 leading-relaxed bg-green-50 rounded-md px-3 py-2">
             Etsy invests in climate solutions like electric trucks and carbon offsets for every delivery.
           </p>
